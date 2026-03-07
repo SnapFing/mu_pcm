@@ -92,7 +92,7 @@ export default function ResourcesPage() {
 
       <div style={{ minHeight: '100vh', background: 'white', color: '#1E293B' }}>
         <Navbar activePath="/resources" />
-        <PageHeader eyebrow="MU SDA PCM" title="Time Management Resources"
+        <PageHeader eyebrow="MU SDA PCM" title="Campus Resources"
           subtitle="Balancing academics, spiritual growth, and personal life — practical tools to help you thrive." />
 
         <div className="max-w-7xl mx-auto px-5 sm:px-8 py-14 space-y-16">

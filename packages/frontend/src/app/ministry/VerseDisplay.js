@@ -4,9 +4,9 @@
  * VerseDisplay.js
  * Place at: src/app/ministry/VerseDisplay.js
  *
- * Cycles through a curated list of verses, picking one per day
- * (deterministic — same verse all day, changes at midnight).
- * No API required.
+ * Props:
+ *   theme  'dark' (default) — white text, for blue/navy backgrounds
+ *          'light'          — dark text, for white/light card backgrounds
  */
 
 const VERSES = [
@@ -26,23 +26,27 @@ const VERSES = [
   { text: 'God is our refuge and strength, an ever-present help in trouble.', ref: 'Psalm 46:1' },
 ];
 
-export default function VerseDisplay() {
-  // Pick verse by day-of-year — consistent all day, changes daily
-  const now        = new Date();
-  const start      = new Date(now.getFullYear(), 0, 0);
-  const dayOfYear  = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-  const verse      = VERSES[dayOfYear % VERSES.length];
+export default function VerseDisplay({ theme = 'dark' }) {
+  const now       = new Date();
+  const start     = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+  const verse     = VERSES[dayOfYear % VERSES.length];
+
+  const isDark = theme === 'dark';
+
+  const quoteColor = isDark ? 'rgba(255,255,255,0.2)'  : 'rgba(46,109,231,0.2)';
+  const textColor  = isDark ? 'rgba(255,255,255,0.9)'  : '#0F2A4A';
+  const refColor   = isDark ? 'rgba(255,255,255,0.55)' : '#2E6DE7';
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Opening quote mark */}
-      <span style={{ fontSize: 48, lineHeight: 0.8, color: 'rgba(255,255,255,0.2)', fontFamily: 'Georgia, serif', userSelect: 'none' }}>
+      <span style={{ fontSize: 48, lineHeight: 0.8, color: quoteColor, fontFamily: 'Georgia, serif', userSelect: 'none' }}>
         &ldquo;
       </span>
-      <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 15, lineHeight: 1.75, color: 'rgba(255,255,255,0.9)', fontStyle: 'italic' }}>
+      <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 15, lineHeight: 1.75, color: textColor, fontStyle: 'italic' }}>
         {verse.text}
       </p>
-      <p style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em' }}>
+      <p style={{ fontSize: 12, fontWeight: 700, color: refColor, letterSpacing: '0.1em' }}>
         — {verse.ref}
       </p>
     </div>

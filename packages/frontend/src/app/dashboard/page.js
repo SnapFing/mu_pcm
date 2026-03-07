@@ -96,7 +96,7 @@ function VerseCard() {
       {/* Verse */}
       <div className="flex-1 px-6 py-4"
         style={{ background: 'linear-gradient(160deg, rgba(46,109,231,0.04) 0%, rgba(46,109,231,0.01) 100%)', borderTop: '1px solid #E2E8F7', borderBottom: '1px solid #E2E8F7' }}>
-        <VerseDisplay />
+        <VerseDisplay theme="light"/>
       </div>
       {/* Footer */}
       <div className="px-6 py-4">
