@@ -1,0 +1,19 @@
+{
+  "name": "mu-sda-pcm-companion",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/frontend",
+    "packages/backend"
+  ],
+ "scripts": {
+  "dev": "npm run dev --workspace=packages/frontend",
+  "dev:frontend": "npm run dev --workspace=packages/frontend",
+  "dev:backend": "npm run dev --workspace=packages/backend",
+  "build": "npm run build --workspace=packages/frontend",
+  "start": "npm run start --workspace=packages/frontend"
+},
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}
