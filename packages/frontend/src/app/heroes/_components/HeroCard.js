@@ -1,6 +1,7 @@
 /**
  * heroes/_components/HeroCard.js
  */
+'use client';
 
 export default function HeroCard({ hero }) {
   const { name, role, summary, image, badge } = hero;

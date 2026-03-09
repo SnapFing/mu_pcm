@@ -1,101 +1,91 @@
 'use client';
 
-import Navbar from '@/app/ui/Navbar';
-import Footer from '@/app/ui/Footer';
-import { PageHeader, SectionLabel } from '@/app/ui/PageHeader';
-import HeroCard from './_components/HeroCard';
+import { useState } from 'react';
+import Navbar  from '@/app/ui/Navbar';
+import Footer  from '@/app/ui/Footer';
+import { PageHeader } from '@/app/ui/PageHeader';
+import { useHeroes }  from '@/app/context/DataContext';
 
+const StarIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>
+);
 
-
-const heroes = [
-  {
-    name: 'Victor Mutinta',
-    role: 'PCM Chairperson 2024–2025',
-    summary: 'Victor led the PCM through one of its most challenging years, organizing virtual worship sessions during the pandemic and maintaining community spirit against all odds.',
-    image: '/heroes/victor.jpg',
-    badge: { label: 'Leadership', color: 'blue' },
-  },
-  {
-    name: 'Agness Bwalya',
-    role: 'Social Welfare Committee Leader',
-    summary: 'Agness organized multiple community service initiatives, including a successful fundraiser that provided school supplies to underprivileged children in Kabwe.',
-    image: '/heroes/agness.jpg',
-    badge: { label: 'Service', color: 'purple' },
-  },
-  {
-    name: 'Emmanuel Siasuntwe',
-    role: 'Personal Ministries',
-    summary: "Emmanuel's innovative approach to Bible study attracted many non-believers to the group, resulting in 15 baptisms last year — a testament to Spirit-led outreach.",
-    image: '/heroes/emmanuel.jpg',
-    badge: { label: 'Evangelism', color: 'blue' },
-  },
-  {
-    name: 'Dickson Liseli',
-    role: 'Choir Director',
-    summary: 'Dickson revitalized the PCM choir, composing original worship songs that have been adopted by several churches across Kabwe and featured in campus media.',
-    image: '/heroes/dickson.jpg',
-    badge: { label: 'Worship', color: 'purple' },
-  },
-  {
-    name: 'Elina Mwelwa',
-    role: 'Prayer Band Leader',
-    summary: 'Elina established the 24-hour prayer chain that has been running continuously for over a year, providing round-the-clock spiritual support for every student in need.',
-    image: '/heroes/elina.jpg',
-    badge: { label: 'Prayer', color: 'blue' },
-  },
-  {
-    name: 'Kenty Siawala',
-    role: 'MU-SASM Chairperson',
-    summary: "Kenty pioneered the campus-wide 'Faith Conversations' program that created safe spaces for interfaith dialogue and deepened understanding among students of all backgrounds.",
-    image: '/heroes/kenty.jpg',
-    badge: { label: 'Unity', color: 'purple' },
-  },
-];
+function HeroCard({ hero, idx }) {
+  const { name, role, year, bio, image } = hero;
+  const accent = idx % 2 === 0 ? '#2E6DE7' : '#7C3AED';
+  const accentBg = idx % 2 === 0 ? 'rgba(46,109,231,0.08)' : 'rgba(124,58,237,0.08)';
+  return (
+    <div className="rounded-2xl overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-0.5"
+      style={{ background: 'white', border: '1px solid #E2E8F7', boxShadow: '0 1px 4px rgba(46,109,231,0.06)' }}
+      onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 28px rgba(46,109,231,0.12)'}
+      onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 4px rgba(46,109,231,0.06)'}>
+      <div className="relative overflow-hidden" style={{ height: 200, background: accentBg }}>
+        {image ? (
+          <img src={image} alt={name} className="w-full h-full object-cover object-top"
+            onError={e => { e.currentTarget.style.display = 'none'; }} />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: accent }}>
+              <span style={{ color: 'white', fontSize: 28, fontWeight: 700, fontFamily: "'Playfair Display', serif" }}>
+                {name.charAt(0)}
+              </span>
+            </div>
+          </div>
+        )}
+        <span className="absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full"
+          style={{ background: 'rgba(255,255,255,0.92)', color: accent }}>{year}</span>
+        <div className="absolute top-3 left-3 w-7 h-7 rounded-full flex items-center justify-center"
+          style={{ background: accent, color: 'white' }}><StarIcon /></div>
+      </div>
+      <div className="p-5 flex flex-col gap-3 flex-1">
+        <div>
+          <h3 className="font-bold text-base leading-snug" style={{ color: '#0F2A4A' }}>{name}</h3>
+          <p className="text-xs font-semibold mt-1" style={{ color: accent }}>{role}</p>
+        </div>
+        {bio && <p className="text-sm leading-relaxed flex-1" style={{ color: '#64748B' }}>{bio}</p>}
+      </div>
+    </div>
+  );
+}
 
 export default function HeroesPage() {
+  const { items: heroes } = useHeroes();
+  const [search, setSearch] = useState('');
+  const featured = heroes.filter(h => h.status === 'Featured');
+  const filtered = featured.filter(h =>
+    h.name.toLowerCase().includes(search.toLowerCase()) ||
+    (h.role || '').toLowerCase().includes(search.toLowerCase())
+  );
+  const years = [...new Set(filtered.map(h => h.year))].sort().reverse();
   return (
     <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap');
-      * { font-family: 'Noto Sans', sans-serif; }`}</style>
-
-      <div style={{ minHeight: '100vh', background: 'white', color: '#1E293B' }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap'); *, body { font-family: 'Noto Sans', sans-serif; }`}</style>
+      <div style={{ minHeight: '100vh', background: '#FFFFFF', color: '#1E293B' }}>
         <Navbar activePath="/heroes" />
-
-        <PageHeader
-          eyebrow="MU SDA PCM"
-          title="Campus Heroes & Heroines"
-          subtitle="Meet the extraordinary individuals whose faith, dedication, and service continue to inspire our community."
-        />
-
+        <PageHeader eyebrow="Celebrating Excellence" title="Campus Heroes"
+          subtitle="Honouring students and leaders who have made a lasting impact on our ministry." />
         <div className="max-w-7xl mx-auto px-5 sm:px-8 py-16">
-          <SectionLabel eyebrow="Class of 2024–2025" title="Extraordinary Individuals" color="purple" />
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {heroes.map(hero => <HeroCard key={hero.name} hero={hero} />)}
+          <div className="relative mb-12 max-w-sm">
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search heroes…"
+              className="pl-10 pr-4 py-2.5 rounded-xl text-sm w-full outline-none"
+              style={{ border: '1px solid #E2E8F7', background: '#F5F7FF', color: '#0F2A4A' }} />
           </div>
-
-          {/* Nomination CTA */}
-          <div className="mt-16 rounded-2xl p-8 sm:p-12 text-center"
-            style={{ background: 'linear-gradient(135deg, #0F2A4A, #1a3d68)' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: 'rgba(46,109,231,0.9)' }} className="uppercase mb-4">
-              Recognise a Fellow Student
-            </p>
-            <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 700, color: 'white', marginBottom: 12 }}>
-              Nominate a Campus Hero
-            </h2>
-            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.8, maxWidth: 480, margin: '0 auto 28px' }}>
-              Know a student who is making a difference in faith, academics, or service? Nominate them to be featured here.
-            </p>
-            <a href="/contact"
-              className="inline-flex items-center px-8 py-3 rounded-full text-sm font-bold transition-all shadow-lg"
-              style={{ background: '#2E6DE7', color: 'white' }}
-              onMouseEnter={e => e.currentTarget.style.background = '#1d5cd4'}
-              onMouseLeave={e => e.currentTarget.style.background = '#2E6DE7'}>
-              Submit a Nomination
-            </a>
-          </div>
+          {years.length === 0 && <p className="text-center py-20" style={{ color: '#94A3B8' }}>No heroes found.</p>}
+          {years.map(year => (
+            <section key={year} className="mb-16">
+              <div className="mb-8">
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: '#7C3AED' }} className="uppercase mb-2">Class of</p>
+                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.6rem,3vw,2.2rem)', fontWeight: 700, color: '#0F2A4A' }}>{year}</h2>
+              </div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filtered.filter(h => h.year === year).map((hero, i) => <HeroCard key={hero.id} hero={hero} idx={i} />)}
+              </div>
+            </section>
+          ))}
         </div>
-
         <Footer />
       </div>
     </>

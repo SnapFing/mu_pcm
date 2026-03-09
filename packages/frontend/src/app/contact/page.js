@@ -1,146 +1,129 @@
 'use client';
-// contact/page.js + contact/_components/ContactForm.js (combined for simplicity)
 
 import { useState } from 'react';
 import Navbar from '@/app/ui/Navbar';
 import Footer from '@/app/ui/Footer';
 import { PageHeader } from '@/app/ui/PageHeader';
+import { useContacts } from '@/app/context/DataContext';
 
-function ContactForm() {
-  const [form, setForm]         = useState({ name: '', email: '', subject: '', message: '' });
+const Ico = ({ children, c = 'w-5 h-5' }) => (
+  <svg className={c} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">{children}</svg>
+);
+const MailIcon   = ({ c }) => <Ico c={c}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></Ico>;
+const PhoneIcon  = ({ c }) => <Ico c={c}><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.21 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.31 7.78a16 16 0 006.13 6.13l1.14-1.14a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></Ico>;
+const MapPinIcon = ({ c }) => <Ico c={c}><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></Ico>;
+const CheckIcon  = ({ c }) => <Ico c={c}><path d="M20 6L9 17l-5-5"/></Ico>;
+
+const C = { primary: '#2E6DE7', navy: '#0F2A4A', border: '#E2E8F7', white: '#F5F7FF' };
+const inputStyle = { width: '100%', padding: '11px 14px', borderRadius: 12, fontSize: 14, border: `1px solid ${C.border}`, background: C.white, color: C.navy, outline: 'none', fontFamily: "'Noto Sans', sans-serif", transition: 'border-color 0.15s' };
+
+function InfoCard({ icon, label, value, href }) {
+  const inner = (
+    <div className="flex items-start gap-4 p-5 rounded-2xl" style={{ background: 'white', border: `1px solid ${C.border}` }}>
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(46,109,231,0.08)', color: C.primary }}>{icon}</div>
+      <div>
+        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', color: '#94A3B8', marginBottom: 3 }}>{label.toUpperCase()}</p>
+        <p style={{ fontSize: 14, color: C.navy, fontWeight: 500 }}>{value}</p>
+      </div>
+    </div>
+  );
+  return href ? <a href={href}>{inner}</a> : inner;
+}
+
+function ContactForm({ onSubmit }) {
+  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading]    = useState(false);
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const [loading, setLoading] = useState(false);
+  const f = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
+  const valid = form.name && form.email && form.message;
 
-  const handleSubmit = async () => {
-    if (!form.name || !form.email || !form.message) return;
+  const handleSend = () => {
+    if (!valid) return;
     setLoading(true);
-    await new Promise(r => setTimeout(r, 900));
-    setLoading(false);
-    setSubmitted(true);
+    setTimeout(() => { onSubmit(form); setLoading(false); setSubmitted(true); }, 600);
   };
 
-  if (submitted) {
-    return (
-      <div className="rounded-2xl p-10 text-center flex flex-col items-center gap-4"
-        style={{ background: '#F5F7FF', border: '1px solid #E2E8F7' }}>
-        <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'rgba(46,109,231,0.12)' }}>
-          <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#2E6DE7" strokeWidth={2} strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-        </div>
-        <h3 className="font-bold text-lg" style={{ color: '#0F2A4A' }}>Message Sent!</h3>
-        <p style={{ fontSize: 14, color: '#64748B' }}>We'll get back to you within 24 hours.</p>
-        <button onClick={() => { setSubmitted(false); setForm({ name:'',email:'',subject:'',message:'' }); }}
-          className="px-6 py-2.5 rounded-full text-sm font-bold" style={{ background: '#2E6DE7', color: 'white' }}>
-          Send Another Message
-        </button>
-      </div>
-    );
-  }
-
-  const inputStyle = { background: '#F5F7FF', border: '1px solid #E2E8F7', color: '#1E293B', width: '100%', borderRadius: 12, fontSize: 14, padding: '10px 16px', outline: 'none', transition: 'border-color 0.15s' };
-  const labelStyle = { fontSize: 12, fontWeight: 600, color: '#475569', letterSpacing: '0.05em', display: 'block', marginBottom: 6 };
+  if (submitted) return (
+    <div className="rounded-2xl p-12 text-center" style={{ background: 'white', border: `1px solid ${C.border}` }}>
+      <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: 'rgba(46,109,231,0.1)', color: C.primary }}><CheckIcon c="w-8 h-8" /></div>
+      <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.navy, marginBottom: 10 }}>Message Sent!</h3>
+      <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.7, maxWidth: 340, margin: '0 auto 28px' }}>Thanks for reaching out, <strong>{form.name}</strong>. We'll get back to you soon.</p>
+      <button onClick={() => { setForm({ name: '', email: '', subject: '', message: '' }); setSubmitted(false); }}
+        className="px-8 py-2.5 rounded-full text-sm font-bold" style={{ background: C.primary, color: 'white' }}>Send Another</button>
+    </div>
+  );
 
   return (
-    <div className="rounded-2xl p-6 sm:p-8 flex flex-col gap-5"
-      style={{ background: 'white', border: '1px solid #E2E8F7', boxShadow: '0 1px 6px rgba(46,109,231,0.07)' }}>
-      <div className="grid sm:grid-cols-2 gap-5">
-        <div>
-          <label style={labelStyle}>Your Name <span style={{ color: '#EF4444' }}>*</span></label>
-          <input type="text" placeholder="John Mwanza" value={form.name} onChange={e => set('name', e.target.value)}
-            style={inputStyle}
-            onFocus={e => e.currentTarget.style.borderColor = '#2E6DE7'}
-            onBlur={e => e.currentTarget.style.borderColor = '#E2E8F7'} />
+    <div className="rounded-2xl p-8" style={{ background: 'white', border: `1px solid ${C.border}` }}>
+      <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.navy, marginBottom: 6 }}>Send Us a Message</h2>
+      <p style={{ fontSize: 14, color: '#64748B', marginBottom: 28 }}>We'd love to hear from you.</p>
+      <div className="flex flex-col gap-5">
+        <div className="grid sm:grid-cols-2 gap-4">
+          {[{ label: 'Full Name', key: 'name', placeholder: 'Your full name', type: 'text' }, { label: 'Email Address', key: 'email', placeholder: 'your@email.com', type: 'email' }].map(({ label, key, placeholder, type }) => (
+            <div key={key}>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: C.navy, marginBottom: 7 }}>{label.toUpperCase()}</label>
+              <input type={type} value={form[key]} onChange={f(key)} placeholder={placeholder} style={inputStyle}
+                onFocus={e => e.target.style.borderColor = C.primary} onBlur={e => e.target.style.borderColor = C.border} />
+            </div>
+          ))}
         </div>
         <div>
-          <label style={labelStyle}>Email Address <span style={{ color: '#EF4444' }}>*</span></label>
-          <input type="email" placeholder="john@example.com" value={form.email} onChange={e => set('email', e.target.value)}
-            style={inputStyle}
-            onFocus={e => e.currentTarget.style.borderColor = '#2E6DE7'}
-            onBlur={e => e.currentTarget.style.borderColor = '#E2E8F7'} />
+          <label style={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: C.navy, marginBottom: 7 }}>SUBJECT</label>
+          <input type="text" value={form.subject} onChange={f('subject')} placeholder="What is this about?" style={inputStyle}
+            onFocus={e => e.target.style.borderColor = C.primary} onBlur={e => e.target.style.borderColor = C.border} />
         </div>
+        <div>
+          <label style={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: C.navy, marginBottom: 7 }}>MESSAGE</label>
+          <textarea value={form.message} onChange={f('message')} rows={5} placeholder="Write your message here…"
+            style={{ ...inputStyle, resize: 'none' }}
+            onFocus={e => e.target.style.borderColor = C.primary} onBlur={e => e.target.style.borderColor = C.border} />
+        </div>
+        <button onClick={handleSend} disabled={loading || !valid}
+          className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2"
+          style={{ background: !valid ? '#CBD5E1' : C.primary, color: 'white', cursor: !valid ? 'not-allowed' : 'pointer' }}>
+          {loading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</> : 'Send Message'}
+        </button>
       </div>
-      <div>
-        <label style={labelStyle}>Subject</label>
-        <input type="text" placeholder="How can we help you?" value={form.subject} onChange={e => set('subject', e.target.value)}
-          style={inputStyle}
-          onFocus={e => e.currentTarget.style.borderColor = '#2E6DE7'}
-          onBlur={e => e.currentTarget.style.borderColor = '#E2E8F7'} />
-      </div>
-      <div>
-        <label style={labelStyle}>Message <span style={{ color: '#EF4444' }}>*</span></label>
-        <textarea rows={5} placeholder="Your message here..." value={form.message} onChange={e => set('message', e.target.value)}
-          style={{ ...inputStyle, resize: 'none', lineHeight: 1.7, padding: '12px 16px' }}
-          onFocus={e => e.currentTarget.style.borderColor = '#2E6DE7'}
-          onBlur={e => e.currentTarget.style.borderColor = '#E2E8F7'} />
-      </div>
-      <button onClick={handleSubmit}
-        disabled={loading || !form.name || !form.email || !form.message}
-        className="w-full py-3 rounded-xl text-sm font-bold transition-all"
-        style={{ background: loading || !form.name || !form.email || !form.message ? '#CBD5E1' : '#2E6DE7', color: 'white', cursor: 'pointer' }}>
-        {loading ? 'Sending...' : 'Send Message'}
-      </button>
     </div>
   );
 }
 
-const contactDetails = [
-  { Icon: () => <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>, label: 'Visit Us', value: 'PCM Office, Student Center\nMultungushi University, Great North Road, Kabwe' },
-  { Icon: () => <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>, label: 'Call Us', value: '+260 123 456 789\nMon – Fri, 8:00 AM – 5:00 PM' },
-  { Icon: () => <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>, label: 'Email Us', value: 'info@mupcm.org\nWe reply within 24 hours' },
-];
-
 export default function ContactPage() {
+  const { add } = useContacts();
+  const handleSubmit = (formData) => {
+    add({ name: formData.name, email: formData.email, subject: formData.subject, message: formData.message, date: new Date().toISOString().split('T')[0], status: 'Unread' });
+  };
   return (
     <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap');
-      * { font-family: 'Noto Sans', sans-serif; }`}</style>
-
-      <div style={{ minHeight: '100vh', background: 'white', color: '#1E293B' }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap'); *, body { font-family: 'Noto Sans', sans-serif; }`}</style>
+      <div style={{ minHeight: '100vh', background: '#FFFFFF', color: '#1E293B' }}>
         <Navbar activePath="/contact" />
-        <PageHeader eyebrow="MU SDA PCM" title="Contact Us" subtitle="We'd love to hear from you — reach out for any questions, prayer requests, or partnership inquiries." />
-
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 py-14">
-          <div className="grid lg:grid-cols-2 gap-12">
-
-            {/* Form */}
-            <div>
-              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: '#2E6DE7' }} className="uppercase mb-2">Get In Touch</p>
-              <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(1.5rem, 2.5vw, 2rem)', fontWeight: 700, color: '#0F2A4A', marginBottom: 24 }}>
-                Send Us a Message
-              </h2>
-              <ContactForm />
-            </div>
-
-            {/* Contact info */}
-            <div className="flex flex-col gap-6">
-              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: '#7C3AED' }} className="uppercase mb-2">Find Us</p>
-              <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(1.5rem, 2.5vw, 2rem)', fontWeight: 700, color: '#0F2A4A', marginBottom: 8 }}>
-                Our Office
-              </h2>
-              {contactDetails.map(({ Icon, label, value }) => (
-                <div key={label} className="flex items-start gap-4 rounded-2xl p-5"
-                  style={{ background: '#F5F7FF', border: '1px solid #E2E8F7' }}>
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(46,109,231,0.1)', color: '#2E6DE7' }}>
-                    <Icon />
-                  </div>
-                  <div>
-                    <p className="font-bold text-sm mb-1" style={{ color: '#0F2A4A' }}>{label}</p>
-                    {value.split('\n').map((line, i) => (
-                      <p key={i} style={{ fontSize: 13, color: '#64748B', lineHeight: 1.6 }}>{line}</p>
-                    ))}
-                  </div>
+        <PageHeader eyebrow="Get in Touch" title="Contact Us" subtitle="Questions, ideas, or just want to connect? We're here and happy to hear from you." />
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 py-16">
+          <div className="grid lg:grid-cols-5 gap-10">
+            <div className="lg:col-span-2 flex flex-col gap-5">
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: C.primary }} className="uppercase mb-3">Find Us</p>
+                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.4rem,2.5vw,1.9rem)', fontWeight: 700, color: C.navy, marginBottom: 8 }}>We'd Love to Hear From You</h2>
+                <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.75 }}>Reach out via the form, or find us at the PCM Office on campus. We respond within 24 hours.</p>
+              </div>
+              <InfoCard icon={<MapPinIcon c="w-5 h-5" />} label="Address" value="PCM Office, Student Centre, Mulungushi University, Kabwe" />
+              <InfoCard icon={<MailIcon   c="w-5 h-5" />} label="Email"   value="info@mupcm.org" href="mailto:info@mupcm.org" />
+              <InfoCard icon={<PhoneIcon  c="w-5 h-5" />} label="Phone"   value="+260 123 456 789" href="tel:+260123456789" />
+              <div className="rounded-2xl p-5" style={{ background: 'white', border: `1px solid ${C.border}` }}>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', color: '#94A3B8', marginBottom: 14 }}>FOLLOW US</p>
+                <div className="flex gap-3">
+                  {[{ label: 'Facebook', href: 'https://facebook.com', color: '#1877F2' }, { label: 'Instagram', href: 'https://instagram.com', color: '#E4405F' }, { label: 'WhatsApp', href: 'https://wa.me/260123456789', color: '#25D366' }].map(({ label, href, color }) => (
+                    <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="flex-1 py-2 rounded-xl text-xs font-bold text-center"
+                      style={{ background: `${color}14`, color, border: `1px solid ${color}30` }}>{label}</a>
+                  ))}
                 </div>
-              ))}
-
-              {/* Map placeholder */}
-              <div className="rounded-2xl overflow-hidden flex items-center justify-center"
-                style={{ height: 200, background: 'linear-gradient(135deg, #0F2A4A, #2E6DE7)' }}>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>Map embed goes here</p>
               </div>
             </div>
+            <div className="lg:col-span-3"><ContactForm onSubmit={handleSubmit} /></div>
           </div>
         </div>
-
         <Footer />
       </div>
     </>
