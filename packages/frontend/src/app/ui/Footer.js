@@ -155,30 +155,34 @@ export default function Footer() {
             <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.2em', color: 'rgba(46,109,231,0.9)' }} className="uppercase mb-5">
               Contact
             </p>
+            
             <ul className="flex flex-col gap-4 text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
               <li className="flex items-start gap-2.5">
                 <span style={{ color: '#2E6DE7', marginTop: 2 }}><PinIcon /></span>
-                <span className="leading-relaxed">PCM Office, Student Center<br />Great North Road, Kabwe, Zambia</span>
+                <span className="leading-relaxed">Mulungushi University<br />Great North Road, Kabwe, Zambia</span>
               </li>
+              
               <li className="flex items-center gap-2.5">
                 <span style={{ color: '#2E6DE7' }}><PhoneIcon /></span>
                 <a href="tel:+260123456789"
                   onMouseEnter={e => e.currentTarget.style.color = 'white'}
                   onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}>
-                  +260 123 456 789
+                  +260 762 062 641
                 </a>
               </li>
+              
               <li className="flex items-center gap-2.5">
                 <span style={{ color: '#2E6DE7' }}><MailIcon /></span>
-                <a href="mailto:info@mupcm.org"
+                <a href="mulungushisdapcmpublicity@gmail.com"
                   onMouseEnter={e => e.currentTarget.style.color = 'white'}
                   onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}>
-                  info@mupcm.org
+                  mulungushisdapcmpublicity@gmail.com
                 </a>
               </li>
+
               <li className="flex items-center gap-2.5">
                 <span style={{ color: '#2E6DE7' }}><ClockIcon /></span>
-                <span>Mon – Fri, 8:00 AM – 5:00 PM</span>
+                <span>Sun – Fri, 8:00 AM – 5:00 PM</span>
               </li>
             </ul>
           </div>
@@ -188,9 +192,11 @@ export default function Footer() {
             <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.2em', color: 'rgba(46,109,231,0.9)' }} className="uppercase mb-5">
               Stay Updated
             </p>
+
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.8, marginBottom: 20 }}>
               Get devotionals, event reminders, and ministry updates straight to your inbox.
             </p>
+            
             <div className="flex flex-col gap-2.5">
               <input type="email" placeholder="Your email address"
                 className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none transition-colors"
@@ -210,8 +216,9 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between gap-2"
           style={{ borderTop: '1px solid rgba(255,255,255,0.08)', fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
-          <p>© 2025 Mulungushi University SDA PCM. All rights reserved.</p>
+          <p>© 2026 Mulungushi University SDA PCM. All rights reserved.</p>
           <p>Built with faith &amp; purpose · Kabwe, Zambia</p>
+          <p>SnapFing</p>
         </div>
       </div>
     </footer>

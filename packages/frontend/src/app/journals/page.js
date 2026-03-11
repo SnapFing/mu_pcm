@@ -7,10 +7,53 @@ import { PageHeader } from '@/app/ui/PageHeader';
 import { useJournals } from '@/app/context/DataContext';
 
 const CATEGORIES = ['All', 'Academic', 'Spiritual Growth', 'Personal Development', 'Community'];
-const CAT_COLORS = { 'Academic': { bg: 'rgba(46,109,231,0.08)', text: '#2E6DE7' }, 'Spiritual Growth': { bg: 'rgba(124,58,237,0.08)', text: '#7C3AED' }, 'Personal Development': { bg: 'rgba(15,42,74,0.08)', text: '#0F2A4A' }, 'Community': { bg: 'rgba(5,150,105,0.08)', text: '#059669' } };
+const CAT_COLORS = {
+  'Academic':             { bg: 'rgba(46,109,231,0.08)',  text: '#2E6DE7' },
+  'Spiritual Growth':     { bg: 'rgba(124,58,237,0.08)', text: '#7C3AED' },
+  'Personal Development': { bg: 'rgba(15,42,74,0.08)',   text: '#0F2A4A' },
+  'Community':            { bg: 'rgba(5,150,105,0.08)',  text: '#059669' },
+};
 
-function JournalCard({ journal, idx }) {
-  const { title, author, category, date } = journal;
+function Modal({ journal, onClose }) {
+  const colors = CAT_COLORS[journal.category] || { bg: 'rgba(46,109,231,0.08)', text: '#2E6DE7' };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(15,42,74,0.6)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}>
+        <div className="sticky top-0 bg-white px-6 py-4 border-b flex items-start justify-between gap-4" style={{ borderColor: '#E2E8F7' }}>
+          <div className="flex-1">
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: colors.bg, color: colors.text }}>{journal.category}</span>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: '#0F2A4A', marginTop: 8 }}>{journal.title}</h2>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 shrink-0">
+            <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div className="px-6 pt-4 pb-2 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: colors.bg, color: colors.text, fontSize: 12, fontWeight: 700 }}>
+            {journal.author ? journal.author.charAt(0) : '?'}
+          </div>
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 600, color: '#0F2A4A' }}>{journal.author}</p>
+            <p style={{ fontSize: 11, color: '#94A3B8' }}>{journal.date ? new Date(journal.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}</p>
+          </div>
+        </div>
+        <div className="px-6 py-4">
+          {journal.body
+            ? <p style={{ fontSize: 15, lineHeight: 1.85, color: '#334155', whiteSpace: 'pre-wrap' }}>{journal.body}</p>
+            : <p style={{ color: '#94A3B8', fontSize: 14, fontStyle: 'italic' }}>No full article content available.</p>}
+        </div>
+        <div className="px-6 py-4 border-t" style={{ borderColor: '#E2E8F7' }}>
+          <button onClick={onClose} className="px-5 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#2E6DE7' }}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function JournalCard({ journal, idx, onRead }) {
+  const { title, author, category, date, body } = journal;
   const colors = CAT_COLORS[category] || { bg: 'rgba(46,109,231,0.08)', text: '#2E6DE7' };
   const accent = idx % 2 === 0 ? '#2E6DE7' : '#7C3AED';
   return (
@@ -20,12 +63,27 @@ function JournalCard({ journal, idx }) {
       onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 4px rgba(46,109,231,0.06)'}>
       <div className="flex items-start justify-between gap-3">
         <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: colors.bg, color: colors.text }}>{category}</span>
-        <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500, whiteSpace: 'nowrap' }}>{date ? new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</span>
+        <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500, whiteSpace: 'nowrap' }}>
+          {date ? new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+        </span>
       </div>
       <h3 className="font-bold leading-snug flex-1" style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, color: '#0F2A4A' }}>{title}</h3>
-      <div className="flex items-center gap-2 pt-3" style={{ borderTop: '1px solid #F1F5F9' }}>
-        <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: colors.bg, color: colors.text, fontSize: 11, fontWeight: 700 }}>{author ? author.charAt(0) : '?'}</div>
-        <span style={{ fontSize: 12, color: '#64748B', fontWeight: 500 }}>{author}</span>
+      {body && (
+        <p className="text-sm leading-relaxed" style={{ color: '#64748B', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{body}</p>
+      )}
+      <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid #F1F5F9' }}>
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: colors.bg, color: colors.text, fontSize: 11, fontWeight: 700 }}>
+            {author ? author.charAt(0) : '?'}
+          </div>
+          <span style={{ fontSize: 12, color: '#64748B', fontWeight: 500 }}>{author}</span>
+        </div>
+        {body && (
+          <button onClick={() => onRead(journal)} className="flex items-center gap-1 text-xs font-semibold" style={{ color: accent }}>
+            Read more
+            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        )}
       </div>
     </div>
   );
@@ -35,8 +93,12 @@ export default function JournalsPage() {
   const { items: journals } = useJournals();
   const [active, setActive] = useState('All');
   const [search, setSearch] = useState('');
+  const [reading, setReading] = useState(null);
   const published = journals.filter(j => j.status === 'Published');
-  const filtered = published.filter(j => (active === 'All' || j.category === active) && (j.title.toLowerCase().includes(search.toLowerCase()) || (j.author || '').toLowerCase().includes(search.toLowerCase())));
+  const filtered = published.filter(j =>
+    (active === 'All' || j.category === active) &&
+    (j.title.toLowerCase().includes(search.toLowerCase()) || (j.author || '').toLowerCase().includes(search.toLowerCase()))
+  );
   return (
     <>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap'); *, body { font-family: 'Noto Sans', sans-serif; }`}</style>
@@ -58,14 +120,13 @@ export default function JournalsPage() {
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…" className="pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none" style={{ border: '1px solid #E2E8F7', background: '#F5F7FF', color: '#0F2A4A', width: 180 }} />
             </div>
           </div>
-          {filtered.length === 0 ? <p className="text-center py-20" style={{ color: '#94A3B8' }}>No articles found.</p> : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filtered.map((j, i) => <JournalCard key={j.id} journal={j} idx={i} />)}
-            </div>
-          )}
+          {filtered.length === 0
+            ? <p className="text-center py-20" style={{ color: '#94A3B8' }}>No articles found.</p>
+            : <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">{filtered.map((j, i) => <JournalCard key={j.id} journal={j} idx={i} onRead={setReading} />)}</div>}
         </div>
         <Footer />
       </div>
+      {reading && <Modal journal={reading} onClose={() => setReading(null)} />}
     </>
   );
 }

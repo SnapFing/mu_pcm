@@ -2,31 +2,20 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CONFIG
-// ─────────────────────────────────────────────────────────────────────────────
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-const ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_TOKEN || "";
+const ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_TOKEN || "mupcm_admin_2026";
 
 const headers = (isWrite = false) => ({
   "Content-Type": "application/json",
-  ...(isWrite && ADMIN_TOKEN ? { "x-admin-token": ADMIN_TOKEN } : {}),
+  "x-admin-token": ADMIN_TOKEN,
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CONTEXT
-// ─────────────────────────────────────────────────────────────────────────────
 const DataContext = createContext(null);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GENERIC COLLECTION HOOK FACTORY
-// Creates { items, loading, add, update, remove } for any collection
-// ─────────────────────────────────────────────────────────────────────────────
 function useCollectionState(key) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch all
   const load = useCallback(async () => {
     try {
       setLoading(true);
@@ -42,7 +31,6 @@ function useCollectionState(key) {
 
   useEffect(() => { load(); }, [load]);
 
-  // Add
   const add = useCallback(async (item) => {
     try {
       const res = await fetch(`${API}/api/${key}`, {
@@ -50,28 +38,28 @@ function useCollectionState(key) {
         headers: headers(true),
         body: JSON.stringify(item),
       });
-      const { id } = await res.json();
-      setItems((prev) => [{ ...item, id }, ...prev]);
+      const data = await res.json();
+      if (!res.ok) { console.error(`[${key}] add failed:`, data); return; }
+      setItems((prev) => [{ ...item, id: data.id }, ...prev]);
     } catch (err) {
       console.error(`[${key}] add error:`, err);
     }
   }, [key]);
 
-  // Update
   const update = useCallback(async (item) => {
     try {
-      await fetch(`${API}/api/${key}/${item.id}`, {
+      const res = await fetch(`${API}/api/${key}/${item.id}`, {
         method: "PUT",
         headers: headers(true),
         body: JSON.stringify(item),
       });
+      if (!res.ok) { const d = await res.json(); console.error(`[${key}] update failed:`, d); return; }
       setItems((prev) => prev.map((x) => (x.id === item.id ? item : x)));
     } catch (err) {
       console.error(`[${key}] update error:`, err);
     }
   }, [key]);
 
-  // Remove
   const remove = useCallback(async (id) => {
     try {
       await fetch(`${API}/api/${key}/${id}`, {
@@ -87,9 +75,6 @@ function useCollectionState(key) {
   return { items, loading, add, update, remove };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ABOUT STATE (single document, not a list)
-// ─────────────────────────────────────────────────────────────────────────────
 function useAboutState() {
   const [about, setAboutLocal] = useState({
     mission: "", vision: "", history: "",
@@ -122,9 +107,6 @@ function useAboutState() {
   return { about, setAbout, loading };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PROVIDER
-// ─────────────────────────────────────────────────────────────────────────────
 export function DataProvider({ children }) {
   const announcements = useCollectionState("announcements");
   const events        = useCollectionState("events");
@@ -137,7 +119,6 @@ export function DataProvider({ children }) {
   const contacts      = useCollectionState("contacts");
   const aboutState    = useAboutState();
 
-  // Build the flat `state` object so OverviewSection (which reads state.X.length) still works
   const state = {
     announcements: announcements.items,
     events:        events.items,
@@ -151,24 +132,13 @@ export function DataProvider({ children }) {
     about:         aboutState.about,
   };
 
-  // reset() is a dev helper — with a real DB we just reload
-  const reset = () => {
-    window.location.reload();
-  };
+  const reset = () => window.location.reload();
 
   return (
     <DataContext.Provider value={{
-      state,
-      reset,
-      announcements,
-      events,
-      journals,
-      media,
-      heroes,
-      groups,
-      resources,
-      prayers,
-      contacts,
+      state, reset,
+      announcements, events, journals, media,
+      heroes, groups, resources, prayers, contacts,
       about: aboutState.about,
       setAbout: aboutState.setAbout,
     }}>
@@ -177,9 +147,6 @@ export function DataProvider({ children }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HOOKS  — identical signatures to the old localStorage version
-// ─────────────────────────────────────────────────────────────────────────────
 export const useAnnouncements = () => useContext(DataContext).announcements;
 export const useEvents        = () => useContext(DataContext).events;
 export const useJournals      = () => useContext(DataContext).journals;

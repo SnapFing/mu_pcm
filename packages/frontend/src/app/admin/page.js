@@ -269,7 +269,7 @@ function JournalsSection() {
   const { items, add, update, remove } = useJournals();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const blank = { title: "", author: "", category: "Academic", date: "", status: "Draft" };
+  const blank = { title: "", author: "", category: "Academic", date: "", body: "", status: "Draft" };
   const [form, setForm] = useState(blank);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()) || x.author.toLowerCase().includes(search.toLowerCase()));
@@ -288,7 +288,8 @@ function JournalsSection() {
             <div className="flex-1"><Field label="Date"><Input type="date" value={form.date} onChange={f("date")} /></Field></div>
           </div>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Draft", "Published"]} /></Field>
-          <MFooter onClose={() => setModal(null)} onSave={save} />
+          <Field label="Article Content"><Textarea value={form.body} onChange={f("body")} rows={8} placeholder="Write the full article here…" /></Field>
+          <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Draft", "Published"]} /></Field>
         </Modal>
       )}
     </div>
@@ -555,8 +556,9 @@ function ContactSection() {
 // ── About Editor ───────────────────────────────────────────────────────────
 function AboutSection() {
   const { about, setAbout } = useAbout();
-  const [form, setForm] = useState(about);
+  const [form, setForm] = useState({ mission: "", vision: "", history: "", address: "", email: "", phone: "", facebook: "", instagram: "", ...about });
   const [saved, setSaved] = useState(false);
+  useEffect(() => { if (about && Object.keys(about).length > 0) setForm(f => ({ ...f, ...about })); }, [about]);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const save = () => { setAbout(form); setSaved(true); setTimeout(() => setSaved(false), 2500); };
   return (

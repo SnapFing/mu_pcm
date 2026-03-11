@@ -16,7 +16,7 @@ const notoSans = Noto_Sans({
 });
 
 export const metadata = {
-  title: "MU PCM — Mulungushi University Campus Ministries",
+  title: "MU SDA PCM — Mulungushi University Seventh-Day Adventist Campus Ministries",
   description:
     "Mulungushi University Public Campus Ministries — supporting students in their spiritual journey while pursuing academic excellence.",
 };

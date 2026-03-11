@@ -7,9 +7,14 @@ router.post('/', async (req, res) => {
   try { const doc = await db.collection(COL).add({...req.body,submittedAt:new Date().toISOString(),status:'Unread'}); res.status(201).json({id:doc.id,message:'Prayer request received'}); }
   catch(err){ res.status(500).json({error:err.message}); }
 });
-router.get('/', authenticate, async (req, res) => {
-  try { const snap = await db.collection(COL).orderBy('submittedAt','desc').get(); res.json(snap.docs.map(d=>({id:d.id,...d.data()}))); }
-  catch(err){ res.status(500).json({error:err.message}); }
+router.get('/', async (req, res) => {
+  try {
+    const token = req.headers['x-admin-token'];
+    const isAdmin = token && token === process.env.ADMIN_SECRET;
+    const snap = await db.collection(COL).orderBy('submittedAt','desc').get();
+    const all = snap.docs.map(d=>({id:d.id,...d.data()}));
+    res.json(isAdmin ? all : []);
+  } catch(err){ res.status(500).json({error:err.message}); }
 });
 router.put('/:id', authenticate, async (req, res) => {
   try { await db.collection(COL).doc(req.params.id).update({...req.body,updatedAt:new Date().toISOString()}); res.json({success:true}); }

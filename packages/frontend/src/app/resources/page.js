@@ -28,10 +28,11 @@ function ResourceCard({ resource, idx }) {
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0" style={{ background: catColors.bg, color: catColors.text }}>{category}</span>
         </div>
         {description && <p className="text-xs leading-relaxed mb-3" style={{ color: '#64748B' }}>{description}</p>}
-        <button className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: accent }}>
+        <a href={resource.url || '#'} target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: accent }}>
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          Download {fileType}
-        </button>
+          {resource.url ? (resource.type === 'Link' ? 'Open Link' : `Download`) : 'No file yet'}
+        </a>
       </div>
     </div>
   );

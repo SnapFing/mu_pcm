@@ -14,30 +14,30 @@ const StarIcon = () => (
 
 function HeroCard({ hero, idx }) {
   const { name, role, year, bio, image } = hero;
-  const accent = idx % 2 === 0 ? '#2E6DE7' : '#7C3AED';
+  const accent   = idx % 2 === 0 ? '#2E6DE7' : '#7C3AED';
   const accentBg = idx % 2 === 0 ? 'rgba(46,109,231,0.08)' : 'rgba(124,58,237,0.08)';
+  const [imgError, setImgError] = useState(false);
   return (
     <div className="rounded-2xl overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-0.5"
       style={{ background: 'white', border: '1px solid #E2E8F7', boxShadow: '0 1px 4px rgba(46,109,231,0.06)' }}
       onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 28px rgba(46,109,231,0.12)'}
       onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 4px rgba(46,109,231,0.06)'}>
-      <div className="relative overflow-hidden" style={{ height: 200, background: accentBg }}>
-        {image ? (
-          <img src={image} alt={name} className="w-full h-full object-cover object-top"
-            onError={e => { e.currentTarget.style.display = 'none'; }} />
+      <div style={{ position: 'relative', width: '100%', height: 240, background: accentBg, overflow: 'hidden' }}>
+        {image && !imgError ? (
+          <img src={image} alt={name} onError={() => setImgError(true)}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: accent }}>
-              <span style={{ color: 'white', fontSize: 28, fontWeight: 700, fontFamily: "'Playfair Display', serif" }}>
-                {name.charAt(0)}
-              </span>
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 80, height: 80, borderRadius: '50%', background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ color: 'white', fontSize: 28, fontWeight: 700, fontFamily: "'Playfair Display', serif" }}>{name ? name.charAt(0) : '?'}</span>
             </div>
           </div>
         )}
-        <span className="absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full"
-          style={{ background: 'rgba(255,255,255,0.92)', color: accent }}>{year}</span>
-        <div className="absolute top-3 left-3 w-7 h-7 rounded-full flex items-center justify-center"
-          style={{ background: accent, color: 'white' }}><StarIcon /></div>
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(to top, rgba(15,42,74,0.35), transparent)' }} />
+        <span style={{ position: 'absolute', top: 12, right: 12, fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 9999, background: 'rgba(255,255,255,0.92)', color: accent }}>{year}</span>
+        <div style={{ position: 'absolute', top: 12, left: 12, width: 28, height: 28, borderRadius: '50%', background: accent, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <StarIcon />
+        </div>
       </div>
       <div className="p-5 flex flex-col gap-3 flex-1">
         <div>
@@ -64,8 +64,7 @@ export default function HeroesPage() {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap'); *, body { font-family: 'Noto Sans', sans-serif; }`}</style>
       <div style={{ minHeight: '100vh', background: '#FFFFFF', color: '#1E293B' }}>
         <Navbar activePath="/heroes" />
-        <PageHeader eyebrow="Celebrating Excellence" title="Campus Heroes"
-          subtitle="Honouring students and leaders who have made a lasting impact on our ministry." />
+        <PageHeader eyebrow="Celebrating Excellence" title="Campus Heroes" subtitle="Honouring students and leaders who have made a lasting impact on our ministry." />
         <div className="max-w-7xl mx-auto px-5 sm:px-8 py-16">
           <div className="relative mb-12 max-w-sm">
             <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
