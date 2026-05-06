@@ -18,7 +18,6 @@ app.get('/api/health', (req, res) => {
 });
 
 // ── Public / mixed routes ───────────────────────────────────────────────
-// GET endpoints are public; POST/PUT/DELETE are protected inside each router
 app.use('/api/announcements', require('./routes/announcements'));
 app.use('/api/events',        require('./routes/events'));
 app.use('/api/journals',      require('./routes/journals'));
@@ -28,12 +27,12 @@ app.use('/api/groups',        require('./routes/groups'));
 app.use('/api/resources',     require('./routes/resources'));
 app.use('/api/about',         require('./routes/about'));
 
-// ── Submit-only public routes (public POST, authenticated GET) ──────────
+// ── Submit-only public routes ───────────────────────────────────────────
 app.use('/api/prayers',       require('./routes/prayers'));
 app.use('/api/contacts',      require('./routes/contacts'));
 
 // ── Admin-only routes ───────────────────────────────────────────────────
-app.use('/api/users',         require('./routes/users'));   // RBAC user management
+app.use('/api/users',         require('./routes/users'));
 
 // ── 404 fallback ────────────────────────────────────────────────────────
 app.use((req, res) => {
@@ -46,6 +45,11 @@ app.use((err, req, res, _next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ Backend running on http://localhost:${PORT}`);
-});
+// ── Local dev server (not used on Vercel) ────────────────────────────────
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`✅ Backend running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
