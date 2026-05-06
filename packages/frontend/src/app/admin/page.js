@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   useAnnouncements,
   useEvents,
@@ -113,7 +113,7 @@ const Field = ({ label, children }) => (
 );
 const inputCls = "w-full px-3 py-2 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-300";
 const inputStyle = { borderColor: C.border, background: C.white, color: C.navy, fontFamily: "'Noto Sans',sans-serif" };
-const Input    = (p) => <input    {...p} className={inputCls}                         style={inputStyle} />;
+const Input    = (p) => <input    {...p} className={inputCls}                              style={inputStyle} />;
 const Textarea = (p) => <textarea {...p} rows={p.rows || 3} className={`${inputCls} resize-none`} style={inputStyle} />;
 const Sel = ({ options, ...p }) => (
   <select {...p} className={inputCls} style={inputStyle}>
@@ -157,7 +157,7 @@ const Table = ({ cols, rows, onEdit, onDelete, extra }) => (
             <td className="px-4 py-3">
               <div className="flex justify-end gap-1.5">
                 {extra && extra(row)}
-                {onEdit   && <button onClick={() => onEdit(row)}    className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors"><Icon d={Icons.edit}  size={14} className="text-blue-600" /></button>}
+                {onEdit   && <button onClick={() => onEdit(row)}      className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors"><Icon d={Icons.edit}  size={14} className="text-blue-600" /></button>}
                 {onDelete && <button onClick={() => onDelete(row.id)} className="p-1.5 rounded-lg hover:bg-red-100  transition-colors"><Icon d={Icons.trash} size={14} className="text-red-500"  /></button>}
               </div>
             </td>
@@ -197,7 +197,7 @@ const SHead = ({ title, sub, onAdd, search, onSearch }) => (
 );
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION COMPONENTS  — each one uses the matching context hook
+// SECTION COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ── Announcements ──────────────────────────────────────────────────────────
@@ -213,8 +213,10 @@ function AnnouncementsSection() {
   return (
     <div>
       <SHead title="Announcements" sub={`${items.length} total`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
-      <Table cols={[{ key: "title", label: "Title" }, { key: "body", label: "Body", clip: true }, { key: "date", label: "Date" }, { key: "type", label: "Type" }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={remove} />
+      <Table
+        cols={[{ key: "title", label: "Title" }, { key: "body", label: "Body", clip: true }, { key: "date", label: "Date" }, { key: "type", label: "Type" }, { key: "status", label: "Status" }]}
+        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={remove}
+      />
       {modal && (
         <Modal title={modal === "add" ? "New Announcement" : "Edit Announcement"} onClose={() => setModal(null)}>
           <Field label="Title"><Input value={form.title} onChange={f("title")} placeholder="Title" /></Field>
@@ -244,8 +246,10 @@ function EventsSection() {
   return (
     <div>
       <SHead title="Events" sub={`${items.length} events`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
-      <Table cols={[{ key: "title", label: "Title", clip: true }, { key: "date", label: "Date" }, { key: "time", label: "Time" }, { key: "venue", label: "Venue" }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={remove} />
+      <Table
+        cols={[{ key: "title", label: "Title", clip: true }, { key: "date", label: "Date" }, { key: "time", label: "Time" }, { key: "venue", label: "Venue" }, { key: "status", label: "Status" }]}
+        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={remove}
+      />
       {modal && (
         <Modal title={modal === "add" ? "Create Event" : "Edit Event"} onClose={() => setModal(null)}>
           <Field label="Event Title"><Input value={form.title} onChange={f("title")} placeholder="Event name" /></Field>
@@ -255,7 +259,7 @@ function EventsSection() {
           </div>
           <Field label="Venue"><Input value={form.venue} onChange={f("venue")} placeholder="Location / Hall" /></Field>
           <Field label="Description"><Textarea value={form.description} onChange={f("description")} rows={3} placeholder="Event details…" /></Field>
-          <Field label="Image path (e.g. /events/sabbath.jpg)"><Input value={form.image} onChange={f("image")} placeholder="/events/sabbath.jpg" /></Field>
+          <Field label="Image path"><Input value={form.image} onChange={f("image")} placeholder="/events/sabbath.jpg" /></Field>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Upcoming", "Past"]} /></Field>
           <MFooter onClose={() => setModal(null)} onSave={save} />
         </Modal>
@@ -272,13 +276,18 @@ function JournalsSection() {
   const blank = { title: "", author: "", category: "Academic", date: "", body: "", status: "Draft" };
   const [form, setForm] = useState(blank);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
-  const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()) || x.author.toLowerCase().includes(search.toLowerCase()));
+  const filtered = items.filter((x) =>
+    x.title.toLowerCase().includes(search.toLowerCase()) ||
+    (x.author || "").toLowerCase().includes(search.toLowerCase())
+  );
   const save = () => { modal === "add" ? add(form) : update({ ...form, id: modal.id }); setModal(null); };
   return (
     <div>
       <SHead title="Journals & Articles" sub={`${items.length} entries`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
-      <Table cols={[{ key: "title", label: "Title", clip: true }, { key: "author", label: "Author" }, { key: "category", label: "Category" }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={remove} />
+      <Table
+        cols={[{ key: "title", label: "Title", clip: true }, { key: "author", label: "Author" }, { key: "category", label: "Category" }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]}
+        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={remove}
+      />
       {modal && (
         <Modal title={modal === "add" ? "Add Article" : "Edit Article"} onClose={() => setModal(null)}>
           <Field label="Title"><Input value={form.title} onChange={f("title")} placeholder="Article title" /></Field>
@@ -289,7 +298,7 @@ function JournalsSection() {
           </div>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Draft", "Published"]} /></Field>
           <Field label="Article Content"><Textarea value={form.body} onChange={f("body")} rows={8} placeholder="Write the full article here…" /></Field>
-          <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Draft", "Published"]} /></Field>
+          <MFooter onClose={() => setModal(null)} onSave={save} />
         </Modal>
       )}
     </div>
@@ -309,8 +318,10 @@ function MediaSection() {
   return (
     <div>
       <SHead title="Media Library" sub={`${items.length} items`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
-      <Table cols={[{ key: "title", label: "Title", clip: true }, { key: "type", label: "Type" }, { key: "presenter", label: "Presenter" }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={remove} />
+      <Table
+        cols={[{ key: "title", label: "Title", clip: true }, { key: "type", label: "Type" }, { key: "presenter", label: "Presenter" }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]}
+        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={remove}
+      />
       {modal && (
         <Modal title={modal === "add" ? "Add Media" : "Edit Media"} onClose={() => setModal(null)}>
           <Field label="Title"><Input value={form.title} onChange={f("title")} placeholder="Media title" /></Field>
@@ -343,8 +354,10 @@ function HeroesSection() {
   return (
     <div>
       <SHead title="Campus Heroes" sub={`${items.length} heroes`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
-      <Table cols={[{ key: "name", label: "Name" }, { key: "role", label: "Role", clip: true }, { key: "year", label: "Year" }, { key: "bio", label: "Bio", clip: true }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={remove} />
+      <Table
+        cols={[{ key: "name", label: "Name" }, { key: "role", label: "Role", clip: true }, { key: "year", label: "Year" }, { key: "bio", label: "Bio", clip: true }, { key: "status", label: "Status" }]}
+        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={remove}
+      />
       {modal && (
         <Modal title={modal === "add" ? "Add Hero" : "Edit Hero"} onClose={() => setModal(null)}>
           <Field label="Full Name"><Input value={form.name} onChange={f("name")} placeholder="Full name" /></Field>
@@ -352,7 +365,7 @@ function HeroesSection() {
             <div className="flex-1"><Field label="Role"><Input value={form.role} onChange={f("role")} placeholder="e.g. Choir Director" /></Field></div>
             <div className="flex-1"><Field label="Year"><Input value={form.year} onChange={f("year")} placeholder="2024-25" /></Field></div>
           </div>
-          <Field label="Image path (e.g. /heroes/victor.jpg)"><Input value={form.image} onChange={f("image")} placeholder="/heroes/victor.jpg" /></Field>
+          <Field label="Image path"><Input value={form.image} onChange={f("image")} placeholder="/heroes/victor.jpg" /></Field>
           <Field label="Bio / Story"><Textarea value={form.bio} onChange={f("bio")} rows={4} placeholder="Their contribution…" /></Field>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Draft", "Featured"]} /></Field>
           <MFooter onClose={() => setModal(null)} onSave={save} />
@@ -379,8 +392,10 @@ function GroupsSection() {
   return (
     <div>
       <SHead title="Ministry Groups" sub={`${items.length} groups`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
-      <Table cols={[{ key: "name", label: "Group" }, { key: "leader", label: "Leader" }, { key: "meetingDay", label: "Day" }, { key: "time", label: "Time" }, { key: "members", label: "Members" }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r, description: r.description || "" }); setModal(r); }} onDelete={remove} />
+      <Table
+        cols={[{ key: "name", label: "Group" }, { key: "leader", label: "Leader" }, { key: "meetingDay", label: "Day" }, { key: "time", label: "Time" }, { key: "members", label: "Members" }, { key: "status", label: "Status" }]}
+        rows={filtered} onEdit={(r) => { setForm({ ...r, description: r.description || "" }); setModal(r); }} onDelete={remove}
+      />
       {modal && (
         <Modal title={modal === "add" ? "Create Group" : "Edit Group"} onClose={() => setModal(null)}>
           <Field label="Group Name"><Input value={form.name} onChange={f("name")} placeholder="e.g. Prayer Band" /></Field>
@@ -451,7 +466,10 @@ function PrayerSection() {
   const { items, update, remove } = usePrayers();
   const [viewing, setViewing] = useState(null);
   const [search, setSearch] = useState("");
-  const filtered = items.filter((x) => x.name.toLowerCase().includes(search.toLowerCase()) || x.request.toLowerCase().includes(search.toLowerCase()));
+  const filtered = items.filter((x) =>
+    (x.name || "").toLowerCase().includes(search.toLowerCase()) ||
+    (x.request || "").toLowerCase().includes(search.toLowerCase())
+  );
   const unread = items.filter((x) => x.status === "Unread").length;
   return (
     <div>
@@ -502,7 +520,10 @@ function ContactSection() {
   const { items, update, remove } = useContacts();
   const [viewing, setViewing] = useState(null);
   const [search, setSearch] = useState("");
-  const filtered = items.filter((x) => x.name.toLowerCase().includes(search.toLowerCase()) || x.subject.toLowerCase().includes(search.toLowerCase()));
+  const filtered = items.filter((x) =>
+    (x.name || "").toLowerCase().includes(search.toLowerCase()) ||
+    (x.subject || "").toLowerCase().includes(search.toLowerCase())
+  );
   const unread = items.filter((x) => x.status === "Unread").length;
   const openMsg = (row) => { update({ ...row, status: row.status === "Unread" ? "Read" : row.status }); setViewing(row); };
   return (
@@ -556,9 +577,16 @@ function ContactSection() {
 // ── About Editor ───────────────────────────────────────────────────────────
 function AboutSection() {
   const { about, setAbout } = useAbout();
-  const [form, setForm] = useState({ mission: "", vision: "", history: "", address: "", email: "", phone: "", facebook: "", instagram: "", ...about });
+  const [form, setForm] = useState({
+    mission: "", vision: "", history: "",
+    address: "", email: "", phone: "",
+    facebook: "", instagram: "",
+    ...about,
+  });
   const [saved, setSaved] = useState(false);
-  useEffect(() => { if (about && Object.keys(about).length > 0) setForm(f => ({ ...f, ...about })); }, [about]);
+  useEffect(() => {
+    if (about && Object.keys(about).length > 0) setForm((f) => ({ ...f, ...about }));
+  }, [about]);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const save = () => { setAbout(form); setSaved(true); setTimeout(() => setSaved(false), 2500); };
   return (
@@ -597,21 +625,32 @@ function AboutSection() {
 
 // ── Overview ───────────────────────────────────────────────────────────────
 function OverviewSection({ setSection }) {
-  const { state, reset } = useData();
+  const { reset } = useData();
+  const { items: journals }       = useJournals();
+  const { items: announcements }  = useAnnouncements();
+  const { items: media }          = useMedia();
+  const { items: heroes }         = useHeroes();
+  const { items: events }         = useEvents();
+  const { items: groups }         = useGroups();
+  const { items: resources }      = useResources();
+  const { items: prayers }        = usePrayers();
+  const { items: contacts }       = useContacts();
+
   const stats = [
-    { label: "Journals",       value: state.journals.length,       icon: Icons.journals,  color: C.primary,  key: "journals"       },
-    { label: "Announcements",  value: state.announcements.length,  icon: Icons.announce,  color: C.purple,   key: "announcements"  },
-    { label: "Media Items",    value: state.media.length,          icon: Icons.media,     color: C.navy,     key: "media"          },
-    { label: "Heroes",         value: state.heroes.length,         icon: Icons.heroes,    color: "#059669",  key: "heroes"         },
-    { label: "Events",         value: state.events.length,         icon: Icons.events,    color: "#F59E0B",  key: "events"         },
-    { label: "Groups",         value: state.groups.length,         icon: Icons.groups,    color: "#DC2626",  key: "groups"         },
-    { label: "Resources",      value: state.resources.length,      icon: Icons.resources, color: "#0891B2",  key: "resources"      },
+    { label: "Journals",        value: journals.length,      icon: Icons.journals,  color: C.primary,  key: "journals"       },
+    { label: "Announcements",   value: announcements.length, icon: Icons.announce,  color: C.purple,   key: "announcements"  },
+    { label: "Media Items",     value: media.length,         icon: Icons.media,     color: C.navy,     key: "media"          },
+    { label: "Heroes",          value: heroes.length,        icon: Icons.heroes,    color: "#059669",  key: "heroes"         },
+    { label: "Events",          value: events.length,        icon: Icons.events,    color: "#F59E0B",  key: "events"         },
+    { label: "Groups",          value: groups.length,        icon: Icons.groups,    color: "#DC2626",  key: "groups"         },
+    { label: "Resources",       value: resources.length,     icon: Icons.resources, color: "#0891B2",  key: "resources"      },
     {
       label: "Unread Messages",
-      value: state.contacts.filter((x) => x.status === "Unread").length + state.prayers.filter((x) => x.status === "Unread").length,
+      value: contacts.filter((x) => x.status === "Unread").length + prayers.filter((x) => x.status === "Unread").length,
       icon: Icons.contact, color: C.purple, key: "contact",
     },
   ];
+
   return (
     <div>
       <div className="mb-6 flex items-start justify-between">
@@ -642,11 +681,10 @@ function OverviewSection({ setSection }) {
         ))}
       </div>
       <div className="rounded-2xl border p-4 bg-blue-50" style={{ borderColor: "#BFDBFE" }}>
-        <p className="text-sm font-semibold mb-1" style={{ color: C.primary }}>💡 How real-time sync works</p>
+        <p className="text-sm font-semibold mb-1" style={{ color: C.primary }}>💡 Live backend sync</p>
         <p className="text-xs leading-relaxed" style={{ color: "#1E40AF" }}>
-          All data lives in a shared React Context backed by <code className="bg-blue-100 px-1 rounded">localStorage</code>.
-          Every public page reads from the same store — so any add, edit, or delete in admin is visible immediately across the site.
-          When you add Firebase later, you only need to swap the Context actions for Firestore calls.
+          All data is read from and written to your Express + Firestore backend in real time.
+          Add, edit, or delete any record here and it will be immediately reflected on every public page.
         </p>
       </div>
     </div>
@@ -659,20 +697,27 @@ function OverviewSection({ setSection }) {
 export default function AdminPage() {
   const [section, setSection] = useState("overview");
   const [open, setOpen] = useState(true);
-  const { state } = useData();
+
+  // Used only for sidebar badges and header unread indicator
+  const { items: prayers }  = usePrayers();
+  const { items: contacts } = useContacts();
+
+  const unreadPrayers  = prayers.filter((x) => x.status === "Unread").length;
+  const unreadContacts = contacts.filter((x) => x.status === "Unread").length;
+  const totalUnread    = unreadPrayers + unreadContacts;
 
   const nav = [
-    { key: "overview",      label: "Overview",         icon: Icons.dashboard  },
-    { key: "announcements", label: "Announcements",    icon: Icons.announce   },
-    { key: "events",        label: "Events",           icon: Icons.events     },
-    { key: "journals",      label: "Journals",         icon: Icons.journals   },
-    { key: "media",         label: "Media",            icon: Icons.media      },
-    { key: "heroes",        label: "Heroes",           icon: Icons.heroes     },
-    { key: "groups",        label: "Groups",           icon: Icons.groups,    divider: true },
-    { key: "resources",     label: "Resources",        icon: Icons.resources  },
-    { key: "prayer",        label: "Prayer Requests",  icon: Icons.prayer,    badge: state.prayers.filter((x) => x.status === "Unread").length },
-    { key: "contact",       label: "Contact Inbox",    icon: Icons.contact,   badge: state.contacts.filter((x) => x.status === "Unread").length, divider: true },
-    { key: "about",         label: "About Editor",     icon: Icons.about      },
+    { key: "overview",      label: "Overview",        icon: Icons.dashboard                                    },
+    { key: "announcements", label: "Announcements",   icon: Icons.announce                                     },
+    { key: "events",        label: "Events",          icon: Icons.events                                       },
+    { key: "journals",      label: "Journals",        icon: Icons.journals                                     },
+    { key: "media",         label: "Media",           icon: Icons.media                                        },
+    { key: "heroes",        label: "Heroes",          icon: Icons.heroes                                       },
+    { key: "groups",        label: "Groups",          icon: Icons.groups,   divider: true                      },
+    { key: "resources",     label: "Resources",       icon: Icons.resources                                    },
+    { key: "prayer",        label: "Prayer Requests", icon: Icons.prayer,   badge: unreadPrayers               },
+    { key: "contact",       label: "Contact Inbox",   icon: Icons.contact,  badge: unreadContacts, divider: true },
+    { key: "about",         label: "About Editor",    icon: Icons.about                                        },
   ];
 
   const sectionMap = {
@@ -699,10 +744,12 @@ export default function AdminPage() {
           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: C.primary }}>
             <span style={{ fontFamily: "'Playfair Display',serif", color: "white", fontSize: 13, fontWeight: 700 }}>M</span>
           </div>
-          {open && <div className="flex-1 min-w-0">
-            <div style={{ fontFamily: "'Playfair Display',serif", color: "white", fontSize: 13, fontWeight: 700 }}>MU PCM</div>
-            <div style={{ color: "rgba(255,255,255,0.38)", fontSize: 9, letterSpacing: "0.08em" }}>ADMIN PORTAL</div>
-          </div>}
+          {open && (
+            <div className="flex-1 min-w-0">
+              <div style={{ fontFamily: "'Playfair Display',serif", color: "white", fontSize: 13, fontWeight: 700 }}>MU PCM</div>
+              <div style={{ color: "rgba(255,255,255,0.38)", fontSize: 9, letterSpacing: "0.08em" }}>ADMIN PORTAL</div>
+            </div>
+          )}
           <button onClick={() => setOpen((p) => !p)} className="p-1 rounded hover:bg-white/10 transition-colors flex-shrink-0">
             <Icon d={open ? Icons.chevronL : Icons.chevronR} size={15} className="text-white/40" />
           </button>
@@ -714,7 +761,8 @@ export default function AdminPage() {
             return (
               <div key={item.key}>
                 {item.divider && <div className="my-1.5 mx-3 border-t" style={{ borderColor: "rgba(255,255,255,0.07)" }} />}
-                <button onClick={() => setSection(item.key)}
+                <button
+                  onClick={() => setSection(item.key)}
                   className="w-full flex items-center gap-2.5 px-3 py-2 transition-all relative text-left"
                   style={{ color: active ? "white" : "rgba(255,255,255,0.46)" }}>
                   {active && <div className="absolute left-0 top-1 bottom-1 w-0.5 rounded-r" style={{ background: C.primary }} />}
@@ -747,15 +795,17 @@ export default function AdminPage() {
             <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: C.primary }}>
               <span style={{ color: "white", fontSize: 12, fontWeight: 700 }}>A</span>
             </div>
-            {open && <>
-              <div className="flex-1 min-w-0">
-                <div style={{ color: "white", fontSize: 11, fontWeight: 600 }}>Administrator</div>
-                <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10 }}>PCM Admin</div>
-              </div>
-              <button className="p-1 rounded hover:bg-white/10 transition-colors">
-                <Icon d={Icons.logout} size={13} className="text-white/35" />
-              </button>
-            </>}
+            {open && (
+              <>
+                <div className="flex-1 min-w-0">
+                  <div style={{ color: "white", fontSize: 11, fontWeight: 600 }}>Administrator</div>
+                  <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10 }}>PCM Admin</div>
+                </div>
+                <button className="p-1 rounded hover:bg-white/10 transition-colors">
+                  <Icon d={Icons.logout} size={13} className="text-white/35" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       </aside>
@@ -765,15 +815,15 @@ export default function AdminPage() {
         <header className="flex-shrink-0 flex items-center justify-between px-6 py-3 border-b bg-white" style={{ borderColor: C.border }}>
           <div className="flex items-center gap-2">
             {current && <Icon d={current.icon} size={15} className="text-blue-600" />}
-            <span style={{ fontFamily: "'Playfair Display',serif", color: C.navy, fontSize: 15, fontWeight: 700 }}>{current?.label}</span>
+            <span style={{ fontFamily: "'Playfair Display',serif", color: C.navy, fontSize: 15, fontWeight: 700 }}>
+              {current?.label}
+            </span>
           </div>
           <div className="flex items-center gap-3">
-            {(state.prayers.some((x) => x.status === "Unread") || state.contacts.some((x) => x.status === "Unread")) && (
+            {totalUnread > 0 && (
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#EF4444" }} />
-                <span className="text-xs" style={{ color: "#EF4444" }}>
-                  {state.prayers.filter((x) => x.status === "Unread").length + state.contacts.filter((x) => x.status === "Unread").length} unread
-                </span>
+                <span className="text-xs" style={{ color: "#EF4444" }}>{totalUnread} unread</span>
               </div>
             )}
             <span className="text-xs" style={{ color: "#94A3B8" }}>mupcm.vercel.app</span>
