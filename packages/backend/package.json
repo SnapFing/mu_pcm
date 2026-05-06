@@ -5,8 +5,9 @@
   "main": "index.js",
 
   "scripts": {
-  "dev": "nodemon src/index.js",
-  "start": "node src/index.js"
+    "dev":       "NODE_OPTIONS=--dns-result-order=ipv4first nodemon src/index.js",
+    "start":     "NODE_OPTIONS=--dns-result-order=ipv4first node src/index.js",
+    "bootstrap": "node --dns-result-order=ipv4first src/scripts/bootstrap.js"
   },
 
   "keywords": [],
@@ -18,7 +19,6 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "firebase-admin": "^13.7.0"
-    
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
