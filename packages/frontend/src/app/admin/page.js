@@ -134,6 +134,37 @@ const FormError = ({ message }) => message ? (
   </div>
 ) : null;
 
+function useAdminEditor({ blank, add, update, normalize = (data) => data, editNormalize = (row) => row, errorMessage = "The record could not be saved. Please try again." }) {
+  const [modal, setModal] = useState(null);
+  const [form, setForm] = useState(blank);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const f = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  const openAdd = () => { setForm(blank); setError(""); setModal("add"); };
+  const openEdit = (row) => { setForm(editNormalize(row)); setError(""); setModal(row); };
+  const closeModal = () => { if (!saving) setModal(null); };
+
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
+    setError("");
+
+    const payload = normalize(form);
+    const result = modal === "add" ? await add(payload) : await update({ ...payload, id: modal.id });
+
+    setSaving(false);
+    if (result?.ok) {
+      setModal(null);
+      return;
+    }
+
+    setError(result?.error || errorMessage);
+  };
+
+  return { modal, form, saving, error, f, openAdd, openEdit, closeModal, save };
+}
+
 // ── Table ──────────────────────────────────────────────────────────────────
 const Table = ({ cols, rows, onEdit, onDelete, extra }) => (
   <div className="overflow-x-auto rounded-xl border" style={{ borderColor: C.border }}>
@@ -210,28 +241,13 @@ const SHead = ({ title, sub, onAdd, search, onSearch }) => (
 // ── Announcements ──────────────────────────────────────────────────────────
 function AnnouncementsSection() {
   const { items, add, update, remove } = useAnnouncements();
-  const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
   const blank = { title: "", date: "", type: "General", status: "Active", body: "" };
-  const [form, setForm] = useState(blank);
-  const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
-  const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
-  const openAdd = () => { setForm(blank); setError(""); setModal("add"); };
-  const openEdit = (row) => { setForm({ ...row }); setError(""); setModal(row); };
-  const closeModal = () => { if (!saving) setModal(null); };
-  const save = async () => {
-    setSaving(true);
-    setError("");
-    const result = modal === "add" ? await add(form) : await update({ ...form, id: modal.id });
-    setSaving(false);
-    if (result?.ok) {
-      setModal(null);
-      return;
-    }
-    setError(result?.error || "The announcement could not be saved. Please try again.");
-  };
+  const { modal, form, saving, error, f, openAdd, openEdit, closeModal, save } = useAdminEditor({
+    blank, add, update,
+    errorMessage: "The announcement could not be saved. Please try again.",
+  });
+  const filtered = items.filter((x) => (x.title || "").toLowerCase().includes(search.toLowerCase()));
   return (
     <div>
       <SHead title="Announcements" sub={`${items.length} total`} onAdd={openAdd} search={search} onSearch={setSearch} />
@@ -259,22 +275,23 @@ function AnnouncementsSection() {
 // ── Events ─────────────────────────────────────────────────────────────────
 function EventsSection() {
   const { items, add, update, remove } = useEvents();
-  const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
   const blank = { title: "", date: "", time: "", venue: "", description: "", image: "", status: "Upcoming" };
-  const [form, setForm] = useState(blank);
-  const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
-  const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
-  const save = () => { modal === "add" ? add(form) : update({ ...form, id: modal.id }); setModal(null); };
+  const { modal, form, saving, error, f, openAdd, openEdit, closeModal, save } = useAdminEditor({
+    blank, add, update,
+    errorMessage: "The event could not be saved. Please try again.",
+  });
+  const filtered = items.filter((x) => (x.title || "").toLowerCase().includes(search.toLowerCase()));
   return (
     <div>
-      <SHead title="Events" sub={`${items.length} events`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
+      <SHead title="Events" sub={`${items.length} events`} onAdd={openAdd} search={search} onSearch={setSearch} />
       <Table
         cols={[{ key: "title", label: "Title", clip: true }, { key: "date", label: "Date" }, { key: "time", label: "Time" }, { key: "venue", label: "Venue" }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={remove}
+        rows={filtered} onEdit={openEdit} onDelete={remove}
       />
       {modal && (
-        <Modal title={modal === "add" ? "Create Event" : "Edit Event"} onClose={() => setModal(null)}>
+        <Modal title={modal === "add" ? "Create Event" : "Edit Event"} onClose={closeModal}>
+          <FormError message={error} />
           <Field label="Event Title"><Input value={form.title} onChange={f("title")} placeholder="Event name" /></Field>
           <div className="flex gap-3">
             <div className="flex-1"><Field label="Date"><Input type="date" value={form.date} onChange={f("date")} /></Field></div>
@@ -284,7 +301,7 @@ function EventsSection() {
           <Field label="Description"><Textarea value={form.description} onChange={f("description")} rows={3} placeholder="Event details…" /></Field>
           <Field label="Image path"><Input value={form.image} onChange={f("image")} placeholder="/events/sabbath.jpg" /></Field>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Upcoming", "Past"]} /></Field>
-          <MFooter onClose={() => setModal(null)} onSave={save} />
+          <MFooter onClose={closeModal} onSave={save} saving={saving} />
         </Modal>
       )}
     </div>
@@ -294,25 +311,26 @@ function EventsSection() {
 // ── Journals ───────────────────────────────────────────────────────────────
 function JournalsSection() {
   const { items, add, update, remove } = useJournals();
-  const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
   const blank = { title: "", author: "", category: "Academic", date: "", body: "", status: "Draft" };
-  const [form, setForm] = useState(blank);
-  const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
+  const { modal, form, saving, error, f, openAdd, openEdit, closeModal, save } = useAdminEditor({
+    blank, add, update,
+    errorMessage: "The article could not be saved. Please try again.",
+  });
   const filtered = items.filter((x) =>
-    x.title.toLowerCase().includes(search.toLowerCase()) ||
+    (x.title || "").toLowerCase().includes(search.toLowerCase()) ||
     (x.author || "").toLowerCase().includes(search.toLowerCase())
   );
-  const save = () => { modal === "add" ? add(form) : update({ ...form, id: modal.id }); setModal(null); };
   return (
     <div>
-      <SHead title="Journals & Articles" sub={`${items.length} entries`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
+      <SHead title="Journals & Articles" sub={`${items.length} entries`} onAdd={openAdd} search={search} onSearch={setSearch} />
       <Table
         cols={[{ key: "title", label: "Title", clip: true }, { key: "author", label: "Author" }, { key: "category", label: "Category" }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={remove}
+        rows={filtered} onEdit={openEdit} onDelete={remove}
       />
       {modal && (
-        <Modal title={modal === "add" ? "Add Article" : "Edit Article"} onClose={() => setModal(null)}>
+        <Modal title={modal === "add" ? "Add Article" : "Edit Article"} onClose={closeModal}>
+          <FormError message={error} />
           <Field label="Title"><Input value={form.title} onChange={f("title")} placeholder="Article title" /></Field>
           <Field label="Author"><Input value={form.author} onChange={f("author")} placeholder="Author name" /></Field>
           <div className="flex gap-3">
@@ -321,7 +339,7 @@ function JournalsSection() {
           </div>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Draft", "Published"]} /></Field>
           <Field label="Article Content"><Textarea value={form.body} onChange={f("body")} rows={8} placeholder="Write the full article here…" /></Field>
-          <MFooter onClose={() => setModal(null)} onSave={save} />
+          <MFooter onClose={closeModal} onSave={save} saving={saving} />
         </Modal>
       )}
     </div>
@@ -331,22 +349,23 @@ function JournalsSection() {
 // ── Media ──────────────────────────────────────────────────────────────────
 function MediaSection() {
   const { items, add, update, remove } = useMedia();
-  const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
   const blank = { title: "", type: "Sermon", presenter: "", date: "", status: "Draft", url: "" };
-  const [form, setForm] = useState(blank);
-  const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
-  const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
-  const save = () => { modal === "add" ? add(form) : update({ ...form, id: modal.id }); setModal(null); };
+  const { modal, form, saving, error, f, openAdd, openEdit, closeModal, save } = useAdminEditor({
+    blank, add, update,
+    errorMessage: "The media item could not be saved. Please try again.",
+  });
+  const filtered = items.filter((x) => (x.title || "").toLowerCase().includes(search.toLowerCase()));
   return (
     <div>
-      <SHead title="Media Library" sub={`${items.length} items`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
+      <SHead title="Media Library" sub={`${items.length} items`} onAdd={openAdd} search={search} onSearch={setSearch} />
       <Table
         cols={[{ key: "title", label: "Title", clip: true }, { key: "type", label: "Type" }, { key: "presenter", label: "Presenter" }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={remove}
+        rows={filtered} onEdit={openEdit} onDelete={remove}
       />
       {modal && (
-        <Modal title={modal === "add" ? "Add Media" : "Edit Media"} onClose={() => setModal(null)}>
+        <Modal title={modal === "add" ? "Add Media" : "Edit Media"} onClose={closeModal}>
+          <FormError message={error} />
           <Field label="Title"><Input value={form.title} onChange={f("title")} placeholder="Media title" /></Field>
           <div className="flex gap-3">
             <div className="flex-1"><Field label="Type"><Sel value={form.type} onChange={f("type")} options={["Sermon", "Event Video", "Photo Gallery", "Music"]} /></Field></div>
@@ -357,7 +376,7 @@ function MediaSection() {
             <div className="flex-1"><Field label="Date"><Input type="date" value={form.date} onChange={f("date")} /></Field></div>
             <div className="flex-1"><Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Draft", "Published"]} /></Field></div>
           </div>
-          <MFooter onClose={() => setModal(null)} onSave={save} />
+          <MFooter onClose={closeModal} onSave={save} saving={saving} />
         </Modal>
       )}
     </div>
@@ -367,22 +386,23 @@ function MediaSection() {
 // ── Heroes ─────────────────────────────────────────────────────────────────
 function HeroesSection() {
   const { items, add, update, remove } = useHeroes();
-  const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
   const blank = { name: "", role: "", year: "2024-25", bio: "", image: "", status: "Draft" };
-  const [form, setForm] = useState(blank);
-  const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
-  const filtered = items.filter((x) => x.name.toLowerCase().includes(search.toLowerCase()));
-  const save = () => { modal === "add" ? add(form) : update({ ...form, id: modal.id }); setModal(null); };
+  const { modal, form, saving, error, f, openAdd, openEdit, closeModal, save } = useAdminEditor({
+    blank, add, update,
+    errorMessage: "The hero could not be saved. Please try again.",
+  });
+  const filtered = items.filter((x) => (x.name || "").toLowerCase().includes(search.toLowerCase()));
   return (
     <div>
-      <SHead title="Campus Heroes" sub={`${items.length} heroes`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
+      <SHead title="Campus Heroes" sub={`${items.length} heroes`} onAdd={openAdd} search={search} onSearch={setSearch} />
       <Table
         cols={[{ key: "name", label: "Name" }, { key: "role", label: "Role", clip: true }, { key: "year", label: "Year" }, { key: "bio", label: "Bio", clip: true }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={remove}
+        rows={filtered} onEdit={openEdit} onDelete={remove}
       />
       {modal && (
-        <Modal title={modal === "add" ? "Add Hero" : "Edit Hero"} onClose={() => setModal(null)}>
+        <Modal title={modal === "add" ? "Add Hero" : "Edit Hero"} onClose={closeModal}>
+          <FormError message={error} />
           <Field label="Full Name"><Input value={form.name} onChange={f("name")} placeholder="Full name" /></Field>
           <div className="flex gap-3">
             <div className="flex-1"><Field label="Role"><Input value={form.role} onChange={f("role")} placeholder="e.g. Choir Director" /></Field></div>
@@ -391,7 +411,7 @@ function HeroesSection() {
           <Field label="Image path"><Input value={form.image} onChange={f("image")} placeholder="/heroes/victor.jpg" /></Field>
           <Field label="Bio / Story"><Textarea value={form.bio} onChange={f("bio")} rows={4} placeholder="Their contribution…" /></Field>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Draft", "Featured"]} /></Field>
-          <MFooter onClose={() => setModal(null)} onSave={save} />
+          <MFooter onClose={closeModal} onSave={save} saving={saving} />
         </Modal>
       )}
     </div>
@@ -401,26 +421,25 @@ function HeroesSection() {
 // ── Groups ─────────────────────────────────────────────────────────────────
 function GroupsSection() {
   const { items, add, update, remove } = useGroups();
-  const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
   const blank = { name: "", leader: "", meetingDay: "Monday", time: "", members: "", description: "", status: "Active" };
-  const [form, setForm] = useState(blank);
-  const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
-  const filtered = items.filter((x) => x.name.toLowerCase().includes(search.toLowerCase()));
-  const save = () => {
-    const data = { ...form, members: Number(form.members) || 0 };
-    modal === "add" ? add(data) : update({ ...data, id: modal.id });
-    setModal(null);
-  };
+  const { modal, form, saving, error, f, openAdd, openEdit, closeModal, save } = useAdminEditor({
+    blank, add, update,
+    normalize: (data) => ({ ...data, members: Number(data.members) || 0 }),
+    editNormalize: (row) => ({ ...row, description: row.description || "" }),
+    errorMessage: "The group could not be saved. Please try again.",
+  });
+  const filtered = items.filter((x) => (x.name || "").toLowerCase().includes(search.toLowerCase()));
   return (
     <div>
-      <SHead title="Ministry Groups" sub={`${items.length} groups`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
+      <SHead title="Ministry Groups" sub={`${items.length} groups`} onAdd={openAdd} search={search} onSearch={setSearch} />
       <Table
         cols={[{ key: "name", label: "Group" }, { key: "leader", label: "Leader" }, { key: "meetingDay", label: "Day" }, { key: "time", label: "Time" }, { key: "members", label: "Members" }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r, description: r.description || "" }); setModal(r); }} onDelete={remove}
+        rows={filtered} onEdit={openEdit} onDelete={remove}
       />
       {modal && (
-        <Modal title={modal === "add" ? "Create Group" : "Edit Group"} onClose={() => setModal(null)}>
+        <Modal title={modal === "add" ? "Create Group" : "Edit Group"} onClose={closeModal}>
+          <FormError message={error} />
           <Field label="Group Name"><Input value={form.name} onChange={f("name")} placeholder="e.g. Prayer Band" /></Field>
           <div className="flex gap-3">
             <div className="flex-1"><Field label="Leader"><Input value={form.leader} onChange={f("leader")} placeholder="Leader name" /></Field></div>
@@ -432,7 +451,7 @@ function GroupsSection() {
           </div>
           <Field label="Description"><Textarea value={form.description} onChange={f("description")} rows={2} placeholder="Brief description…" /></Field>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Active", "Inactive"]} /></Field>
-          <MFooter onClose={() => setModal(null)} onSave={save} />
+          <MFooter onClose={closeModal} onSave={save} saving={saving} />
         </Modal>
       )}
     </div>
@@ -442,27 +461,28 @@ function GroupsSection() {
 // ── Resources ──────────────────────────────────────────────────────────────
 function ResourcesSection() {
   const { items, add, update, remove } = useResources();
-  const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
   const blank = { title: "", description: "", category: "Planning", fileType: "PDF", status: "Draft" };
-  const [form, setForm] = useState(blank);
-  const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
-  const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
-  const save = () => { modal === "add" ? add(form) : update({ ...form, id: modal.id }); setModal(null); };
+  const { modal, form, saving, error, f, openAdd, openEdit, closeModal, save } = useAdminEditor({
+    blank, add, update,
+    errorMessage: "The resource could not be saved. Please try again.",
+  });
+  const filtered = items.filter((x) => (x.title || "").toLowerCase().includes(search.toLowerCase()));
   return (
     <div>
-      <SHead title="Resources" sub="Downloadable files & guides" onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
+      <SHead title="Resources" sub="Downloadable files & guides" onAdd={openAdd} search={search} onSearch={setSearch} />
       <Table
         cols={[{ key: "title", label: "Title", clip: true }, { key: "description", label: "Description", clip: true }, { key: "category", label: "Category" }, { key: "fileType", label: "Type" }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={remove}
-        extra={(r) => (
+        rows={filtered} onEdit={openEdit} onDelete={remove}
+        extra={() => (
           <button className="p-1.5 rounded-lg hover:bg-emerald-100 transition-colors" title="Upload file">
             <Icon d={Icons.download} size={14} className="text-emerald-600" />
           </button>
         )}
       />
       {modal && (
-        <Modal title={modal === "add" ? "Add Resource" : "Edit Resource"} onClose={() => setModal(null)}>
+        <Modal title={modal === "add" ? "Add Resource" : "Edit Resource"} onClose={closeModal}>
+          <FormError message={error} />
           <Field label="Title"><Input value={form.title} onChange={f("title")} placeholder="Resource title" /></Field>
           <Field label="Description"><Textarea value={form.description} onChange={f("description")} rows={2} placeholder="Brief description…" /></Field>
           <div className="flex gap-3">
@@ -477,7 +497,7 @@ function ResourcesSection() {
             </div>
           </Field>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Draft", "Published"]} /></Field>
-          <MFooter onClose={() => setModal(null)} onSave={save} />
+          <MFooter onClose={closeModal} onSave={save} saving={saving} />
         </Modal>
       )}
     </div>
@@ -607,6 +627,8 @@ function AboutSection() {
     ...about,
   });
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   useEffect(() => {
     if (about && Object.keys(about).length > 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- keep the editor in sync after async about content loads.
@@ -614,10 +636,25 @@ function AboutSection() {
     }
   }, [about]);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
-  const save = () => { setAbout(form); setSaved(true); setTimeout(() => setSaved(false), 2500); };
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
+    setError("");
+    const result = await setAbout(form);
+    setSaving(false);
+
+    if (result?.ok) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+      return;
+    }
+
+    setError(result?.error || "About content could not be saved. Please try again.");
+  };
   return (
     <div>
       <SHead title="About Page Editor" sub="Mission, vision, contact info & social links" />
+      <FormError message={error} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div className="rounded-2xl border p-5 bg-white" style={{ borderColor: C.border }}>
           <p className="text-xs font-semibold mb-4 tracking-widest" style={{ color: C.navy }}>CONTENT</p>
@@ -640,9 +677,9 @@ function AboutSection() {
         </div>
       </div>
       <div className="flex justify-end mt-5">
-        <button onClick={save} className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all"
+        <button disabled={saving} onClick={save} className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-60"
           style={{ background: saved ? "#059669" : C.primary }}>
-          {saved ? "✓ Saved!" : "Save Changes"}
+          {saving ? "Saving…" : saved ? "✓ Saved!" : "Save Changes"}
         </button>
       </div>
     </div>
