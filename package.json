@@ -1,19 +1,25 @@
 {
-  "name": "mu-sda-pcm-companion",
+  "name": "backend",
   "version": "1.0.0",
-  "private": true,
-  "workspaces": [
-    "packages/frontend",
-    "packages/backend"
-  ],
- "scripts": {
-  "dev": "npm run dev --workspace=packages/frontend",
-  "dev:frontend": "npm run dev --workspace=packages/frontend",
-  "dev:backend": "npm run dev --workspace=packages/backend",
-  "build": "npm run build --workspace=packages/frontend",
-  "start": "npm run start --workspace=packages/frontend"
-},
+  "description": "",
+  "main": "index.js",
+
+  "scripts": {
+    "dev": "NODE_OPTIONS=--dns-result-order=ipv4first nodemon src/index.js",
+    "start": "NODE_OPTIONS=--dns-result-order=ipv4first node src/index.js"
+  },
+
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "firebase-admin": "^13.7.0"
+  },
   "devDependencies": {
-    "concurrently": "^9.0.1"
+    "nodemon": "^3.1.14"
   }
 }
