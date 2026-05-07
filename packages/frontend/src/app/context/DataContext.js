@@ -39,36 +39,61 @@ function useCollectionState(key) {
         body: JSON.stringify(item),
       });
       const data = await res.json();
-      if (!res.ok) { console.error(`[${key}] add failed:`, data); return; }
-      setItems((prev) => [{ ...item, id: data.id }, ...prev]);
+      if (!res.ok) {
+        console.error(`[${key}] add failed:`, data);
+        return { ok: false, error: data?.error || "Unable to add item." };
+      }
+
+      const created = { ...item, id: data.id };
+      setItems((prev) => [created, ...prev]);
+      load();
+      return { ok: true, item: created };
     } catch (err) {
       console.error(`[${key}] add error:`, err);
+      return { ok: false, error: err.message || "Unable to add item." };
     }
-  }, [key]);
+  }, [key, load]);
 
   const update = useCallback(async (item) => {
     try {
-      const res = await fetch(`${API}/api/${key}/${item.id}`, {
+      const { id, ...payload } = item;
+      const res = await fetch(`${API}/api/${key}/${id}`, {
         method: "PUT",
         headers: headers(true),
-        body: JSON.stringify(item),
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) { const d = await res.json(); console.error(`[${key}] update failed:`, d); return; }
-      setItems((prev) => prev.map((x) => (x.id === item.id ? item : x)));
+      if (!res.ok) {
+        const data = await res.json();
+        console.error(`[${key}] update failed:`, data);
+        return { ok: false, error: data?.error || "Unable to update item." };
+      }
+
+      setItems((prev) => prev.map((x) => (x.id === id ? { ...x, ...payload, id } : x)));
+      load();
+      return { ok: true, item: { ...payload, id } };
     } catch (err) {
       console.error(`[${key}] update error:`, err);
+      return { ok: false, error: err.message || "Unable to update item." };
     }
-  }, [key]);
+  }, [key, load]);
 
   const remove = useCallback(async (id) => {
     try {
-      await fetch(`${API}/api/${key}/${id}`, {
+      const res = await fetch(`${API}/api/${key}/${id}`, {
         method: "DELETE",
         headers: headers(true),
       });
+      if (!res.ok) {
+        const data = await res.json();
+        console.error(`[${key}] remove failed:`, data);
+        return { ok: false, error: data?.error || "Unable to delete item." };
+      }
+
       setItems((prev) => prev.filter((x) => x.id !== id));
+      return { ok: true };
     } catch (err) {
       console.error(`[${key}] remove error:`, err);
+      return { ok: false, error: err.message || "Unable to delete item." };
     }
   }, [key]);
 
@@ -93,14 +118,22 @@ function useAboutState() {
 
   const setAbout = useCallback(async (data) => {
     try {
-      await fetch(`${API}/api/about`, {
+      const res = await fetch(`${API}/api/about`, {
         method: "PUT",
         headers: headers(true),
         body: JSON.stringify(data),
       });
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error("[about] update failed:", errorData);
+        return { ok: false, error: errorData?.error || "Unable to update about content." };
+      }
+
       setAboutLocal(data);
+      return { ok: true };
     } catch (err) {
       console.error("[about] update error:", err);
+      return { ok: false, error: err.message || "Unable to update about content." };
     }
   }, []);
 

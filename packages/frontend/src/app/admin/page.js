@@ -120,12 +120,19 @@ const Sel = ({ options, ...p }) => (
     {options.map((o) => <option key={o}>{o}</option>)}
   </select>
 );
-const MFooter = ({ onClose, onSave }) => (
+const MFooter = ({ onClose, onSave, saving = false }) => (
   <div className="flex justify-end gap-2 mt-4">
-    <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm border" style={{ borderColor: C.border, color: "#64748B" }}>Cancel</button>
-    <button onClick={onSave}  className="px-5 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: C.primary }}>Save</button>
+    <button disabled={saving} onClick={onClose} className="px-4 py-2 rounded-xl text-sm border disabled:opacity-60" style={{ borderColor: C.border, color: "#64748B" }}>Cancel</button>
+    <button disabled={saving} onClick={onSave} className="px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-60" style={{ background: C.primary }}>
+      {saving ? "Saving…" : "Save"}
+    </button>
   </div>
 );
+const FormError = ({ message }) => message ? (
+  <div className="mb-4 rounded-xl border px-3 py-2 text-sm" style={{ borderColor: "#FECACA", background: "#FEF2F2", color: "#B91C1C" }}>
+    {message}
+  </div>
+) : null;
 
 // ── Table ──────────────────────────────────────────────────────────────────
 const Table = ({ cols, rows, onEdit, onDelete, extra }) => (
@@ -205,20 +212,36 @@ function AnnouncementsSection() {
   const { items, add, update, remove } = useAnnouncements();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const blank = { title: "", date: "", type: "General", status: "Active", body: "" };
   const [form, setForm] = useState(blank);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
-  const save = () => { modal === "add" ? add(form) : update({ ...form, id: modal.id }); setModal(null); };
+  const openAdd = () => { setForm(blank); setError(""); setModal("add"); };
+  const openEdit = (row) => { setForm({ ...row }); setError(""); setModal(row); };
+  const closeModal = () => { if (!saving) setModal(null); };
+  const save = async () => {
+    setSaving(true);
+    setError("");
+    const result = modal === "add" ? await add(form) : await update({ ...form, id: modal.id });
+    setSaving(false);
+    if (result?.ok) {
+      setModal(null);
+      return;
+    }
+    setError(result?.error || "The announcement could not be saved. Please try again.");
+  };
   return (
     <div>
-      <SHead title="Announcements" sub={`${items.length} total`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
+      <SHead title="Announcements" sub={`${items.length} total`} onAdd={openAdd} search={search} onSearch={setSearch} />
       <Table
         cols={[{ key: "title", label: "Title" }, { key: "body", label: "Body", clip: true }, { key: "date", label: "Date" }, { key: "type", label: "Type" }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={remove}
+        rows={filtered} onEdit={openEdit} onDelete={remove}
       />
       {modal && (
-        <Modal title={modal === "add" ? "New Announcement" : "Edit Announcement"} onClose={() => setModal(null)}>
+        <Modal title={modal === "add" ? "New Announcement" : "Edit Announcement"} onClose={closeModal}>
+          <FormError message={error} />
           <Field label="Title"><Input value={form.title} onChange={f("title")} placeholder="Title" /></Field>
           <Field label="Body"><Textarea value={form.body} onChange={f("body")} rows={4} placeholder="Content…" /></Field>
           <div className="flex gap-3">
@@ -226,7 +249,7 @@ function AnnouncementsSection() {
             <div className="flex-1"><Field label="Type"><Sel value={form.type} onChange={f("type")} options={["General", "Worship", "Prayer", "Admin", "Event"]} /></Field></div>
           </div>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Active", "Archived"]} /></Field>
-          <MFooter onClose={() => setModal(null)} onSave={save} />
+          <MFooter onClose={closeModal} onSave={save} saving={saving} />
         </Modal>
       )}
     </div>
@@ -585,7 +608,10 @@ function AboutSection() {
   });
   const [saved, setSaved] = useState(false);
   useEffect(() => {
-    if (about && Object.keys(about).length > 0) setForm((f) => ({ ...f, ...about }));
+    if (about && Object.keys(about).length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- keep the editor in sync after async about content loads.
+      setForm((f) => ({ ...f, ...about }));
+    }
   }, [about]);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const save = () => { setAbout(form); setSaved(true); setTimeout(() => setSaved(false), 2500); };
