@@ -18,8 +18,12 @@ const roleLevel = (role) => ROLES.indexOf(role);
 const verifyToken = async (req, res, next) => {
   // ── Legacy secret (keep until frontend is migrated to Firebase Auth) ──
   const legacy = req.headers['x-admin-token'];
-  
-  const legacySecret = process.env.ADMIN_SECRETE || process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'mupcm_admin_2026';
+
+  const legacySecret =
+    process.env.ADMIN_SECRET ||
+    process.env.ADMIN_SECRETE ||
+    process.env.NEXT_PUBLIC_ADMIN_TOKEN ||
+    'mupcm_admin_2026';
   if (legacy && legacy === legacySecret) {
     req.user = {
       uid: 'legacy-admin',
