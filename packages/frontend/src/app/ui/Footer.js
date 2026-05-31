@@ -15,7 +15,7 @@ const footerLinks = [
 const socialLinks = [
   { label: 'Facebook',  href: 'https://facebook.com',       Icon: FbIcon  },
   { label: 'Instagram', href: 'https://instagram.com',      Icon: IgIcon  },
-  { label: 'YouTube',   href: 'https://youtube.com',        Icon: YtIcon  },
+  { label: 'YouTube',   href: 'https://https://youtube.com/@mulungushisdapcmpublicity?si=RsiOtIMrXWs2XwfB',        Icon: YtIcon  },
   { label: 'WhatsApp',  href: 'https://wa.me/260123456789', Icon: WaIcon  },
 ];
 

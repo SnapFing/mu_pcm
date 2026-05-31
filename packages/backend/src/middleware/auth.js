@@ -11,30 +11,10 @@ const ROLES = ['editor', 'admin', 'super_admin'];
 const roleLevel = (role) => ROLES.indexOf(role);
 
 /**
- * verifyToken — verifies a Firebase ID token (Bearer) OR the legacy
- * x-admin-token secret (kept for backwards compat during migration).
+ * verifyToken — verifies a Firebase ID token (Bearer).
  * Attaches req.user = { uid, email, role, displayName, active }
  */
 const verifyToken = async (req, res, next) => {
-  // ── Legacy secret (keep until frontend is migrated to Firebase Auth) ──
-  const legacy = req.headers['x-admin-token'];
-
-  const legacySecret =
-    process.env.ADMIN_SECRET ||
-    process.env.ADMIN_SECRETE ||
-    process.env.NEXT_PUBLIC_ADMIN_TOKEN ||
-    'mupcm_admin_2026';
-  if (legacy && legacy === legacySecret) {
-    req.user = {
-      uid: 'legacy-admin',
-      email: 'admin@system',
-      role: 'super_admin',
-      displayName: 'System Admin',
-      active: true,
-    };
-    return next();
-  }
-
   // ── Firebase ID token ──────────────────────────────────────────────────
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
