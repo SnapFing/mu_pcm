@@ -287,16 +287,18 @@ function LoginGate({ onLogin }) {
   };
 
   const handleForgotPassword = async () => {
-    if (!email) return alert("Enter your email first");
-    const auth = getFirebaseAuth();
-    if (!auth) return;
-    try {
-      await sendPasswordResetEmail(auth, email);
-      alert("Password reset email sent to " + email);
-    } catch (err) {
-      setError(err.message || "Failed to send reset email");
-    }
-  };
+  if (!email) return alert("Enter your email first");
+  const auth = getFirebaseAuth();
+  if (!auth) return;
+  try {
+    await sendPasswordResetEmail(auth, email, {
+      url: "https://mu-pcm.vercel.app/admin-portal",   // ← Vercel domain
+    });
+    alert("Password reset email sent to " + email);
+  } catch (err) {
+    setError(err.message || "Failed to send reset email");
+  }
+};
 
   const inputStyle = {
     width: "100%", padding: "11px 14px", borderRadius: 10, fontSize: 14,
@@ -1220,7 +1222,13 @@ export default function AdminPage() {
     );
   }
 
-  if (!user) return <LoginGate onLogin={login} />;
+  if (!user) {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("mode") === "resetPassword") {
+    return <ResetPasswordHandler />;
+  }
+  return <LoginGate onLogin={login} />;
+}
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: C.white, fontFamily: "'Noto Sans',sans-serif" }}>

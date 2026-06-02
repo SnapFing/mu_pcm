@@ -89,7 +89,9 @@ router.post('/invite', ...requireSuperAdmin, async (req, res) => {
     );
 
     // Send password-reset email so they can log in
-    const resetLink = await admin.auth().generatePasswordResetLink(email);
+    const resetLink = await admin.auth().generatePasswordResetLink(email, {
+  url: 'https://mu-pcm.vercel.app/admin-portal',
+});
 
     res.status(201).json({
       id: uid,
