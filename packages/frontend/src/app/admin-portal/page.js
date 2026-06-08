@@ -7,7 +7,7 @@ import {
   signInWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  sendPasswordRestEmail,
+  sendPasswordResetEmail,
   verifyPasswordResetCode,
   confirmPasswordReset,
  } from "firebase/auth";
@@ -287,18 +287,19 @@ function LoginGate({ onLogin }) {
   };
 
   const handleForgotPassword = async () => {
-  if (!email) return alert("Enter your email first");
-  const auth = getFirebaseAuth();
-  if (!auth) return;
-  try {
-    await sendPasswordResetEmail(auth, email, {
-      url: "https://mu-pcm.vercel.app/admin-portal",   // ← Vercel domain
-    });
-    alert("Password reset email sent to " + email);
-  } catch (err) {
-    setError(err.message || "Failed to send reset email");
-  }
-};
+    if (!email) return alert("Enter your email first");
+    const auth = getFirebaseAuth();
+    if (!auth) return;
+    try {
+      const resetUrl = typeof window !== "undefined"
+        ? `${window.location.origin}/admin-portal`
+        : "/admin-portal";
+      await sendPasswordResetEmail(auth, email, { url: resetUrl });
+      alert("Password reset email sent to " + email);
+    } catch (err) {
+      setError(err.message || "Failed to send reset email");
+    }
+  };
 
   const inputStyle = {
     width: "100%", padding: "11px 14px", borderRadius: 10, fontSize: 14,
@@ -1162,6 +1163,7 @@ export default function AdminPage() {
   const { user, token, loading, login, logout } = useAdminAuth();
   const [section, setSection] = useState("overview");
   const [open, setOpen] = useState(true);
+  const [isResetLink, setIsResetLink] = useState(false);
 
   const { items: prayers, load: loadPrayers } = usePrayers();
   const { items: contacts, load: loadContacts } = useContacts();
@@ -1172,6 +1174,11 @@ export default function AdminPage() {
       loadContacts();
     }
   }, [user, loadPrayers, loadContacts]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setIsResetLink(params.get("mode") === "resetPassword");
+  }, []);
 
   const unreadPrayers  = prayers.filter((x) => x.status === "Unread").length;
   const unreadContacts = contacts.filter((x) => x.status === "Unread").length;
@@ -1223,12 +1230,11 @@ export default function AdminPage() {
   }
 
   if (!user) {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("mode") === "resetPassword") {
-    return <ResetPasswordHandler />;
+    if (isResetLink) {
+      return <ResetPasswordHandler />;
+    }
+    return <LoginGate onLogin={login} />;
   }
-  return <LoginGate onLogin={login} />;
-}
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: C.white, fontFamily: "'Noto Sans',sans-serif" }}>

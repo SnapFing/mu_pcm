@@ -8,13 +8,15 @@ export default function PrayerForm() {
   const [form, setForm] = useState({ name: '', anonymous: false, category: '', request: '' });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSubmit = async () => {
     if (!form.category || !form.request.trim()) return;
     setLoading(true);
+    setError('');
     try {
-      await fetch(`${API}/api/prayers`, {
+      const res = await fetch(`${API}/api/prayers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -25,9 +27,12 @@ export default function PrayerForm() {
           date: new Date().toISOString().split('T')[0],
         }),
       });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || 'Unable to submit your prayer request.');
       setSubmitted(true);
     } catch (err) {
       console.error('Prayer submit error:', err);
+      setError(err.message || 'Unable to submit your prayer request.');
     } finally {
       setLoading(false);
     }
@@ -52,6 +57,12 @@ export default function PrayerForm() {
   return (
     <div className="rounded-2xl p-6 sm:p-8 flex flex-col gap-5"
       style={{ background: 'white', border: '1px solid #E2E8F7', boxShadow: '0 1px 6px rgba(46,109,231,0.07)' }}>
+      {error && (
+        <div className="rounded-xl px-4 py-3 text-sm"
+          style={{ background: 'rgba(239,68,68,0.08)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.2)' }}>
+          {error}
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
         <div className="flex-1 flex flex-col gap-1.5">
           <label style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>Your Name <span style={{ color: '#94A3B8', fontWeight: 400 }}>(optional)</span></label>

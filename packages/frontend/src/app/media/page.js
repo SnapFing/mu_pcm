@@ -5,66 +5,29 @@ import { useState } from 'react';
 import Navbar from '@/app/ui/Navbar';
 import Footer from '@/app/ui/Footer';
 import { PageHeader } from '@/app/ui/PageHeader';
+import { useMedia } from '@/app/context/DataContext';
 
 const TABS = ['All Media', 'Sermons', 'Event Videos', 'Photo Gallery'];
 
-/**
- * youtubeId: the part after watch?v= in the YouTube URL
- * e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ → youtubeId: 'dQw4w9WgXcQ'
- * Leave as null if no video is available yet.
- */
-const MEDIA = [
-  {
-    id: 1,
-    type: 'Sermons',
-    title: 'Balancing Faith and Academia',
-    speaker: 'Eng. Choolwe Sitima',
-    date: 'Aug 20, 2025',
-    duration: '42 min',
-    thumbnail: '/media/sermon1.jpg',
-    youtubeId: null, // e.g. 'dQw4w9WgXcQ'
-  },
-  {
-    id: 2,
-    type: 'Sermons',
-    title: 'The Fellowship Band Lesson Summary',
-    speaker: 'Rev. Edward Phiri',
-    date: 'Sep 13, 2025',
-    duration: '58 min',
-    thumbnail: '/media/sermon2.jpg',
-    youtubeId: null,
-  },
-  {
-    id: 3,
-    type: 'Event Videos',
-    title: 'Hymns and Harmony Worship Night',
-    speaker: 'Inspire Love Music',
-    date: 'Aug 27, 2025',
-    duration: '1h 12m',
-    thumbnail: '/media/worship.jpg',
-    youtubeId: null,
-  },
-  {
-    id: 4,
-    type: 'Sermons',
-    title: 'Developing Christ-like Character',
-    speaker: 'Pastor James Mulenga',
-    date: 'Oct 4, 2025',
-    duration: '35 min',
-    thumbnail: '/media/sermon3.jpg',
-    youtubeId: null,
-  },
-  {
-    id: 5,
-    type: 'Event Videos',
-    title: 'Freshman Welcome Sabbath Recap',
-    speaker: 'PCM Media Team',
-    date: 'Sep 14, 2025',
-    duration: '18 min',
-    thumbnail: '/media/event1.jpg',
-    youtubeId: null,
-  },
-];
+function getYouTubeId(value = '') {
+  if (!value) return '';
+  if (/^[a-zA-Z0-9_-]{11}$/.test(value)) return value;
+  const match = value.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return match?.[1] || '';
+}
+
+function normalizeType(type = '') {
+  if (type === 'Sermon') return 'Sermons';
+  if (type === 'Event Video') return 'Event Videos';
+  return type || 'Sermons';
+}
+
+function formatDate(value = '') {
+  if (!value) return 'Date TBA';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 function ClockIcon() {
@@ -283,8 +246,20 @@ function MediaCard({ item, onPlay }) {
 export default function MediaPage() {
   const [tab, setTab]           = useState('All Media');
   const [playing, setPlaying]   = useState(null);
+  const { items, loading, error } = useMedia();
 
-  const filtered = tab === 'All Media' ? MEDIA : MEDIA.filter(m => m.type === tab);
+  const media = items
+    .filter(item => item.status === 'Published')
+    .map(item => ({
+      ...item,
+      type: normalizeType(item.type),
+      speaker: item.presenter || item.speaker || 'MU SDA PCM',
+      date: formatDate(item.date),
+      duration: item.duration || 'Watch',
+      thumbnail: item.thumbnail || item.image || '',
+      youtubeId: item.youtubeId || getYouTubeId(item.url),
+    }));
+  const filtered = tab === 'All Media' ? media : media.filter(m => m.type === tab);
 
   return (
     <>
@@ -301,17 +276,6 @@ export default function MediaPage() {
 
         <div className="max-w-7xl mx-auto px-5 sm:px-8 py-14">
 
-          {/* How to add videos — helper note */}
-          <div className="mb-8 rounded-2xl px-5 py-4 flex items-start gap-3"
-            style={{ background: '#F5F7FF', border: '1px solid #E2E8F7' }}>
-            <span style={{ color: '#2E6DE7', fontSize: 18, lineHeight: 1 }}>💡</span>
-            <p style={{ fontSize: 13, color: '#64748B', lineHeight: 1.7 }}>
-              <strong style={{ color: '#0F2A4A' }}>To add a video:</strong> upload it to YouTube, copy the video ID from the URL
-              (e.g. <code style={{ background: '#E2E8F7', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>youtube.com/watch?v=<strong>ABC123xyz</strong></code>),
-              then paste it as the <code style={{ background: '#E2E8F7', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>youtubeId</code> for that item in <code style={{ background: '#E2E8F7', padding: '1px 6px', borderRadius: 4, fontSize: 12 }}>MEDIA</code> in the code.
-            </p>
-          </div>
-
           {/* Tabs */}
           <div className="flex flex-wrap gap-2 mb-10">
             {TABS.map(t => (
@@ -327,12 +291,18 @@ export default function MediaPage() {
             ))}
           </div>
 
-          {tab === 'Photo Gallery' ? (
+          {loading ? (
+            <p className="text-center py-20" style={{ color: '#94A3B8' }}>Loading media...</p>
+          ) : error ? (
+            <p className="text-center py-20" style={{ color: '#dc2626' }}>{error}</p>
+          ) : tab === 'Photo Gallery' ? (
             <div className="text-center py-20 rounded-2xl"
               style={{ background: '#F5F7FF', border: '1px solid #E2E8F7' }}>
               <p className="font-semibold" style={{ color: '#0F2A4A' }}>Photo Gallery</p>
               <p className="text-sm mt-1" style={{ color: '#94A3B8' }}>Photos coming soon — check back after events.</p>
             </div>
+          ) : filtered.length === 0 ? (
+            <p className="text-center py-20" style={{ color: '#94A3B8' }}>No media has been published yet.</p>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filtered.map(m => (

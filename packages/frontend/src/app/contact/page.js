@@ -35,13 +35,21 @@ function ContactForm({ onSubmit }) {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const f = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
   const valid = form.name && form.email && form.message;
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!valid) return;
     setLoading(true);
-    setTimeout(() => { onSubmit(form); setLoading(false); setSubmitted(true); }, 600);
+    setError('');
+    const result = await onSubmit(form);
+    setLoading(false);
+    if (result?.ok) {
+      setSubmitted(true);
+    } else {
+      setError(result?.error || 'Unable to send your message. Please try again.');
+    }
   };
 
   if (submitted) return (
@@ -58,6 +66,12 @@ function ContactForm({ onSubmit }) {
     <div className="rounded-2xl p-8" style={{ background: 'white', border: `1px solid ${C.border}` }}>
       <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.navy, marginBottom: 6 }}>Send Us a Message</h2>
       <p style={{ fontSize: 14, color: '#64748B', marginBottom: 28 }}>We'd love to hear from you.</p>
+      {error && (
+        <div className="mb-5 rounded-xl px-4 py-3 text-sm"
+          style={{ background: 'rgba(239,68,68,0.08)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.2)' }}>
+          {error}
+        </div>
+      )}
       <div className="flex flex-col gap-5">
         <div className="grid sm:grid-cols-2 gap-4">
           {[{ label: 'Full Name', key: 'name', placeholder: 'Your full name', type: 'text' }, { label: 'Email Address', key: 'email', placeholder: 'your@email.com', type: 'email' }].map(({ label, key, placeholder, type }) => (
@@ -91,8 +105,8 @@ function ContactForm({ onSubmit }) {
 
 export default function ContactPage() {
   const { add } = useContacts();
-  const handleSubmit = (formData) => {
-    add({ name: formData.name, email: formData.email, subject: formData.subject, message: formData.message, date: new Date().toISOString().split('T')[0], status: 'Unread' });
+  const handleSubmit = async (formData) => {
+    return add({ name: formData.name, email: formData.email, subject: formData.subject, message: formData.message, date: new Date().toISOString().split('T')[0], status: 'Unread' });
   };
   return (
     <>

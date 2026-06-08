@@ -1,5 +1,5 @@
 "use client";
-import PrayerForm from "../components/PrayerForm";
+import PrayerForm from "./_components/PrayerForm";
 import Navbar from "@/app/ui/Navbar";
 import Footer from "@/app/ui/Footer";
 

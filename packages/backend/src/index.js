@@ -5,12 +5,22 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// ── CORS ─────────────────────────────────────────────────────────────────
+// CORS_ORIGIN must be set in Vercel environment variables to your
+// frontend domain, e.g. https://mu-pcm.vercel.app
+// Falling back to true only in local development (NODE_ENV !== 'production')
+const corsOrigin = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN
+  : process.env.NODE_ENV === 'production'
+    ? false   // block all cross-origin in prod if var is missing
+    : true;   // allow all in local dev
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || true,
+  origin: corsOrigin,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' })); // explicit body size limit
 
 // ── Health ──────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
