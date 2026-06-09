@@ -1,10 +1,12 @@
 'use client';
+import ErrorBoundary from '@/app/ui/ErrorBoundary';
 
 import { useState } from 'react';
 import Navbar from '@/app/ui/Navbar';
 import Footer from '@/app/ui/Footer';
 import { PageHeader } from '@/app/ui/PageHeader';
 import { useJournals } from '@/app/context/DataContext';
+import Skeleton, { CardSkeleton } from '@/app/ui/Skeleton';
 
 const CATEGORIES = ['All', 'Academic', 'Spiritual Growth', 'Personal Development', 'Community'];
 const CAT_COLORS = {
@@ -90,7 +92,7 @@ function JournalCard({ journal, idx, onRead }) {
 }
 
 export default function JournalsPage() {
-  const { items: journals } = useJournals();
+  const { items: journals, loading } = useJournals();
   const [active, setActive] = useState('All');
   const [search, setSearch] = useState('');
   const [reading, setReading] = useState(null);
@@ -120,9 +122,31 @@ export default function JournalsPage() {
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…" className="pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none" style={{ border: '1px solid #E2E8F7', background: '#F5F7FF', color: '#0F2A4A', width: 180 }} />
             </div>
           </div>
-          {filtered.length === 0
-            ? <p className="text-center py-20" style={{ color: '#94A3B8' }}>No articles found.</p>
-            : <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">{filtered.map((j, i) => <JournalCard key={j.id} journal={j} idx={i} onRead={setReading} />)}</div>}
+
+          {loading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+            </div>
+          ) : (
+            <ErrorBoundary>
+              {filtered.length === 0 ? (
+                <div className="text-center py-20 px-5">
+                  <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center"
+                    style={{ background: 'rgba(46,109,231,0.06)', color: '#2E6DE7' }}>
+                    <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
+                      <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+                    </svg>
+                  </div>
+                  <h3 className="font-bold text-lg mb-2" style={{ color: '#0F2A4A' }}>No articles published yet</h3>
+                  <p style={{ color: '#94A3B8', fontSize: 14, maxWidth: 340, margin: '0 auto' }}>
+                    Articles written by PCM members will appear here once published.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">{filtered.map((j, i) => <JournalCard key={j.id} journal={j} idx={i} onRead={setReading} />)}</div>
+              )}
+            </ErrorBoundary>
+          )}
         </div>
         <Footer />
       </div>

@@ -1,4 +1,5 @@
 'use client';
+import ErrorBoundary from '@/app/ui/ErrorBoundary';
 // media/page.js
 
 import { useState } from 'react';
@@ -6,6 +7,7 @@ import Navbar from '@/app/ui/Navbar';
 import Footer from '@/app/ui/Footer';
 import { PageHeader } from '@/app/ui/PageHeader';
 import { useMedia } from '@/app/context/DataContext';
+import Skeleton, { CardSkeleton } from '@/app/ui/Skeleton';
 
 const TABS = ['All Media', 'Sermons', 'Event Videos', 'Photo Gallery'];
 
@@ -294,26 +296,43 @@ export default function MediaPage() {
           </div>
 
           {loading ? (
-            <p className="text-center py-20" style={{ color: '#94A3B8' }}>Loading media...</p>
-          ) : error ? (
-            <p className="text-center py-20" style={{ color: '#dc2626' }}>{error}</p>
-          ) : tab === 'Photo Gallery' ? (
-            <div className="text-center py-20 rounded-2xl"
-              style={{ background: '#F5F7FF', border: '1px solid #E2E8F7' }}>
-              <p className="font-semibold" style={{ color: '#0F2A4A' }}>Photo Gallery</p>
-              <p className="text-sm mt-1" style={{ color: '#94A3B8' }}>Photos coming soon — check back after events.</p>
-            </div>
-          ) : filtered.length === 0 ? (
-            <p className="text-center py-20" style={{ color: '#94A3B8' }}>No media has been published yet.</p>
-          ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filtered.map(m => (
-                <MediaCard key={m.id} item={m} onPlay={setPlaying} />
-              ))}
+              {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
             </div>
-          )}
-        </div>
-
+          ) : (
+            <ErrorBoundary>
+              {error ? (
+                <p className="text-center py-20" style={{ color: '#dc2626' }}>{error}</p>
+              ) : tab === 'Photo Gallery' ? (
+                <div className="text-center py-20 rounded-2xl"
+                  style={{ background: '#F5F7FF', border: '1px solid #E2E8F7' }}>
+                  <p className="font-semibold" style={{ color: '#0F2A4A' }}>Photo Gallery</p>
+                  <p className="text-sm mt-1" style={{ color: '#94A3B8' }}>Photos coming soon — check back after events.</p>
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="text-center py-20 px-5">
+                  <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center"
+                    style={{ background: 'rgba(46,109,231,0.06)', color: '#2E6DE7' }}>
+                    <PlayIcon />
+                  </div>
+                  <h3 className="font-bold text-lg mb-2" style={{ color: '#0F2A4A' }}>No media published yet</h3>
+                  <p style={{ color: '#94A3B8', fontSize: 14, maxWidth: 340, margin: '0 auto' }}>
+                    Sermons and event recordings will appear here once they're published.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filtered.map(m => (
+                    <MediaCard key={m.id} item={m} onPlay={setPlaying} />
+                  ))}
+                </div>
+              )}
+            <ErrorBoundary>
+              {loading ? (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+                </div>
+              ) : error ? (
         <Footer />
       </div>
 

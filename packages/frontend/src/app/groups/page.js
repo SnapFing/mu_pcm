@@ -1,10 +1,12 @@
 'use client';
+import ErrorBoundary from '@/app/ui/ErrorBoundary';
 
 import { useState } from 'react';
 import Navbar from '@/app/ui/Navbar';
 import Footer from '@/app/ui/Footer';
 import { PageHeader } from '@/app/ui/PageHeader';
 import { useGroups } from '@/app/context/DataContext';
+import Skeleton, { CardSkeleton } from '@/app/ui/Skeleton';
 
 const Ico = ({ children, c = 'w-5 h-5' }) => (
   <svg className={c} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">{children}</svg>
@@ -111,7 +113,7 @@ function JoinModal({ group, onClose }) {
 }
 
 export default function GroupsPage() {
-  const { items: groups } = useGroups();
+  const { items: groups, loading } = useGroups();
   const [joining, setJoining] = useState(null);
   const [search, setSearch] = useState('');
   const active = groups.filter(g => g.status === 'Active');
@@ -137,29 +139,48 @@ export default function GroupsPage() {
             <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search groups…" className="pl-10 pr-4 py-2.5 rounded-xl text-sm w-full outline-none" style={{ border: '1px solid #E2E8F7', background: '#F5F7FF', color: '#0F2A4A' }} />
           </div>
-          {filtered(active).length > 0 && (
-            <section className="mb-16">
-              <div className="mb-8">
-                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: '#2E6DE7' }} className="uppercase mb-2">Active Ministries</p>
-                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.6rem,3vw,2.2rem)', fontWeight: 700, color: '#0F2A4A' }}>Our Groups</h2>
-              </div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filtered(active).map((g, i) => <GroupCard key={g.id} group={g} idx={i} onJoin={setJoining} />)}
-              </div>
-            </section>
+          {loading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+            </div>
+          ) : (
+            <ErrorBoundary>
+              {filtered(active).length > 0 && (
+                <section className="mb-16">
+                  <div className="mb-8">
+                    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: '#2E6DE7' }} className="uppercase mb-2">Active Ministries</p>
+                    <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.6rem,3vw,2.2rem)', fontWeight: 700, color: '#0F2A4A' }}>Our Groups</h2>
+                  </div>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filtered(active).map((g, i) => <GroupCard key={g.id} group={g} idx={i} onJoin={setJoining} />)}
+                  </div>
+                </section>
+              )}
+              {filtered(inactive).length > 0 && (
+                <section className="mb-16">
+                  <div className="mb-8">
+                    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: '#94A3B8' }} className="uppercase mb-2">Currently Inactive</p>
+                    <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.4rem,2.5vw,1.9rem)', fontWeight: 700, color: '#0F2A4A' }}>Other Groups</h2>
+                  </div>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filtered(inactive).map((g, i) => <GroupCard key={g.id} group={g} idx={i} onJoin={setJoining} />)}
+                  </div>
+                </section>
+              )}
+              {filtered(active).length === 0 && filtered(inactive).length === 0 && (
+                <div className="text-center py-20 px-5">
+                  <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center"
+                    style={{ background: 'rgba(46,109,231,0.06)', color: '#2E6DE7' }}>
+                    <UsersIcon c="w-7 h-7" />
+                  </div>
+                  <h3 className="font-bold text-lg mb-2" style={{ color: '#0F2A4A' }}>No groups added yet</h3>
+                  <p style={{ color: '#94A3B8', fontSize: 14, maxWidth: 340, margin: '0 auto' }}>
+                    Ministry groups and departments will be listed here once added.
+                  </p>
+                </div>
+              )}
+            </ErrorBoundary>
           )}
-          {filtered(inactive).length > 0 && (
-            <section className="mb-16">
-              <div className="mb-8">
-                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: '#94A3B8' }} className="uppercase mb-2">Currently Inactive</p>
-                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.4rem,2.5vw,1.9rem)', fontWeight: 700, color: '#0F2A4A' }}>Other Groups</h2>
-              </div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filtered(inactive).map((g, i) => <GroupCard key={g.id} group={g} idx={i} onJoin={setJoining} />)}
-              </div>
-            </section>
-          )}
-          {filtered(active).length === 0 && filtered(inactive).length === 0 && <p className="text-center py-20" style={{ color: '#94A3B8' }}>No groups found.</p>}
           <div className="rounded-2xl p-8 text-center" style={{ background: 'linear-gradient(135deg, #0F2A4A, #2E6DE7)', color: 'white' }}>
             <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: 'rgba(255,255,255,0.6)' }} className="uppercase mb-3">Don't See Your Niche?</p>
             <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.3rem,2.5vw,1.8rem)', fontWeight: 700, marginBottom: 12 }}>Propose a New Group</h3>

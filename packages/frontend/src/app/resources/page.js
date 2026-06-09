@@ -1,10 +1,12 @@
 'use client';
+import ErrorBoundary from '@/app/ui/ErrorBoundary';
 
 import { useState } from 'react';
 import Navbar from '@/app/ui/Navbar';
 import Footer from '@/app/ui/Footer';
 import { PageHeader } from '@/app/ui/PageHeader';
 import { useResources } from '@/app/context/DataContext';
+import Skeleton, { CardSkeleton } from '@/app/ui/Skeleton';
 
 const CATEGORIES = ['All', 'Planning', 'Study', 'Spiritual', 'Health', 'General'];
 const CAT_COLORS = { Planning: { bg: 'rgba(46,109,231,0.08)', text: '#2E6DE7' }, Study: { bg: 'rgba(124,58,237,0.08)', text: '#7C3AED' }, Spiritual: { bg: 'rgba(5,150,105,0.08)', text: '#059669' }, Health: { bg: 'rgba(239,68,68,0.08)', text: '#EF4444' }, General: { bg: 'rgba(15,42,74,0.08)', text: '#0F2A4A' } };
@@ -39,7 +41,7 @@ function ResourceCard({ resource, idx }) {
 }
 
 export default function ResourcesPage() {
-  const { items: resources } = useResources();
+  const { items: resources, loading } = useResources();
   const [active, setActive] = useState('All');
   const [search, setSearch] = useState('');
   const published = resources.filter(r => r.status === 'Published');
@@ -65,10 +67,31 @@ export default function ResourcesPage() {
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search resources…" className="pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none" style={{ border: '1px solid #E2E8F7', background: '#F5F7FF', color: '#0F2A4A', width: 190 }} />
             </div>
           </div>
-          {filtered.length === 0 ? <p className="text-center py-20" style={{ color: '#94A3B8' }}>No resources found.</p> : (
+          {loading ? (
             <div className="grid sm:grid-cols-2 gap-5">
-              {filtered.map((r, i) => <ResourceCard key={r.id} resource={r} idx={i} />)}
+              {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
             </div>
+          ) : (
+            <ErrorBoundary>
+              {filtered.length === 0 ? (
+                <div className="text-center py-20 px-5">
+                  <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center"
+                    style={{ background: 'rgba(46,109,231,0.06)', color: '#2E6DE7' }}>
+                    <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
+                      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                    </svg>
+                  </div>
+                  <h3 className="font-bold text-lg mb-2" style={{ color: '#0F2A4A' }}>No resources published yet</h3>
+                  <p style={{ color: '#94A3B8', fontSize: 14, maxWidth: 340, margin: '0 auto' }}>
+                    Downloadable guides and files will appear here once published.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 gap-5">
+                  {filtered.map((r, i) => <ResourceCard key={r.id} resource={r} idx={i} />)}
+                </div>
+              )}
+            </ErrorBoundary>
           )}
         </div>
         <Footer />

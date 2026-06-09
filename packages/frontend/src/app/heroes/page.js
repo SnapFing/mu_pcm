@@ -1,10 +1,12 @@
 'use client';
+import ErrorBoundary from '@/app/ui/ErrorBoundary';
 
 import { useState } from 'react';
 import Navbar  from '@/app/ui/Navbar';
 import Footer  from '@/app/ui/Footer';
 import { PageHeader } from '@/app/ui/PageHeader';
 import { useHeroes }  from '@/app/context/DataContext';
+import Skeleton, { CardSkeleton } from '@/app/ui/Skeleton';
 
 const StarIcon = () => (
   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -51,7 +53,7 @@ function HeroCard({ hero, idx }) {
 }
 
 export default function HeroesPage() {
-  const { items: heroes } = useHeroes();
+  const { items: heroes, loading } = useHeroes();
   const [search, setSearch] = useState('');
   const featured = heroes.filter(h => h.status === 'Featured');
   const filtered = featured.filter(h =>
@@ -72,18 +74,39 @@ export default function HeroesPage() {
               className="pl-10 pr-4 py-2.5 rounded-xl text-sm w-full outline-none"
               style={{ border: '1px solid #E2E8F7', background: '#F5F7FF', color: '#0F2A4A' }} />
           </div>
-          {years.length === 0 && <p className="text-center py-20" style={{ color: '#94A3B8' }}>No heroes found.</p>}
-          {years.map(year => (
-            <section key={year} className="mb-16">
-              <div className="mb-8">
-                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: '#7C3AED' }} className="uppercase mb-2">Class of</p>
-                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.6rem,3vw,2.2rem)', fontWeight: 700, color: '#0F2A4A' }}>{year}</h2>
-              </div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filtered.filter(h => h.year === year).map((hero, i) => <HeroCard key={hero.id} hero={hero} idx={i} />)}
-              </div>
-            </section>
-          ))}
+          {loading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+            </div>
+          ) : (
+            <ErrorBoundary>
+              {years.length === 0 && (
+                <div className="text-center py-20 px-5">
+                  <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center"
+                    style={{ background: 'rgba(124,58,237,0.06)', color: '#7C3AED' }}>
+                    <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                  </div>
+                  <h3 className="font-bold text-lg mb-2" style={{ color: '#0F2A4A' }}>No heroes featured yet</h3>
+                  <p style={{ color: '#94A3B8', fontSize: 14, maxWidth: 340, margin: '0 auto' }}>
+                    Outstanding PCM members will be showcased here once featured.
+                  </p>
+                </div>
+              )}
+              {years.map(year => (
+                <section key={year} className="mb-16">
+                  <div className="mb-8">
+                    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: '#7C3AED' }} className="uppercase mb-2">Class of</p>
+                    <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.6rem,3vw,2.2rem)', fontWeight: 700, color: '#0F2A4A' }}>{year}</h2>
+                  </div>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filtered.filter(h => h.year === year).map((hero, i) => <HeroCard key={hero.id} hero={hero} idx={i} />)}
+                  </div>
+                </section>
+              ))}
+            </ErrorBoundary>
+          )}
         </div>
         <Footer />
       </div>
