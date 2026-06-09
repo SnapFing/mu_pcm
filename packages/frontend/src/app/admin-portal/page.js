@@ -511,7 +511,16 @@ function AnnouncementsSection({ role }) {
   const [form, setForm] = useState(blank);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
-  const save = () => saveAndClose({ modal, form, add, update, setModal });
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    setSaving(true);
+    try {
+      const result = await saveAndClose({ modal, form, add, update, setModal });
+      if (result?.ok) setForm(blank);
+    } finally {
+      setSaving(false);
+    }
+  };
   return (
     <div>
       <SHead title="Announcements" sub={`${items.length} total`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />

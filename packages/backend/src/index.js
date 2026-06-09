@@ -18,7 +18,7 @@ const corsOrigin = process.env.CORS_ORIGIN
 app.use(cors({
   origin: corsOrigin,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-token'],
 }));
 app.use(express.json({ limit: '10mb' })); // explicit body size limit
 

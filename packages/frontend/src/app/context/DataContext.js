@@ -11,12 +11,18 @@ async function authHeaders() {
     "Content-Type": "application/json",
   };
 
-  if (!getApps().length) return requestHeaders;
-
-  const user = getAuth().currentUser;
-  if (user) {
-    const token = await user.getIdToken();
-    requestHeaders.Authorization = `Bearer ${token}`;
+  try {
+    if (getApps().length) {
+      const user = getAuth().currentUser;
+      if (user) {
+        const token = await user.getIdToken();
+        requestHeaders.Authorization = `Bearer ${token}`;
+      }
+    }
+  } catch (err) {
+    // Do not block requests if Firebase isn't ready or token retrieval fails
+    // Log for debugging but return minimal headers so public reads still work
+    console.warn('[authHeaders] token fetch failed:', err?.message || err);
   }
 
   return requestHeaders;
