@@ -71,7 +71,19 @@ export default function EventsPage() {
           )}
 
           {filter(upcoming).length === 0 && filter(past).length === 0 && (
-            <p className="text-center py-20" style={{ color: '#94A3B8' }}>No events found for this category.</p>
+          <div className="text-center py-20 px-5">
+  <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center"
+    style={{ background: 'rgba(46,109,231,0.06)', color: '#2E6DE7' }}>
+    <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+  </div>
+  <h3 className="font-bold text-lg mb-2" style={{ color: '#0F2A4A' }}>No events yet</h3>
+  <p style={{ color: '#94A3B8', fontSize: 14, maxWidth: 320, margin: '0 auto' }}>
+    Check back soon — the ministry team adds new events regularly.
+  </p>
+</div>
           )}
 
         </div>
