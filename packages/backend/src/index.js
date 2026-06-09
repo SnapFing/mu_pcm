@@ -20,7 +20,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use(express.json({ limit: '1mb' })); // explicit body size limit
+app.use(express.json({ limit: '10mb' })); // explicit body size limit
 
 // ── Health ──────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
@@ -36,6 +36,7 @@ app.use('/api/heroes',        require('./routes/heroes'));
 app.use('/api/groups',        require('./routes/groups'));
 app.use('/api/resources',     require('./routes/resources'));
 app.use('/api/about',         require('./routes/about'));
+app.use('/api/uploads',       require('./routes/uploads'));
 
 // ── Submit-only public routes ───────────────────────────────────────────
 app.use('/api/prayers',       require('./routes/prayers'));

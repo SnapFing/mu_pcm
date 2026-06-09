@@ -413,10 +413,12 @@ const Sel = ({ options, ...p }) => (
     {options.map((o) => <option key={o}>{o}</option>)}
   </select>
 );
-const MFooter = ({ onClose, onSave }) => (
+const MFooter = ({ onClose, onSave, saving = false }) => (
   <div className="flex justify-end gap-2 mt-4">
     <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm border" style={{ borderColor: C.border, color: "#64748B" }}>Cancel</button>
-    <button onClick={onSave}  className="px-5 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: C.primary }}>Save</button>
+    <button onClick={onSave} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: saving ? '#94A3B8' : C.primary, cursor: saving ? 'not-allowed' : 'pointer' }}>
+      {saving ? 'Saving…' : 'Save'}
+    </button>
   </div>
 );
 
@@ -424,6 +426,7 @@ const saveAndClose = async ({ modal, form, add, update, setModal }) => {
   const result = modal === "add" ? await add(form) : await update({ ...form, id: modal.id });
   if (result?.ok) setModal(null);
   else alert(result?.error || "The change could not be saved.");
+  return result;
 };
 
 // ── Table ──────────────────────────────────────────────────────────────────
@@ -504,7 +507,7 @@ function AnnouncementsSection({ role }) {
   const { items, add, update, remove } = useAnnouncements();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const blank = { title: "", date: "", type: "General", status: "Active", body: "" };
+  const blank = { title: "", date: "", time: "", venue: "", description: "", image: "", status: "Upcoming", category: "Worship Services", featured: false };
   const [form, setForm] = useState(blank);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
@@ -525,7 +528,7 @@ function AnnouncementsSection({ role }) {
             <div className="flex-1"><Field label="Type"><Sel value={form.type} onChange={f("type")} options={["General", "Worship", "Prayer", "Admin", "Event"]} /></Field></div>
           </div>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Active", "Archived"]} /></Field>
-          <MFooter onClose={() => setModal(null)} onSave={save} />
+          <MFooter onClose={() => setModal(null)} onSave={save} saving={saving} />
         </Modal>
       )}
     </div>
@@ -537,7 +540,7 @@ function EventsSection({ role }) {
   const { items, add, update, remove } = useEvents();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const blank = { title: "", date: "", time: "", venue: "", description: "", image: "", status: "Upcoming" };
+  const blank = { title: "", date: "", time: "", venue: "", description: "", image: "", status: "Upcoming", category: "Worship Services", featured: false };
   const [form, setForm] = useState(blank);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
@@ -560,6 +563,12 @@ function EventsSection({ role }) {
           <Field label="Description"><Textarea value={form.description} onChange={f("description")} rows={3} placeholder="Event details…" /></Field>
           <Field label="Image path"><Input value={form.image} onChange={f("image")} placeholder="/events/sabbath.jpg" /></Field>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Upcoming", "Past"]} /></Field>
+          <Field label="Category">
+            <Sel value={form.category} onChange={f("category")} options={["Worship Services", "Bible Studies", "Community Service", "Retreats & Camps", "Prayer"]} />
+          </Field>
+          <Field label="Featured">
+            <Sel value={form.featured ? "Yes" : "No"} onChange={(e) => setForm(p => ({ ...p, featured: e.target.value === "Yes" }))} options={["No", "Yes"]} />
+          </Field>
           <MFooter onClose={() => setModal(null)} onSave={save} />
         </Modal>
       )}
@@ -572,14 +581,24 @@ function JournalsSection({ role }) {
   const { items, add, update, remove } = useJournals();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const blank = { title: "", author: "", category: "Academic", date: "", body: "", status: "Draft" };
+  const blank = { title: "", author: "", category: "Academic", date: "", body: "", status: "Published" };
   const [form, setForm] = useState(blank);
+  const [saving, setSaving] = useState(false);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) =>
     x.title.toLowerCase().includes(search.toLowerCase()) ||
     (x.author || "").toLowerCase().includes(search.toLowerCase())
   );
-  const save = () => saveAndClose({ modal, form, add, update, setModal });
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const result = await saveAndClose({ modal, form, add, update, setModal });
+      if (result?.ok) setForm(blank);
+    } finally {
+      setSaving(false);
+    }
+  };
   return (
     <div>
       <SHead title="Journals & Articles" sub={`${items.length} entries`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
@@ -609,7 +628,7 @@ function MediaSection({ role }) {
   const { items, add, update, remove } = useMedia();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const blank = { title: "", type: "Sermon", presenter: "", date: "", status: "Draft", url: "" };
+  const blank = { title: "", type: "Sermon", presenter: "", date: "", status: "Published", url: "" };
   const [form, setForm] = useState(blank);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
@@ -645,9 +664,41 @@ function HeroesSection({ role }) {
   const { items, add, update, remove } = useHeroes();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const blank = { name: "", role: "", year: "2024-25", bio: "", image: "", status: "Draft" };
+  const blank = { name: "", role: "", year: "2024-25", bio: "", image: "", status: "Featured" };
   const [form, setForm] = useState(blank);
+  const [uploading, setUploading] = useState(false);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const auth = getFirebaseAuth();
+      let token = null;
+      if (auth && auth.currentUser) token = await auth.currentUser.getIdToken();
+      const fd = new FormData();
+      fd.append('file', file, file.name);
+      const res = await fetch(`${API}/api/uploads`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      let data;
+      try {
+        data = await res.json();
+      } catch (err) {
+        const text = await res.text().catch(() => String(err));
+        // Show raw response when JSON parse fails (helps debugging server errors)
+        throw new Error(text || 'Upload failed: non-JSON response from server');
+      }
+      if (!res.ok) throw new Error(data?.error || 'Upload failed');
+      setForm(p => ({ ...p, image: data.url }));
+    } catch (err) {
+      alert(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
   const filtered = items.filter((x) => x.name.toLowerCase().includes(search.toLowerCase()));
   const save = () => saveAndClose({ modal, form, add, update, setModal });
   return (
@@ -664,7 +715,22 @@ function HeroesSection({ role }) {
             <div className="flex-1"><Field label="Role"><Input value={form.role} onChange={f("role")} placeholder="e.g. Choir Director" /></Field></div>
             <div className="flex-1"><Field label="Year"><Input value={form.year} onChange={f("year")} placeholder="2024-25" /></Field></div>
           </div>
-          <Field label="Image path"><Input value={form.image} onChange={f("image")} placeholder="/heroes/victor.jpg" /></Field>
+          <Field label="Image">
+            <div className="flex items-center gap-3">
+              <div className="w-24 h-24 rounded overflow-hidden bg-gray-100" style={{ border: '1px solid #E2E8F7' }}>
+                {form.image ? (
+                  <img src={form.image} alt="preview" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-sm" style={{ color: '#94A3B8' }}>No image</div>
+                )}
+              </div>
+              <div className="flex-1">
+                <input type="file" accept="image/*" onChange={handleFile} />
+                {uploading && <p className="text-xs" style={{ color: '#64748B' }}>Uploading…</p>}
+                <p className="text-xs" style={{ color: '#94A3B8' }}>Choose an image to upload (max 5MB)</p>
+              </div>
+            </div>
+          </Field>
           <Field label="Bio / Story"><Textarea value={form.bio} onChange={f("bio")} rows={4} placeholder="Their contribution…" /></Field>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Draft", "Featured"]} /></Field>
           <MFooter onClose={() => setModal(null)} onSave={save} />
@@ -719,7 +785,7 @@ function ResourcesSection({ role }) {
   const { items, add, update, remove } = useResources();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const blank = { title: "", description: "", category: "Planning", fileType: "PDF", status: "Draft" };
+  const blank = { title: "", description: "", category: "Planning", fileType: "PDF", status: "Published" };
   const [form, setForm] = useState(blank);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));

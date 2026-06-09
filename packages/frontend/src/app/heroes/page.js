@@ -13,7 +13,7 @@ const StarIcon = () => (
 );
 
 function HeroCard({ hero, idx }) {
-  const { name, role, year, bio, image } = hero;
+  const { name, role, year = "Current", bio, image } = hero;
   const accent   = idx % 2 === 0 ? '#2E6DE7' : '#7C3AED';
   const accentBg = idx % 2 === 0 ? 'rgba(46,109,231,0.08)' : 'rgba(124,58,237,0.08)';
   const [imgError, setImgError] = useState(false);
@@ -58,7 +58,7 @@ export default function HeroesPage() {
     h.name.toLowerCase().includes(search.toLowerCase()) ||
     (h.role || '').toLowerCase().includes(search.toLowerCase())
   );
-  const years = [...new Set(filtered.map(h => h.year))].sort().reverse();
+  const years = [...new Set(filtered.map(h => h.year || "Current"))].sort().reverse();
   return (
     <>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap'); *, body { font-family: 'Noto Sans', sans-serif; }`}</style>

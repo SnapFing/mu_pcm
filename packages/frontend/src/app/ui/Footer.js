@@ -7,7 +7,7 @@ const footerLinks = [
   { label: 'Upcoming Events', href: '/events'           },
   { label: 'Sermons & Media', href: '/media'            },
   { label: 'Journals',        href: '/journals'         },
-  { label: 'Time Management', href: '/time-management'  },
+  { label: 'Resources',       href: '/resources'        },
   { label: 'Heroes',          href: '/heroes'           },
   { label: 'Contact Us',      href: '/contact'          },
 ];

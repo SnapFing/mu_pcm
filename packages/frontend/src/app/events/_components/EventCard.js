@@ -38,7 +38,7 @@ const categoryColors = {
 };
 
 export default function EventCard({ event }) {
-  const { title, category, date, time, venue, description, image, featured } = event;
+  const { title, category = 'General', date, time, venue, description, image, featured = false } = event;
   const colors = categoryColors[category] || { bg: 'rgba(46,109,231,0.1)', text: '#2E6DE7' };
 
   return (

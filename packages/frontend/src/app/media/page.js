@@ -154,15 +154,17 @@ function MediaCard({ item, onPlay }) {
       <div className="relative overflow-hidden flex items-center justify-center"
         style={{ height: 180, background: 'linear-gradient(135deg, #0F2A4A, #2E6DE7)' }}>
 
-        {/* Thumbnail image — uses YouTube thumbnail if no local image */}
-        <img
-          src={hasVideo
-            ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`
-            : thumbnail}
-          alt={title}
-          className="w-full h-full object-cover"
-          onError={e => { e.currentTarget.style.display = 'none'; }}
-        />
+      {/* Thumbnail image — uses YouTube thumbnail if no local image */}
+       {(hasVideo || thumbnail) && (
+         <img
+           src={hasVideo
+             ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`
+             : thumbnail}
+           alt={title}
+           className="w-full h-full object-cover"
+           onError={e => { e.currentTarget.style.display = 'none'; }}
+         />
+       )}
 
         {/* Play overlay — only shown if video exists */}
         {hasVideo && (

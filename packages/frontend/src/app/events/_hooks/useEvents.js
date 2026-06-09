@@ -1,8 +1,10 @@
-/**
+'/**
  * events/_hooks/useEvents.js
- * Provides filtered, sorted event data.
- * Currently uses static data — swap the EVENTS array for a Firebase fetch later.
+ * DEPRECATED: data now comes from DataContext (Firestore). This file remains
+ * for reference only and uses static example data. Avoid importing this in
+ * production code; prefer the DataContext hooks under /context.
  *
+ * Provides filtered, sorted event data (static sample).
  * Usage:
  *   const { events, filter, setFilter, categories } = useEvents();
  */

@@ -23,8 +23,16 @@ try {
 }
 
 if (!admin.apps.length) {
-  admin.initializeApp({ credential });
+  // Determine storage bucket from environment or sensible defaults
+  const storageBucket = process.env.FIREBASE_STORAGE_BUCKET || process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || (process.env.FIREBASE_PROJECT_ID ? `${process.env.FIREBASE_PROJECT_ID}.appspot.com` : undefined);
+
+  const initOpts = { credential };
+  if (storageBucket) initOpts.storageBucket = storageBucket;
+
+  admin.initializeApp(initOpts);
   console.log('✅ Firebase Admin SDK initialized successfully');
+  if (storageBucket) console.log(`🔹 Using storage bucket: ${storageBucket}`);
+  else console.warn('⚠️ No storage bucket configured; admin.storage().bucket() will require an explicit bucket name');
 }
 
 const db = admin.firestore();
