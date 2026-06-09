@@ -15,8 +15,8 @@ const footerLinks = [
 const socialLinks = [
   { label: 'Facebook',  href: 'https://facebook.com',       Icon: FbIcon  },
   { label: 'Instagram', href: 'https://instagram.com',      Icon: IgIcon  },
-  { label: 'YouTube',   href: 'https://https://youtube.com/@mulungushisdapcmpublicity?si=RsiOtIMrXWs2XwfB',        Icon: YtIcon  },
-  { label: 'WhatsApp',  href: 'https://wa.me/260123456789', Icon: WaIcon  },
+  { label: 'YouTube',   href: 'https://youtube.com/@mulungushisdapcmpublicity?si=RsiOtIMrXWs2XwfB',        Icon: YtIcon  },
+  { label: 'WhatsApp',  href: 'https://wa.me/260762062641', Icon: WaIcon  },
 ];
 
 function FbIcon() {
@@ -173,7 +173,7 @@ export default function Footer() {
               
               <li className="flex items-center gap-2.5">
                 <span style={{ color: '#2E6DE7' }}><MailIcon /></span>
-                <a href="mulungushisdapcmpublicity@gmail.com"
+                <a href="mailto:mulungushisdapcmpublicity@gmail.com"
                   onMouseEnter={e => e.currentTarget.style.color = 'white'}
                   onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}>
                   mulungushisdapcmpublicity@gmail.com
@@ -218,7 +218,7 @@ export default function Footer() {
           style={{ borderTop: '1px solid rgba(255,255,255,0.08)', fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
           <p>© 2026 Mulungushi University SDA PCM. All rights reserved.</p>
           <p>Built with faith &amp; purpose · Kabwe, Zambia</p>
-          <p>SnapFing</p>
+          <p>Contact the Developer - SnapFing</p>
         </div>
       </div>
     </footer>
