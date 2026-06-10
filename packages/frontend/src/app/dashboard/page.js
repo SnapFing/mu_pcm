@@ -1,4 +1,5 @@
 'use client';
+import React from 'react';
 
 import { useState, useEffect, useRef } from 'react';
 import Navbar          from '@/app/ui/Navbar';
@@ -6,9 +7,10 @@ import Footer          from '@/app/ui/Footer';
 import SabbathGreeting from '@/app/ministry/SabbathGreeting';
 import VerseDisplay    from '@/app/ministry/VerseDisplay';
 import CountdownTimer  from '@/app/ministry/CountdownTimer';
+import { downloadICS } from '@/app/utils/calendar';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const userName = "Edward";
+const userName = " ";
 
 const Ico = ({ children, className = 'w-5 h-5' }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none"
@@ -47,6 +49,7 @@ const quickLinks = [
   { href: '/journals',  Icon: JournalIcon, label: 'Journals'  },
   { href: '/media',     Icon: MediaIcon,   label: 'Media'     },
   { href: '/heroes',    Icon: StarIcon,    label: 'Heroes'    },
+  { href: '/groups',    Icon: UsersIcon,   label: 'Groups'    },  
 ];
 
 // ── Accent colors cycle ────────────────────────────────────────────────────
@@ -87,6 +90,22 @@ function VerseCard() {
 }
 
 function EventCard() {
+  const [rsvpDone, setRsvpDone] = React.useState(false);
+ 
+  // Hardcoded next Vespers — swap for live data once events API is wired here
+  const nextEvent = {
+    title:       'Vespers',
+    date:        '2026-03-13',
+    time:        '19:00',
+    venue:       'Lecture Room 3',
+    description: 'Developing Christ-like Character',
+  };
+ 
+  const handleAddToCalendar = (e) => {
+    e.preventDefault();
+    downloadICS(nextEvent);
+  };
+ 
   return (
     <div className="rounded-2xl overflow-hidden flex flex-col h-full"
       style={{ background: 'white', border: '1px solid #E2E8F7', boxShadow: '0 1px 4px rgba(46,109,231,0.06)', borderTop: '3px solid #0F2A4A' }}>
@@ -115,12 +134,35 @@ function EventCard() {
         <CountdownTimer targetDate="2026-03-13T19:00:00+02:00" />
       </div>
       <div className="px-6 py-4 flex justify-between items-center" style={{ borderTop: '1px solid #E2E8F7', background: '#FAFBFF' }}>
-        <button className="flex items-center gap-1.5 text-xs font-medium" style={{ color: '#94A3B8' }}>
+ 
+        {/* Add to Calendar — downloads .ics */}
+        <button
+          onClick={handleAddToCalendar}
+          className="flex items-center gap-1.5 text-xs font-medium transition-colors"
+          style={{ color: '#64748B', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          onMouseEnter={e => e.currentTarget.style.color = '#0F2A4A'}
+          onMouseLeave={e => e.currentTarget.style.color = '#64748B'}
+        >
           <CalIcon c="w-3.5 h-3.5" /> Add to Calendar
         </button>
-        <button className="px-4 py-1.5 rounded-full text-xs font-bold" style={{ background: '#2E6DE7', color: 'white' }}>
-          I'm Coming
-        </button>
+ 
+        {/* I'm Coming — inline confirmation, no backend needed */}
+        {rsvpDone ? (
+          <span className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold"
+            style={{ background: 'rgba(5,150,105,0.1)', color: '#059669' }}>
+            ✓ See you there!
+          </span>
+        ) : (
+          <button
+            onClick={() => setRsvpDone(true)}
+            className="px-4 py-1.5 rounded-full text-xs font-bold transition-all"
+            style={{ background: '#2E6DE7', color: 'white' }}
+            onMouseEnter={e => e.currentTarget.style.background = '#1d5cd4'}
+            onMouseLeave={e => e.currentTarget.style.background = '#2E6DE7'}
+          >
+            I&apos;m Coming
+          </button>
+        )}
       </div>
     </div>
   );
@@ -421,3 +463,4 @@ export default function Dashboard() {
     </>
   );
 }
+
