@@ -1,13 +1,12 @@
 'use client';
 import ErrorBoundary from '@/app/ui/ErrorBoundary';
-// media/page.js
+import { CardSkeleton } from '@/app/ui/Skeleton';
 
 import { useState } from 'react';
 import Navbar from '@/app/ui/Navbar';
 import Footer from '@/app/ui/Footer';
 import { PageHeader } from '@/app/ui/PageHeader';
 import { useMedia } from '@/app/context/DataContext';
-import Skeleton, { CardSkeleton } from '@/app/ui/Skeleton';
 
 const TABS = ['All Media', 'Sermons', 'Event Videos', 'Photo Gallery'];
 
@@ -327,12 +326,10 @@ export default function MediaPage() {
                   ))}
                 </div>
               )}
-            <ErrorBoundary>
-              {loading ? (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
-                </div>
-              ) : error ? (
+            </ErrorBoundary>
+          )}
+        </div>
+
         <Footer />
       </div>
 
