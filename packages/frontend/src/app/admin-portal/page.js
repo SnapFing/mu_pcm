@@ -6,7 +6,7 @@ import {
   getAuth, 
   signInWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged,
+  onIdTokenChanged,
   sendPasswordResetEmail,
   verifyPasswordResetCode,
   confirmPasswordReset,
@@ -136,12 +136,41 @@ function useAdminAuth() {
     setToken(null);
   }, []);
 
-  useEffect(() => {
-    const auth = getFirebaseAuth();
-    if (!auth) {
+useEffect(() => {
+  const auth = getFirebaseAuth();
+  if (!auth) {
+    setLoading(false);
+    return;
+  }
+
+  return onIdTokenChanged(auth, async (fbUser) => {
+    if (!fbUser) {
+      setUser(null);
+      setToken(null);
       setLoading(false);
       return;
     }
+    try {
+      const idToken = await fbUser.getIdToken();
+      setToken(idToken);
+      const profile = await fetchAdminProfile(idToken);
+      setUser({
+        uid: fbUser.uid,
+        email: fbUser.email,
+        role: profile.role,
+        displayName: profile.displayName,
+        active: profile.active,
+      });
+    } catch (err) {
+      console.error("Auth state change error:", err);
+      await signOut(auth);
+      setUser(null);
+      setToken(null);
+    } finally {
+      setLoading(false);
+    }
+  });
+  
 
     return onAuthStateChanged(auth, async (fbUser) => {
       if (!fbUser) {
@@ -294,7 +323,7 @@ function LoginGate({ onLogin }) {
       const resetUrl = typeof window !== "undefined"
         ? `${window.location.origin}/admin-portal`
         : "/admin-portal";
-      await sendPasswordResetEmail(auth, email, { url: resetUrl });
+      await sendPasswordResetEmail(auth, email, { url: resetUrl, handleCodeInApp: true});
       alert("Password reset email sent to " + email);
     } catch (err) {
       setError(err.message || "Failed to send reset email");
@@ -509,16 +538,11 @@ function AnnouncementsSection({ role, token }) {
   const [search, setSearch] = useState("");
   const blank = {
     title: "",
+    body: "",
     date: "",
-    time: "",
-    venue: "",
-    description: "",
-    image: "",
+    type: "General",
     status: "Active",
-    category: "General",
-    featured: false,
-    contactNumber: "",
-    mapsQuery: "",
+    image: "",
   };
   const [form, setForm] = useState(blank);
   const [imageFile, setImageFile] = useState(null);
@@ -1008,7 +1032,7 @@ function ResourcesSection({ role, token }) {
 }
 
 // ── Prayer Requests ────────────────────────────────────────────────────────
-function PrayerSection() {
+function PrayerSection({ role }) {
   const { items, update, remove } = usePrayers();
   const [viewing, setViewing] = useState(null);
   const [search, setSearch] = useState("");
@@ -1062,7 +1086,7 @@ function PrayerSection() {
 }
 
 // ── Contact Inbox ──────────────────────────────────────────────────────────
-function ContactSection() {
+function ContactSection({ role }) {
   const { items, update, remove } = useContacts();
   const [viewing, setViewing] = useState(null);
   const [search, setSearch] = useState("");
@@ -1370,10 +1394,10 @@ function OverviewSection({ setSection, role }) {
           <p className="text-sm mt-0.5" style={{ color: "#64748B" }}>Changes you make here are reflected instantly on all public pages.</p>
         </div>
         {role === "super_admin" && (
-          <button onClick={() => { if (confirm("Reset all data to defaults?")) reset(); }}
+          <button onClick={() => window.location.reload()}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border hover:bg-red-50 transition-colors"
             style={{ borderColor: "#FCA5A5", color: "#EF4444" }}>
-            <Icon d={Icons.reset} size={13} /> Reset Data
+            <Icon d={Icons.reset} size={13} /> Refresh Page
           </button>
         )}
       </div>
@@ -1434,18 +1458,23 @@ export default function AdminPage() {
 
   const nav = useMemo(() => {
     const base = [
-      { key: "overview",      label: "Overview",        icon: Icons.dashboard                                    },
-      { key: "announcements", label: "Announcements",   icon: Icons.announce                                     },
-      { key: "events",        label: "Events",          icon: Icons.events                                       },
-      { key: "journals",      label: "Journals",        icon: Icons.journals                                     },
-      { key: "media",         label: "Media",           icon: Icons.media                                        },
-      { key: "heroes",        label: "Heroes",          icon: Icons.heroes                                       },
-      { key: "groups",        label: "Groups",          icon: Icons.groups,   divider: true                      },
-      { key: "resources",     label: "Resources",       icon: Icons.resources                                    },
-      { key: "prayer",        label: "Prayer Requests", icon: Icons.prayer,   badge: unreadPrayers               },
-      { key: "contact",       label: "Contact Inbox",   icon: Icons.contact,  badge: unreadContacts, divider: true },
-      { key: "about",         label: "About Editor",    icon: Icons.about                                        },
+      { key: "overview", label: "Overview", icon: Icons.dashboard },
+      { key: "announcements", label: "Announcements", icon: Icons.announce },
+      { key: "events", label: "Events", icon: Icons.events },
+      { key: "journals", label: "Journals", icon: Icons.journals },
+      { key: "media", label: "Media", icon: Icons.media },
+      { key: "heroes", label: "Heroes", icon: Icons.heroes },
+      { key: "groups", label: "Groups", icon: Icons.groups, divider: true },
+      { key: "resources", label: "Resources", icon: Icons.resources },
     ];
+    // Only admin+ can see prayers and contacts
+    if (user?.role !== 'editor') {
+      base.push(
+        { key: "prayer", label: "Prayer Requests", icon: Icons.prayer, badge: unreadPrayers },
+        { key: "contact", label: "Contact Inbox", icon: Icons.contact, badge: unreadContacts, divider: true },
+      );
+    }
+    base.push({ key: "about", label: "About Editor", icon: Icons.about });
     if (user?.role === "super_admin") {
       base.push({ key: "users", label: "Manage Users", icon: Icons.users, divider: true });
     }
@@ -1456,13 +1485,13 @@ export default function AdminPage() {
     overview:      <OverviewSection setSection={setSection} role={user?.role} />,
     announcements: <AnnouncementsSection role={user?.role} token={token} />,
     events:        <EventsSection role={user?.role} token={token} />,
-    journals:      <JournalsSection role={user?.role} token={token} />,
+    journals:      <JournalsSection role={user?.role} />,
     media:         <MediaSection role={user?.role} />,
     heroes:        <HeroesSection role={user?.role} token={token} />,
     groups:        <GroupsSection role={user?.role} />,
     resources:     <ResourcesSection role={user?.role} token={token} />,
-    prayer:        <PrayerSection />,
-    contact:       <ContactSection />,
+    prayer:        <PrayerSection role={user?.role} />,
+    contact:       <ContactSection role={user?.role} />,
     about:         <AboutSection />,
     users:         <UsersSection token={token} />,
   };

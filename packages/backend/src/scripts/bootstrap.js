@@ -63,7 +63,10 @@ const db = admin.firestore();
     }
 
     // 3. Generate password-reset link
-    const resetLink = await admin.auth().generatePasswordResetLink(email);
+    const resetLink = await admin.auth().generatePasswordResetLink(email {
+      url: 'https://mu-pcm.vercel.app/admin-portal',
+      handleCodeInApp: true,
+    });
     console.log('\n─────────────────────────────────────────────────');
     console.log('Super Admin Bootstrap Complete!');
     console.log('─────────────────────────────────────────────────');

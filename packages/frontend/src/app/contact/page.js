@@ -122,9 +122,9 @@ export default function ContactPage() {
                 <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.4rem,2.5vw,1.9rem)', fontWeight: 700, color: C.navy, marginBottom: 8 }}>We'd Love to Hear From You</h2>
                 <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.75 }}>Reach out via the form, or find us at the PCM Office on campus. We respond within 24 hours.</p>
               </div>
-              <InfoCard icon={<MapPinIcon c="w-5 h-5" />} label="Address" value="PCM Office, Student Centre, Mulungushi University, Kabwe" />
-              <InfoCard icon={<MailIcon   c="w-5 h-5" />} label="Email"   value="info@mupcm.org" href="mailto:info@mupcm.org" />
-              <InfoCard icon={<PhoneIcon  c="w-5 h-5" />} label="Phone"   value="+260 123 456 789" href="tel:+260123456789" />
+              <InfoCard icon={<MapPinIcon c="w-5 h-5" />} label="Address" value="PCM OFFICE, Mulungushi University Great North Road Campus , Kapiri" />
+              <InfoCard icon={<MailIcon   c="w-5 h-5" />} label="Email"   value="mulungushisdapcmpublicity@gmail.com" href="mailto:mulungushisdapcmpublicity@gmail.com" />
+              <InfoCard icon={<PhoneIcon  c="w-5 h-5" />} label="Phone"   value="+260 762 062 641" href="tel:+260762062641" />
               <div className="rounded-2xl p-5" style={{ background: 'white', border: `1px solid ${C.border}` }}>
                 <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', color: '#94A3B8', marginBottom: 14 }}>FOLLOW US</p>
                 <div className="flex gap-3">
