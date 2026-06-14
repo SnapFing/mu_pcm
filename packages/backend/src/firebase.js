@@ -18,10 +18,6 @@ if (!admin.apps.length) {
     });
   }
 
-  admin.initializeApp({
-    credential,
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,   // ← this makes uploads.js work
-  });
 
   console.log('✅ Firebase Admin SDK initialized');
 }

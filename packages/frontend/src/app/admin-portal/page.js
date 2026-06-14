@@ -615,7 +615,7 @@ function EventsSection({ role, token }) {
     try {
       const formData = new FormData();
       formData.append('file', imageFile);
-      const res = await fetch(`${API}/api/upload/image`, {
+      const res = await fetch(`${API}/api/uploads`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
