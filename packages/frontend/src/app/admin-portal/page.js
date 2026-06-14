@@ -503,7 +503,7 @@ const SHead = ({ title, sub, onAdd, search, onSearch }) => (
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ── Announcements ──────────────────────────────────────────────────────────
-function AnnouncementsSection({ role }) {
+function AnnouncementsSection({ role, token }) {
   const { items, add, update, remove } = useAnnouncements();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
@@ -514,25 +514,53 @@ function AnnouncementsSection({ role }) {
     venue: "",
     description: "",
     image: "",
-    status: "Upcoming",
-    category: "Worship Services",
+    status: "Active",
+    category: "General",
     featured: false,
-    contactNumber: "",   // NEW — admin's phone number for "Call" button
-    mapsQuery: "",       // NEW — text used to build embedded map (defaults to venue if empty)
+    contactNumber: "",
+    mapsQuery: "",
   };
   const [form, setForm] = useState(blank);
+  const [imageFile, setImageFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
   const [saving, setSaving] = useState(false);
+
+  const handleImageUpload = async () => {
+    if (!imageFile) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', imageFile, imageFile.name);
+      const res = await fetch(`${API}/api/uploads`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Upload failed');
+      setForm(p => ({ ...p, image: data.url }));
+      setImageFile(null);
+      alert('Image uploaded successfully');
+    } catch (err) {
+      alert(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const save = async () => {
     setSaving(true);
     try {
-      const result = await saveAndClose({ modal, form, add, update, setModal });
-      if (result?.ok) setForm(blank);
+      const result = modal === "add" ? await add(form) : await update({ ...form, id: modal.id });
+      if (result?.ok) setModal(null);
+      else alert(result?.error || "The change could not be saved.");
     } finally {
       setSaving(false);
     }
   };
+
   return (
     <div>
       <SHead title="Announcements" sub={`${items.length} total`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
@@ -549,6 +577,18 @@ function AnnouncementsSection({ role }) {
             <div className="flex-1"><Field label="Type"><Sel value={form.type} onChange={f("type")} options={["General", "Worship", "Prayer", "Admin", "Event"]} /></Field></div>
           </div>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Active", "Archived"]} /></Field>
+          <Field label="Announcement Image">
+            {form.image && (
+              <img src={form.image} alt="preview" className="w-full h-24 object-cover rounded-lg mb-2" />
+            )}
+            <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} className="text-sm" />
+            {imageFile && (
+              <button type="button" onClick={handleImageUpload} disabled={uploading} className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold">
+                {uploading ? 'Uploading...' : 'Upload Image'}
+              </button>
+            )}
+            <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>Upload a flyer or banner image for the announcement.</p>
+          </Field>
           <MFooter onClose={() => setModal(null)} onSave={save} saving={saving} />
         </Modal>
       )}
@@ -573,18 +613,21 @@ function EventsSection({ role, token }) {
     if (!imageFile) return;
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('file', imageFile, imageFile.name);
-      const res = await fetch(`${API}/api/uploads`, {
+      const formData = new FormData();
+      formData.append('file', imageFile);
+      const res = await fetch(`${API}/api/upload/image`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: fd,
+        body: formData,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Upload failed');
-      setForm(p => ({ ...p, image: data.url }));
-      setImageFile(null);
-      alert('Image uploaded successfully');
+      if (res.ok) {
+        setForm(f => ({ ...f, image: data.url }));
+        setImageFile(null);
+        alert('Image uploaded successfully');
+      } else {
+        alert(data.error || 'Upload failed');
+      }
     } catch (err) {
       alert(err.message || 'Upload failed');
     } finally {
@@ -760,7 +803,7 @@ function MediaSection({ role }) {
 }
 
 // ── Heroes ─────────────────────────────────────────────────────────────────
-function HeroesSection({ role }) {
+function HeroesSection({ role, token }) {
   const { items, add, update, remove } = useHeroes();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
@@ -768,14 +811,12 @@ function HeroesSection({ role }) {
   const [form, setForm] = useState(blank);
   const [uploading, setUploading] = useState(false);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
+
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
     try {
-      const auth = getFirebaseAuth();
-      let token = null;
-      if (auth && auth.currentUser) token = await auth.currentUser.getIdToken();
       const fd = new FormData();
       fd.append('file', file, file.name);
       const res = await fetch(`${API}/api/uploads`, {
@@ -783,14 +824,7 @@ function HeroesSection({ role }) {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: fd,
       });
-      let data;
-      try {
-        data = await res.json();
-      } catch (err) {
-        const text = await res.text().catch(() => String(err));
-        // Show raw response when JSON parse fails (helps debugging server errors)
-        throw new Error(text || 'Upload failed: non-JSON response from server');
-      }
+      const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Upload failed');
       setForm(p => ({ ...p, image: data.url }));
     } catch (err) {
@@ -799,8 +833,10 @@ function HeroesSection({ role }) {
       setUploading(false);
     }
   };
+
   const filtered = items.filter((x) => x.name.toLowerCase().includes(search.toLowerCase()));
   const save = () => saveAndClose({ modal, form, add, update, setModal });
+
   return (
     <div>
       <SHead title="Campus Heroes" sub={`${items.length} heroes`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
@@ -881,15 +917,52 @@ function GroupsSection({ role }) {
 }
 
 // ── Resources ──────────────────────────────────────────────────────────────
-function ResourcesSection({ role }) {
+function ResourcesSection({ role, token }) {
   const { items, add, update, remove } = useResources();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const blank = { title: "", description: "", category: "Planning", fileType: "PDF", status: "Published" };
+  const blank = { title: "", description: "", category: "Planning", fileType: "PDF", status: "Published", fileUrl: "" };
   const [form, setForm] = useState(blank);
+  const [resourceFile, setResourceFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
-  const save = () => saveAndClose({ modal, form, add, update, setModal });
+
+  const handleFileUpload = async () => {
+    if (!resourceFile) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', resourceFile, resourceFile.name);
+      const res = await fetch(`${API}/api/uploads`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Upload failed');
+      setForm(p => ({ ...p, fileUrl: data.url }));
+      setResourceFile(null);
+      alert('File uploaded successfully');
+    } catch (err) {
+      alert(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const save = async () => {
+    const result = modal === "add"
+      ? await add(form)
+      : await update({ ...form, id: modal.id });
+    if (result?.ok) {
+      setModal(null);
+      setForm(blank);
+    } else {
+      alert(result?.error || "The change could not be saved.");
+    }
+  };
+
   return (
     <div>
       <SHead title="Resources" sub="Downloadable files & guides" onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
@@ -897,9 +970,11 @@ function ResourcesSection({ role }) {
         cols={[{ key: "title", label: "Title", clip: true }, { key: "description", label: "Description", clip: true }, { key: "category", label: "Category" }, { key: "fileType", label: "Type" }, { key: "status", label: "Status" }]}
         rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={role !== "editor" ? remove : null}
         extra={(r) => (
-          <button className="p-1.5 rounded-lg hover:bg-emerald-100 transition-colors" title="Upload file">
-            <Icon d={Icons.download} size={14} className="text-emerald-600" />
-          </button>
+          r.fileUrl ? (
+            <a href={r.fileUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-emerald-100 transition-colors" title="Download file">
+              <Icon d={Icons.download} size={14} className="text-emerald-600" />
+            </a>
+          ) : null
         )}
       />
       {modal && (
@@ -910,12 +985,19 @@ function ResourcesSection({ role }) {
             <div className="flex-1"><Field label="Category"><Sel value={form.category} onChange={f("category")} options={["Planning", "Study", "Spiritual", "Health", "General"]} /></Field></div>
             <div className="flex-1"><Field label="File Type"><Sel value={form.fileType} onChange={f("fileType")} options={["PDF", "DOCX", "XLSX", "Link"]} /></Field></div>
           </div>
-          <Field label="File Upload">
-            <div className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer hover:bg-blue-50 transition-colors" style={{ borderColor: C.border }}>
-              <Icon d={Icons.download} size={20} className="mx-auto mb-1 text-slate-400" />
-              <p className="text-xs" style={{ color: "#64748B" }}>Click to upload or drag & drop</p>
-              <p className="text-xs mt-0.5" style={{ color: "#94A3B8" }}>PDF, DOCX, XLSX — up to 10 MB</p>
-            </div>
+          <Field label="Upload File">
+            {form.fileUrl && (
+              <div className="mb-2 text-sm">
+                Current file: <a href={form.fileUrl} target="_blank" className="text-blue-600 underline">View</a>
+              </div>
+            )}
+            <input type="file" accept=".pdf,.docx,.xlsx" onChange={(e) => setResourceFile(e.target.files[0])} className="text-sm" />
+            {resourceFile && (
+              <button type="button" onClick={handleFileUpload} disabled={uploading} className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold">
+                {uploading ? 'Uploading...' : 'Upload File'}
+              </button>
+            )}
+            <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>Upload a PDF, DOCX, or XLSX file (max 5MB).</p>
           </Field>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Draft", "Published"]} /></Field>
           <MFooter onClose={() => setModal(null)} onSave={save} />
@@ -1372,11 +1454,11 @@ export default function AdminPage() {
 
   const sectionMap = {
     overview:      <OverviewSection setSection={setSection} role={user?.role} />,
-    announcements: <AnnouncementsSection role={user?.role} />,
+    announcements: <AnnouncementsSection role={user?.role} token={token} />,
     events:        <EventsSection role={user?.role} token={token} />,
-    journals:      <JournalsSection role={user?.role} />,
+    journals:      <JournalsSection role={user?.role} token={token} />,
     media:         <MediaSection role={user?.role} />,
-    heroes:        <HeroesSection role={user?.role} />,
+    heroes:        <HeroesSection role={user?.role} token={token} />,
     groups:        <GroupsSection role={user?.role} />,
     resources:     <ResourcesSection role={user?.role} />,
     prayer:        <PrayerSection />,

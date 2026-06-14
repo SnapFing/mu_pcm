@@ -4,22 +4,26 @@ const path = require('path');
 // Try loading from the JSON file first (simplest, no formatting issues)
 const serviceAccountPath = path.resolve(__dirname, '../config/serviceAccount.json');
 
-let credential;
-try {
-  // eslint-disable-next-line import/no-dynamic-require
-  const serviceAccount = require(serviceAccountPath);
-  credential = admin.credential.cert(serviceAccount);
-} catch (err) {
-  // Fallback to environment variables (for production where you can't use a file)
-  if (process.env.FIREBASE_PRIVATE_KEY) {
+if (!admin.apps.length) {
+  let credential;
+
+  try {
+    const serviceAccount = require('../config/serviceAccount.json');
+    credential = admin.credential.cert(serviceAccount);
+  } catch {
     credential = admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
     });
-  } else {
-    throw new Error('No Firebase credentials found. Provide a serviceAccount.json or set environment variables.');
   }
+
+  admin.initializeApp({
+    credential,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,   // ← this makes uploads.js work
+  });
+
+  console.log('✅ Firebase Admin SDK initialized');
 }
 
 if (!admin.apps.length) {
