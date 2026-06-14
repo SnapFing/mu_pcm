@@ -1460,7 +1460,7 @@ export default function AdminPage() {
     media:         <MediaSection role={user?.role} />,
     heroes:        <HeroesSection role={user?.role} token={token} />,
     groups:        <GroupsSection role={user?.role} />,
-    resources:     <ResourcesSection role={user?.role} />,
+    resources:     <ResourcesSection role={user?.role} token={token} />,
     prayer:        <PrayerSection />,
     contact:       <ContactSection />,
     about:         <AboutSection />,
