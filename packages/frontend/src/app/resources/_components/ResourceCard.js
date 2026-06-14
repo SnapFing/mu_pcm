@@ -9,7 +9,7 @@ const CAT_COLORS = {
 };
 
 export default function ResourceCard({ resource, idx = 0 }) {
-  const { title, description, category, fileType } = resource;
+  const { title, description, category, fileType, fileUrl} = resource;
   const accent = idx % 2 === 0 ? '#2E6DE7' : '#7C3AED';
   const catColors = CAT_COLORS[category] || CAT_COLORS.General;
   const fileColor = { PDF: '#EF4444', DOCX: '#2E6DE7', XLSX: '#059669', Link: '#7C3AED' }[fileType] || '#64748B';
@@ -39,4 +39,21 @@ export default function ResourceCard({ resource, idx = 0 }) {
       </div>
     </div>
   );
+
+  {fileUrl ? (
+  <a href={fileUrl} target="_blank" rel="noopener noreferrer"
+    className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: accent }}>
+    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+    </svg>
+    {fileType === 'Link' ? 'Open Link' : 'Download'}
+  </a>
+) : (
+  <span className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: '#94A3B8' }}>
+    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+    </svg>
+    No file yet
+  </span>
+)}
 }

@@ -44,11 +44,21 @@ router.post('/', verifyToken, requireRole('editor'), upload.single('file'), asyn
     const b64 = Buffer.from(req.file.buffer).toString('base64');
     const dataURI = `data:${req.file.mimetype};base64,${b64}`;
 
-    // Upload to Cloudinary (auto-detect resource type)
-    const result = await cloudinary.uploader.upload(dataURI, {
+    // Determine if the file is an image – all other types will be treated as 'raw'
+    const isImage = req.file.mimetype.startsWith('image/');
+
+    const uploadOptions = {
       folder: 'mu-pcm-uploads',
-      resource_type: 'auto',
-    });
+      resource_type: isImage ? 'image' : 'raw',   // PDFs, DOCXs etc. must be 'raw'
+    };
+
+    // For PDFs we can force the public format to pdf, but it's optional.
+    // Cloudinary will still serve it correctly if resource_type is 'raw'.
+    if (req.file.mimetype === 'application/pdf') {
+      uploadOptions.format = 'pdf';
+    }
+
+    const result = await cloudinary.uploader.upload(dataURI, uploadOptions);
 
     res.json({ url: result.secure_url });
   } catch (err) {

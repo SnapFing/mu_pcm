@@ -545,18 +545,19 @@ function AnnouncementsSection({ role, token }) {
     image: "",
   };
   const [form, setForm] = useState(blank);
-  const [imageFile, setImageFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
   const [saving, setSaving] = useState(false);
 
-  const handleImageUpload = async () => {
-    if (!imageFile) return;
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
     setUploading(true);
     try {
       const fd = new FormData();
-      fd.append('file', imageFile, imageFile.name);
+      fd.append('file', file, file.name);
       const res = await fetch(`${API}/api/uploads`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -565,12 +566,11 @@ function AnnouncementsSection({ role, token }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Upload failed');
       setForm(p => ({ ...p, image: data.url }));
-      setImageFile(null);
-      alert('Image uploaded successfully');
     } catch (err) {
       alert(err.message || 'Upload failed');
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
   };
 
@@ -601,18 +601,34 @@ function AnnouncementsSection({ role, token }) {
             <div className="flex-1"><Field label="Type"><Sel value={form.type} onChange={f("type")} options={["General", "Worship", "Prayer", "Admin", "Event"]} /></Field></div>
           </div>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Active", "Archived"]} /></Field>
+          
           <Field label="Announcement Image">
             {form.image && (
-              <img src={form.image} alt="preview" className="w-full h-24 object-cover rounded-lg mb-2" />
+              <div className="relative mb-2">
+                <img src={form.image} alt="preview" className="w-full h-24 object-cover rounded-lg" />
+                <button
+                  type="button"
+                  onClick={() => setForm(p => ({ ...p, image: '' }))}
+                  className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center bg-red-500 text-white text-xs"
+                  title="Remove image"
+                >
+                  ✕
+                </button>
+              </div>
             )}
-            <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} className="text-sm" />
-            {imageFile && (
-              <button type="button" onClick={handleImageUpload} disabled={uploading} className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold">
-                {uploading ? 'Uploading...' : 'Upload Image'}
-              </button>
-            )}
-            <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>Upload a flyer or banner image for the announcement.</p>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              disabled={uploading}
+              className="text-sm"
+            />
+            {uploading && <p className="text-xs mt-1" style={{ color: '#64748B' }}>Uploading…</p>}
+            <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>
+              Select an image – it will upload automatically. Click ✕ to remove.
+            </p>
           </Field>
+
           <MFooter onClose={() => setModal(null)} onSave={save} saving={saving} />
         </Modal>
       )}
@@ -633,29 +649,27 @@ function EventsSection({ role, token }) {
   const [uploading, setUploading] = useState(false);
 
   // Image Upload
-  const handleImageUpload = async () => {
-    if (!imageFile) return;
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', imageFile);
+      const fd = new FormData();
+      fd.append('file', file, file.name);
       const res = await fetch(`${API}/api/uploads`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
+        body: fd,
       });
       const data = await res.json();
-      if (res.ok) {
-        setForm(f => ({ ...f, image: data.url }));
-        setImageFile(null);
-        alert('Image uploaded successfully');
-      } else {
-        alert(data.error || 'Upload failed');
-      }
+      if (!res.ok) throw new Error(data?.error || 'Upload failed');
+      setForm(p => ({ ...p, image: data.url }));
     } catch (err) {
       alert(err.message || 'Upload failed');
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
   };
 
@@ -706,29 +720,32 @@ function EventsSection({ role, token }) {
           <Field label="Description"><Textarea value={form.description} onChange={f("description")} rows={3} placeholder="Event details…" /></Field>
           
           <Field label="Event Image">
-          {form.image && (
-            <img src={form.image} alt="preview" className="w-full h-24 object-cover rounded-lg mb-2" />
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setImageFile(e.target.files[0])}
-            className="text-sm"
-          />
-          {imageFile && (
-            <button
-              type="button"
-              onClick={handleImageUpload}
+            {form.image && (
+              <div className="relative mb-2">
+                <img src={form.image} alt="preview" className="w-full h-24 object-cover rounded-lg" />
+                <button
+                  type="button"
+                  onClick={() => setForm(p => ({ ...p, image: '' }))}
+                  className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center bg-red-500 text-white text-xs"
+                  title="Remove image"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
               disabled={uploading}
-              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold"
-            >
-              {uploading ? 'Uploading...' : 'Upload Image'}
-            </button>
-          )}
-          <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>
-            Upload from your device. Previous image URL can be replaced.
-          </p>
-        </Field>
+              className="text-sm"
+            />
+            {uploading && <p className="text-xs mt-1" style={{ color: '#64748B' }}>Uploading…</p>}
+            <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>
+              Select an image – it will upload automatically. Click ✕ to remove the current image.
+            </p>
+          </Field>
+
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Upcoming", "Past"]} /></Field>
           <Field label="Category">
             <Sel value={form.category} onChange={f("category")} options={["Worship Services", "Bible Studies", "Community Service", "Retreats & Camps", "Prayer"]} />
@@ -836,9 +853,10 @@ function HeroesSection({ role, token }) {
   const [uploading, setUploading] = useState(false);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
 
-  const handleFile = async (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     setUploading(true);
     try {
       const fd = new FormData();
@@ -855,6 +873,7 @@ function HeroesSection({ role, token }) {
       alert(err.message || 'Upload failed');
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
   };
 
@@ -875,6 +894,7 @@ function HeroesSection({ role, token }) {
             <div className="flex-1"><Field label="Role"><Input value={form.role} onChange={f("role")} placeholder="e.g. Choir Director" /></Field></div>
             <div className="flex-1"><Field label="Year"><Input value={form.year} onChange={f("year")} placeholder="2024-25" /></Field></div>
           </div>
+
           <Field label="Image">
             <div className="flex items-center gap-3">
               <div className="w-24 h-24 rounded overflow-hidden bg-gray-100" style={{ border: '1px solid #E2E8F7' }}>
@@ -885,12 +905,22 @@ function HeroesSection({ role, token }) {
                 )}
               </div>
               <div className="flex-1">
-                <input type="file" accept="image/*" onChange={handleFile} />
+                <input type="file" accept="image/*" onChange={handleFileChange} disabled={uploading} className="text-sm" />
                 {uploading && <p className="text-xs" style={{ color: '#64748B' }}>Uploading…</p>}
-                <p className="text-xs" style={{ color: '#94A3B8' }}>Choose an image to upload (max 5MB)</p>
+                {form.image && (
+                  <button
+                    type="button"
+                    onClick={() => setForm(p => ({ ...p, image: '' }))}
+                    className="mt-2 text-xs text-red-500 underline"
+                  >
+                    Remove image
+                  </button>
+                )}
+                <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>Choose an image – it will upload automatically (max 5MB).</p>
               </div>
             </div>
           </Field>
+
           <Field label="Bio / Story"><Textarea value={form.bio} onChange={f("bio")} rows={4} placeholder="Their contribution…" /></Field>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Draft", "Featured"]} /></Field>
           <MFooter onClose={() => setModal(null)} onSave={save} />
@@ -947,17 +977,18 @@ function ResourcesSection({ role, token }) {
   const [search, setSearch] = useState("");
   const blank = { title: "", description: "", category: "Planning", fileType: "PDF", status: "Published", fileUrl: "" };
   const [form, setForm] = useState(blank);
-  const [resourceFile, setResourceFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
 
-  const handleFileUpload = async () => {
-    if (!resourceFile) return;
+ const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
     setUploading(true);
     try {
       const fd = new FormData();
-      fd.append('file', resourceFile, resourceFile.name);
+      fd.append('file', file, file.name);
       const res = await fetch(`${API}/api/uploads`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -966,12 +997,11 @@ function ResourcesSection({ role, token }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Upload failed');
       setForm(p => ({ ...p, fileUrl: data.url }));
-      setResourceFile(null);
-      alert('File uploaded successfully');
     } catch (err) {
       alert(err.message || 'Upload failed');
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
   };
 
@@ -1009,20 +1039,33 @@ function ResourcesSection({ role, token }) {
             <div className="flex-1"><Field label="Category"><Sel value={form.category} onChange={f("category")} options={["Planning", "Study", "Spiritual", "Health", "General"]} /></Field></div>
             <div className="flex-1"><Field label="File Type"><Sel value={form.fileType} onChange={f("fileType")} options={["PDF", "DOCX", "XLSX", "Link"]} /></Field></div>
           </div>
-          <Field label="Upload File">
-            {form.fileUrl && (
-              <div className="mb-2 text-sm">
-                Current file: <a href={form.fileUrl} target="_blank" className="text-blue-600 underline">View</a>
-              </div>
-            )}
-            <input type="file" accept=".pdf,.docx,.xlsx" onChange={(e) => setResourceFile(e.target.files[0])} className="text-sm" />
-            {resourceFile && (
-              <button type="button" onClick={handleFileUpload} disabled={uploading} className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold">
-                {uploading ? 'Uploading...' : 'Upload File'}
-              </button>
-            )}
-            <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>Upload a PDF, DOCX, or XLSX file (max 5MB).</p>
-          </Field>
+
+        <Field label="Upload File">
+          {form.fileUrl && (
+          <div className="mb-2 text-sm flex items-center gap-2">
+            Current file: <a href={form.fileUrl} target="_blank" className="text-blue-600 underline">View</a>
+            <button
+              type="button"
+              onClick={() => setForm(p => ({ ...p, fileUrl: '' }))}
+              className="text-xs text-red-500 underline"
+            >
+              Remove
+            </button>
+          </div>
+          )}
+          <input
+            type="file"
+            accept=".pdf,.docx,.xlsx,.doc,.xls"
+            onChange={handleFileChange}
+            disabled={uploading}
+            className="text-sm"
+          />
+          {uploading && <p className="text-xs mt-1" style={{ color: '#64748B' }}>Uploading…</p>}
+          <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>
+            Select a file – it will upload automatically. Max 5MB.
+          </p>
+        </Field>
+
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Draft", "Published"]} /></Field>
           <MFooter onClose={() => setModal(null)} onSave={save} />
         </Modal>
