@@ -507,7 +507,19 @@ function AnnouncementsSection({ role }) {
   const { items, add, update, remove } = useAnnouncements();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const blank = { title: "", date: "", time: "", venue: "", description: "", image: "", status: "Upcoming", category: "Worship Services", featured: false };
+  const blank = {
+    title: "",
+    date: "",
+    time: "",
+    venue: "",
+    description: "",
+    image: "",
+    status: "Upcoming",
+    category: "Worship Services",
+    featured: false,
+    contactNumber: "",   // NEW — admin's phone number for "Call" button
+    mapsQuery: "",       // NEW — text used to build embedded map (defaults to venue if empty)
+  };
   const [form, setForm] = useState(blank);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
@@ -545,7 +557,7 @@ function AnnouncementsSection({ role }) {
 }
 
 // ── Events ─────────────────────────────────────────────────────────────────
-function EventsSection({ role }) {
+function EventsSection({ role, token }) {
   const { items, add, update, remove } = useEvents();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
@@ -553,6 +565,33 @@ function EventsSection({ role }) {
   const [form, setForm] = useState(blank);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
+  const [imageFile, setImageFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
+  // Image Upload
+  const handleImageUpload = async () => {
+    if (!imageFile) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', imageFile, imageFile.name);
+      const res = await fetch(`${API}/api/uploads`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Upload failed');
+      setForm(p => ({ ...p, image: data.url }));
+      setImageFile(null);
+      alert('Image uploaded successfully');
+    } catch (err) {
+      alert(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const save = () => saveAndClose({ modal, form, add, update, setModal });
   return (
     <div>
@@ -568,9 +607,61 @@ function EventsSection({ role }) {
             <div className="flex-1"><Field label="Date"><Input type="date" value={form.date} onChange={f("date")} /></Field></div>
             <div className="flex-1"><Field label="Time"><Input type="time" value={form.time} onChange={f("time")} /></Field></div>
           </div>
+           
           <Field label="Venue"><Input value={form.venue} onChange={f("venue")} placeholder="Location / Hall" /></Field>
+          
+          {/* NEW — Contact number for Call button */}
+          <Field label="Contact Number (optional)">
+            <Input
+              type="tel"
+              value={form.contactNumber}
+              onChange={f("contactNumber")}
+              placeholder="e.g. +260 977 123 456"
+            />
+            <p className="text-xs mt-1" style={{ color: "#94A3B8" }}>
+              If set, a "Call" button appears on the event card and detail view.
+            </p>
+          </Field>
+          
+          {/* NEW — Map location for embedded map */}
+          <Field label="Map Location (optional)">
+            <Input
+              value={form.mapsQuery}
+              onChange={f("mapsQuery")}
+              placeholder="e.g. Mulungushi University Multi Purpose Hall, Kabwe"
+            />
+            <p className="text-xs mt-1" style={{ color: "#94A3B8" }}>
+              Leave blank to use the Venue field above. This text is used to show an
+              embedded map — be specific (include "Kabwe, Zambia") for best results.
+            </p>
+          </Field>
+          
           <Field label="Description"><Textarea value={form.description} onChange={f("description")} rows={3} placeholder="Event details…" /></Field>
-          <Field label="Image path"><Input value={form.image} onChange={f("image")} placeholder="/events/sabbath.jpg" /></Field>
+          
+          <Field label="Event Image">
+          {form.image && (
+            <img src={form.image} alt="preview" className="w-full h-24 object-cover rounded-lg mb-2" />
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImageFile(e.target.files[0])}
+            className="text-sm"
+          />
+          {imageFile && (
+            <button
+              type="button"
+              onClick={handleImageUpload}
+              disabled={uploading}
+              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold"
+            >
+              {uploading ? 'Uploading...' : 'Upload Image'}
+            </button>
+          )}
+          <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>
+            Upload from your device. Previous image URL can be replaced.
+          </p>
+        </Field>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Upcoming", "Past"]} /></Field>
           <Field label="Category">
             <Sel value={form.category} onChange={f("category")} options={["Worship Services", "Bible Studies", "Community Service", "Retreats & Camps", "Prayer"]} />
@@ -1282,7 +1373,7 @@ export default function AdminPage() {
   const sectionMap = {
     overview:      <OverviewSection setSection={setSection} role={user?.role} />,
     announcements: <AnnouncementsSection role={user?.role} />,
-    events:        <EventsSection role={user?.role} />,
+    events:        <EventsSection role={user?.role} token={token} />,
     journals:      <JournalsSection role={user?.role} />,
     media:         <MediaSection role={user?.role} />,
     heroes:        <HeroesSection role={user?.role} />,
