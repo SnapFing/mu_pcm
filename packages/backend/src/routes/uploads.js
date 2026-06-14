@@ -19,7 +19,7 @@ if (!multer) {
     try {
       if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-      const bucket = admin.storage().bucket();
+      const bucket = admin.storage().bucket('mu-pcm.firebasestorage.app');
       const name = `uploads/${Date.now()}_${req.file.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
       const file = bucket.file(name);
 

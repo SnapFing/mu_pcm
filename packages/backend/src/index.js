@@ -36,7 +36,7 @@ app.use('/api/heroes',        require('./routes/heroes'));
 app.use('/api/groups',        require('./routes/groups'));
 app.use('/api/resources',     require('./routes/resources'));
 app.use('/api/about',         require('./routes/about'));
-app.use('/api/upload',        require('./routes/upload'));
+app.use('/api/uploads',        require('./routes/uploads'));
 
 // ── Submit-only public routes ───────────────────────────────────────────
 app.use('/api/prayers',       require('./routes/prayers'));
@@ -64,3 +64,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+
