@@ -1,39 +1,39 @@
 const express = require('express');
 const router = express.Router();
-const { admin } = require('../firebase');
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
 const { verifyToken, requireRole } = require('../middleware/auth');
 
-let multer;
-try { multer = require('multer'); } catch (err) { multer = null; }
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-if (!multer) {
-  console.warn('Multer is not installed. File uploads are disabled.');
-  router.post('/', verifyToken, requireRole('editor'), async (req, res) => {
-    res.status(501).json({ error: 'File uploads not configured on server.' });
-  });
-} else {
-  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
-  // POST /api/uploads
-  router.post('/', verifyToken, requireRole('editor'), upload.single('file'), async (req, res) => {
-    try {
-      if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+router.post('/', verifyToken, requireRole('editor'), upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-      const bucket = admin.storage().bucket('mu-pcm.firebasestorage.app');
-      const name = `uploads/${Date.now()}_${req.file.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
-      const file = bucket.file(name);
+    // Convert buffer to base64 data URI
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
 
-      await file.save(req.file.buffer, { metadata: { contentType: req.file.mimetype } });
-      // Make public (optional). If your bucket requires signed urls, adjust accordingly.
-      await file.makePublic();
+    // Upload to Cloudinary (auto-detect resource type)
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: 'mu-pcm-uploads',
+      resource_type: 'auto',
+    });
 
-      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${encodeURIComponent(name)}`;
-      res.json({ url: publicUrl });
-    } catch (err) {
-      console.error('[uploads] error:', err);
-      res.status(500).json({ error: err.message || 'Upload failed' });
-    }
-  });
-}
+    res.json({ url: result.secure_url });
+  } catch (err) {
+    console.error('[uploads] error:', err);
+    res.status(500).json({ error: err.message || 'Upload failed' });
+  }
+});
 
 module.exports = router;
