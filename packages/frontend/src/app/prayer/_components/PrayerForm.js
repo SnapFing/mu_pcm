@@ -5,7 +5,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const CATEGORIES = ['Personal Growth', 'Academic', 'Family', 'Health', 'Spiritual Guidance', 'Thanksgiving', 'Other'];
 
 export default function PrayerForm() {
-  const [form, setForm] = useState({ name: '', anonymous: false, category: '', request: '' });
+  const [form, setForm] = useState({ name: '', email: '', anonymous: false, category: '', request: '' });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,6 +21,7 @@ export default function PrayerForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: form.anonymous ? 'Anonymous' : form.name,
+          email: form.anonymous ? '' : form.email,
           category: form.category,
           request: form.request,
           anonymous: form.anonymous,
@@ -46,8 +47,11 @@ export default function PrayerForm() {
       </div>
       <h3 className="font-bold text-lg" style={{ color: '#0F2A4A' }}>Prayer Request Received</h3>
       <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.7 }}>Your request has been shared with the prayer team. We are standing with you in faith.</p>
+      {form.email && !form.anonymous && (
+        <p style={{ fontSize: 13, color: '#64748B' }}>A short confirmation has been sent to <strong>{form.email}</strong>.</p>
+      )}
       <p style={{ fontSize: 13, fontStyle: 'italic', color: '#94A3B8' }}>"The prayer of a righteous person is powerful and effective." — James 5:16</p>
-      <button onClick={() => { setSubmitted(false); setForm({ name: '', anonymous: false, category: '', request: '' }); }}
+      <button onClick={() => { setSubmitted(false); setForm({ name: '', email: '', anonymous: false, category: '', request: '' }); }}
         className="mt-2 px-6 py-2.5 rounded-full text-sm font-bold" style={{ background: '#2E6DE7', color: 'white' }}>
         Submit Another Request
       </button>
@@ -82,6 +86,18 @@ export default function PrayerForm() {
           <span style={{ fontSize: 13, color: '#475569', fontWeight: 500 }}>Anonymous</span>
         </label>
       </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>
+          Your Email <span style={{ color: '#94A3B8', fontWeight: 400 }}>(optional — to receive a confirmation and any reply from our prayer team)</span>
+        </label>
+        <input type="email" placeholder="e.g. you@example.com"
+          value={form.anonymous ? '' : form.email} disabled={form.anonymous}
+          onChange={e => set('email', e.target.value)}
+          className="w-full px-4 py-2.5 rounded-xl text-sm focus:outline-none"
+          style={{ background: '#F5F7FF', border: '1px solid #E2E8F7', color: '#1E293B', opacity: form.anonymous ? 0.4 : 1 }} />
+      </div>
+
       <div className="flex flex-col gap-1.5">
         <label style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>Prayer Category <span style={{ color: '#EF4444' }}>*</span></label>
         <div className="flex flex-wrap gap-2">

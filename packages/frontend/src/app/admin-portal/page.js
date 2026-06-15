@@ -23,6 +23,7 @@ import {
   useContacts,
   useAbout,
   useData,
+  requestJson,
 } from "../context/DataContext";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -1075,33 +1076,66 @@ function ResourcesSection({ role, token }) {
 }
 
 // ── Prayer Requests ────────────────────────────────────────────────────────
-function PrayerSection({ role }) {
-  const { items, update, remove } = usePrayers();
+function PrayerSection() {
+  const { items, update, remove, load } = usePrayers();
   const [viewing, setViewing] = useState(null);
+  const [replyText, setReplyText] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
   const [search, setSearch] = useState("");
   const filtered = items.filter((x) =>
     (x.name || "").toLowerCase().includes(search.toLowerCase()) ||
+    (x.email || "").toLowerCase().includes(search.toLowerCase()) ||
     (x.request || "").toLowerCase().includes(search.toLowerCase())
   );
   const unread = items.filter((x) => x.status === "Unread").length;
+
+  const openView = (row) => { setViewing(row); setReplyText(""); };
+  const closeView = () => { setViewing(null); setReplyText(""); };
+
+  const sendReply = async () => {
+    if (!viewing?.email || !replyText.trim()) return;
+    setSendingReply(true);
+    try {
+      const result = await requestJson(`${API}/api/prayers/${viewing.id}/reply`, {
+        method: "POST",
+        body: JSON.stringify({ message: replyText.trim() }),
+      });
+      if (!result.ok) {
+        alert(result.error || "Could not send the reply.");
+        return;
+      }
+      await load();
+      closeView();
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
   return (
     <div>
       <SHead title="Prayer Requests" sub={`${items.length} requests · ${unread} unread`} search={search} onSearch={setSearch} />
       <Table
-        cols={[{ key: "name", label: "From" }, { key: "request", label: "Request", clip: true }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]}
-        rows={filtered} onDelete={remove}
+        cols={[
+          { key: "name", label: "From" },
+          { key: "email", label: "Email", clip: true },
+          { key: "request", label: "Request", clip: true },
+          { key: "date", label: "Date" },
+          { key: "status", label: "Status" },
+        ]}
+        rows={filtered.map((r) => ({ ...r, email: r.email || "—" }))}
+        onDelete={remove}
         extra={(row) => (<>
           <button onClick={() => update({ ...row, status: row.status === "Unread" ? "Prayed" : "Unread" })}
             className="p-1.5 rounded-lg hover:bg-emerald-100 transition-colors" title="Toggle Prayed">
             <Icon d={Icons.check} size={14} className={row.status === "Prayed" ? "text-emerald-600" : "text-slate-300"} />
           </button>
-          <button onClick={() => setViewing(row)} className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors" title="View">
+          <button onClick={() => openView(row)} className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors" title="View">
             <Icon d={Icons.eye} size={14} className="text-blue-500" />
           </button>
         </>)}
       />
       {viewing && (
-        <Modal title="Prayer Request" onClose={() => setViewing(null)}>
+        <Modal title="Prayer Request" onClose={closeView}>
           <div className="rounded-xl p-4 mb-4" style={{ background: C.white, border: `1px solid ${C.border}` }}>
             <div className="flex items-start justify-between mb-3">
               <div>
@@ -1115,12 +1149,42 @@ function PrayerSection({ role }) {
             </div>
             <p className="text-sm leading-relaxed" style={{ color: "#334155" }}>{viewing.request}</p>
           </div>
+
+          {viewing.lastReply && (
+            <div className="rounded-xl p-4 mb-4" style={{ background: "#ECFDF5", border: "1px solid #A7F3D0" }}>
+              <p className="text-xs font-semibold mb-1" style={{ color: "#059669" }}>LAST REPLY SENT</p>
+              <p className="text-sm leading-relaxed" style={{ color: "#334155" }}>{viewing.lastReply}</p>
+            </div>
+          )}
+
+          {viewing.email ? (
+            <Field label="Reply by email">
+              <Textarea
+                rows={3}
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder={`Write an encouraging reply to ${viewing.name}…`}
+              />
+            </Field>
+          ) : (
+            <p className="text-xs mb-4" style={{ color: "#94A3B8" }}>
+              {viewing.name} didn't share an email address, so a reply can't be sent by email — please pray for this request and follow up in person if possible.
+            </p>
+          )}
+
           <div className="flex justify-end gap-2">
-            <button onClick={() => setViewing(null)} className="px-4 py-2 rounded-xl text-sm border" style={{ borderColor: C.border, color: "#64748B" }}>Close</button>
-            <button onClick={() => { update({ ...viewing, status: "Prayed" }); setViewing(null); }}
+            <button onClick={closeView} className="px-4 py-2 rounded-xl text-sm border" style={{ borderColor: C.border, color: "#64748B" }}>Close</button>
+            <button onClick={() => { update({ ...viewing, status: "Prayed" }); closeView(); }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: "#059669" }}>
               <Icon d={Icons.check} size={14} className="text-white" /> Mark as Prayed
             </button>
+            {viewing.email && (
+              <button onClick={sendReply} disabled={sendingReply || !replyText.trim()}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+                style={{ background: sendingReply || !replyText.trim() ? "#94A3B8" : C.primary, cursor: sendingReply || !replyText.trim() ? "not-allowed" : "pointer" }}>
+                <Icon d={Icons.reply} size={14} className="text-white" /> {sendingReply ? "Sending…" : "Send Reply"}
+              </button>
+            )}
           </div>
         </Modal>
       )}
@@ -1130,21 +1194,57 @@ function PrayerSection({ role }) {
 
 // ── Contact Inbox ──────────────────────────────────────────────────────────
 function ContactSection({ role }) {
-  const { items, update, remove } = useContacts();
+  const { items, update, remove, load } = useContacts();
   const [viewing, setViewing] = useState(null);
+  const [replyText, setReplyText] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
   const [search, setSearch] = useState("");
   const filtered = items.filter((x) =>
     (x.name || "").toLowerCase().includes(search.toLowerCase()) ||
+    (x.email || "").toLowerCase().includes(search.toLowerCase()) ||
     (x.subject || "").toLowerCase().includes(search.toLowerCase())
   );
   const unread = items.filter((x) => x.status === "Unread").length;
-  const openMsg = (row) => { update({ ...row, status: row.status === "Unread" ? "Read" : row.status }); setViewing(row); };
+
+  const openMsg = (row) => {
+    update({ ...row, status: row.status === "Unread" ? "Read" : row.status });
+    setViewing(row);
+    setReplyText("");
+  };
+  const closeView = () => { setViewing(null); setReplyText(""); };
+
+  const sendReply = async () => {
+    if (!viewing?.email || !replyText.trim()) return;
+    setSendingReply(true);
+    try {
+      const result = await requestJson(`${API}/api/contacts/${viewing.id}/reply`, {
+        method: "POST",
+        body: JSON.stringify({ reply: replyText.trim() }),
+      });
+      if (!result.ok) {
+        alert(result.error || "Could not send the reply.");
+        return;
+      }
+      await load();
+      closeView();
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
   return (
     <div>
       <SHead title="Contact Inbox" sub={`${items.length} messages · ${unread} unread`} search={search} onSearch={setSearch} />
       <Table
-        cols={[{ key: "name", label: "From" }, { key: "subject", label: "Subject", clip: true }, { key: "message", label: "Preview", clip: true }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]}
-        rows={filtered} onDelete={remove}
+        cols={[
+          { key: "name", label: "From" },
+          { key: "email", label: "Email", clip: true },
+          { key: "subject", label: "Subject", clip: true },
+          { key: "date", label: "Date" },
+          { key: "status", label: "Status" },
+        ]}
+        rows={filtered.map((r) => ({ ...r, email: r.email || "—" }))}
+        onDelete={role !== "editor" ? remove : null}
         extra={(row) => (
           <button onClick={() => openMsg(row)} className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors" title="View">
             <Icon d={Icons.eye} size={14} className="text-blue-500" />
@@ -1152,7 +1252,7 @@ function ContactSection({ role }) {
         )}
       />
       {viewing && (
-        <Modal title="Message" onClose={() => setViewing(null)} wide>
+        <Modal title="Message" onClose={closeView} wide>
           <div className="rounded-xl p-4 mb-4" style={{ background: C.white, border: `1px solid ${C.border}` }}>
             <div className="grid grid-cols-2 gap-4 mb-3 pb-3 border-b" style={{ borderColor: C.border }}>
               <div>
@@ -1171,13 +1271,33 @@ function ContactSection({ role }) {
             <p className="text-xs font-semibold mb-1" style={{ color: "#94A3B8" }}>MESSAGE</p>
             <p className="text-sm leading-relaxed" style={{ color: "#334155" }}>{viewing.message}</p>
           </div>
-          {viewing.email && <Field label="Reply"><Textarea rows={3} placeholder={`Write reply to ${viewing.name}…`} /></Field>}
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setViewing(null)} className="px-4 py-2 rounded-xl text-sm border" style={{ borderColor: C.border, color: "#64748B" }}>Close</button>
+
+          {viewing.email ? (
+            <Field label="Reply by email">
+              <Textarea
+                rows={3}
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder={`Write a reply to ${viewing.name}…`}
+              />
+            </Field>
+          ) : (
+            <p className="text-xs mb-4" style={{ color: "#94A3B8" }}>
+              No email address was provided, so a reply can't be sent by email.
+            </p>
+          )}
+
+          <div className="flex justify-end gap-2 mt-2">
+            <button onClick={closeView} className="px-4 py-2 rounded-xl text-sm border" style={{ borderColor: C.border, color: "#64748B" }}>Close</button>
             {viewing.email && (
-              <button onClick={() => { update({ ...viewing, status: "Replied" }); setViewing(null); }}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: C.primary }}>
-                <Icon d={Icons.reply} size={14} className="text-white" /> Send Reply
+              <button
+                onClick={sendReply}
+                disabled={sendingReply || !replyText.trim()}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+                style={{ background: sendingReply || !replyText.trim() ? "#94A3B8" : C.primary, cursor: sendingReply || !replyText.trim() ? "not-allowed" : "pointer" }}
+              >
+                <Icon d={Icons.reply} size={14} className="text-white" />
+                {sendingReply ? "Sending…" : "Send Reply"}
               </button>
             )}
           </div>

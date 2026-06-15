@@ -44,7 +44,7 @@ async function readJson(res) {
   }
 }
 
-async function requestJson(url, options = {}) {
+export async function requestJson(url, options = {}) {
   const res = await fetch(url, {
     ...options,
     headers: { ...(await authHeaders()), ...(options.headers || {}) },

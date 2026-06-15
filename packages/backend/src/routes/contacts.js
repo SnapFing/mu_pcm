@@ -97,4 +97,40 @@ router.delete('/:id', verifyToken, requireRole('admin'), async (req, res) => {
   }
 });
 
+// ── Admin reply to a contact message ─────────────────────────────────────
+router.post('/:id/reply', verifyToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reply } = req.body;
+
+    if (!reply || typeof reply !== 'string' || reply.trim().length < 2) {
+      return res.status(400).json({ error: 'Reply message is required.' });
+    }
+
+    const doc = await db.collection(COL).doc(id).get();
+    if (!doc.exists) return res.status(404).json({ error: 'Contact message not found' });
+
+    const contact = doc.data();
+    if (!contact.email) return res.status(400).json({ error: 'No email address for this contact.' });
+
+    await sendEmail({
+      to: contact.email,
+      subject: `Re: ${contact.subject || 'Your message to MU SDA PCM'}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px;border:1px solid #e2e8f7;border-radius:8px;">
+          <p>Dear ${contact.name},</p>
+          <p style="white-space:pre-wrap;">${reply.trim()}</p>
+          <p style="font-size:12px;color:#94A3B8;">Best regards,<br>MU SDA PCM</p>
+        </div>
+      `,
+    });
+
+    await doc.ref.update({ status: 'Replied', updatedAt: new Date().toISOString(), updatedBy: req.user.uid });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
