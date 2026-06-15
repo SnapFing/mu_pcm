@@ -8,6 +8,8 @@
 
 import { useState, useEffect } from 'react';
 import Button from '@/app/ui/Button';
+import { MenuIcon } from '@/app/ui/Icon';
+import { XIcon } from '@/app/ui/Icon';
 
 const navLinks = [
   { label: 'Home',      href: '/dashboard' },
@@ -88,13 +90,14 @@ export default function Navbar({ activePath = '' }) {
           </a>
 
           {/* Desktop links */}
-          <div className="hidden lg:flex items-center gap-0.5">
+          <div className="hidden lg:flex items-center gap-0.5" role="navigation" aria-label="Main navigation">
             {navLinks.map(({ label, href }) => {
               const isActive = activePath === href;
               return (
                 <a key={href} href={href}
                   className="nav-link px-3.5 py-2 rounded-lg text-[13px] font-medium transition-all relative"
-                  style={{ color: isActive ? 'white' : 'rgba(255,255,255,0.72)', background: isActive ? 'rgba(46,109,231,0.28)' : 'transparent' }}>
+                          style={{ color: isActive ? 'white' : 'rgba(255,255,255,0.72)', background: isActive ? 'rgba(46,109,231,0.28)' : 'transparent' }}
+                          aria-current={isActive ? 'page' : undefined}>
                   {label}
                   {isActive && (
                     <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full"
@@ -115,8 +118,10 @@ export default function Navbar({ activePath = '' }) {
                 border:         '1px solid rgba(255,255,255,0.14)',
                 backdropFilter: 'blur(8px)',
               }}
-              aria-label="Toggle navigation">
-              {open ? <CloseIcon /> : <MenuIcon />}
+              aria-label="Toggle navigation"
+              aria-expanded={open}
+            >
+              {open ? <XIcon /> : <MenuIcon />}
             </button>
           </div>
         </div>
@@ -170,7 +175,7 @@ export default function Navbar({ activePath = '' }) {
         </div>
 
         {/* Nav links */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-0.5">
+        <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-0.5" role="navigation" aria-label="Mobile navigation">
           {navLinks.map(({ label, href }) => {
             const isActive = activePath === href;
             return (

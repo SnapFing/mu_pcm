@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Button from '@/app/ui/Button';
+import { CheckIcon } from '@/app/ui/Icon';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const CATEGORIES = ['Personal Growth', 'Academic', 'Family', 'Health', 'Spiritual Guidance', 'Thanksgiving', 'Other'];
@@ -43,9 +44,9 @@ export default function PrayerForm() {
   if (submitted) return (
     <div className="rounded-2xl p-8 text-center flex flex-col items-center gap-4"
       style={{ background: '#F5F7FF', border: '1px solid #E2E8F7' }}>
-      <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'rgba(46,109,231,0.12)' }}>
-        <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#2E6DE7" strokeWidth={2} strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-      </div>
+        <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'rgba(46,109,231,0.12)' }}>
+          <CheckIcon className="w-7 h-7 text-[#2E6DE7]" />
+        </div>
       <h3 className="font-bold text-lg" style={{ color: '#0F2A4A' }}>Prayer Request Received</h3>
       <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.7 }}>Your request has been shared with the prayer team. We are standing with you in faith.</p>
       {form.email && !form.anonymous && (

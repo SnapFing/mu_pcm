@@ -139,12 +139,11 @@ export default function Footer() {
                 style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: 'white' }}
                 onFocus={e => e.currentTarget.style.borderColor = '#2E6DE7'}
                 onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'} />
-              <button className="w-full py-3 rounded-xl text-sm font-bold shadow transition-all"
-                style={{ background: '#2E6DE7', color: 'white' }}
-                onMouseEnter={e => e.currentTarget.style.background = '#1d5cd4'}
-                onMouseLeave={e => e.currentTarget.style.background = '#2E6DE7'}>
-                Subscribe
-              </button>
+              <div>
+                <a href="/newsletter" className="w-full block">
+                  <button className="w-full py-3 rounded-xl text-sm font-bold shadow transition-all" style={{ background: '#2E6DE7', color: 'white' }}>Subscribe</button>
+                </a>
+              </div>
             </div>
           </div>
         </div>

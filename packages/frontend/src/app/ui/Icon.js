@@ -118,3 +118,9 @@ export const SearchIcon = (props) => (
     <path d="M21 21l-4.35-4.35" />
   </Svg>
 );
+
+export const MenuIcon = (props) => (
+  <Svg {...props}>
+    <path d="M3 12h18M3 6h18M3 18h18" />
+  </Svg>
+);

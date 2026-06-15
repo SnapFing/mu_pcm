@@ -6,6 +6,8 @@
 //  - Embedded map (no external navigation) — uses mapsQuery or falls back to venue
 
 import { useState } from 'react';
+import Button from '@/app/ui/Button';
+import { CalendarIcon, ClockIcon, PinIcon, PhoneIcon, XIcon } from '@/app/ui/Icon';
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 const Ico = ({ d, c = 'w-4 h-4' }) => (
@@ -116,8 +118,9 @@ function EventModal({ event, onClose }) {
             onClick={onClose}
             className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center"
             style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)', color: 'white' }}
+            aria-label="Close dialog"
           >
-            <CloseIcon c="w-4 h-4" />
+            <XIcon className="w-4 h-4 text-white" />
           </button>
           <span
             className="absolute bottom-3 left-4 text-[10px] font-bold px-2.5 py-1 rounded-full"
@@ -143,18 +146,18 @@ function EventModal({ event, onClose }) {
 
           <div className="flex flex-col gap-2.5 rounded-2xl p-4" style={{ background: '#F5F7FF', border: '1px solid #E2E8F7' }}>
             <div className="flex items-center gap-3" style={{ fontSize: 14, color: '#0F2A4A', fontWeight: 500 }}>
-              <span style={{ color: '#2E6DE7' }}><CalIcon c="w-4 h-4" /></span>
+              <span style={{ color: '#2E6DE7' }}><CalendarIcon className="w-4 h-4" /></span>
               {formatDate(date)}
             </div>
             {time && (
               <div className="flex items-center gap-3" style={{ fontSize: 14, color: '#475569' }}>
-                <span style={{ color: '#2E6DE7' }}><ClockIcon c="w-4 h-4" /></span>
+                <span style={{ color: '#2E6DE7' }}><ClockIcon className="w-4 h-4" /></span>
                 {formatTime(time)}
               </div>
             )}
             {venue && (
               <div className="flex items-center gap-3" style={{ fontSize: 14, color: '#475569' }}>
-                <span style={{ color: '#2E6DE7', flexShrink: 0 }}><PinIcon c="w-4 h-4" /></span>
+                <span style={{ color: '#2E6DE7', flexShrink: 0 }}><PinIcon className="w-4 h-4" /></span>
                 <span>{venue}</span>
               </div>
             )}
@@ -188,7 +191,7 @@ function EventModal({ event, onClose }) {
                 className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold"
                 style={{ color: '#2E6DE7' }}
               >
-                Get directions <ExtIcon c="w-3 h-3" />
+                Get directions
               </a>
             </div>
           )}
@@ -201,18 +204,13 @@ function EventModal({ event, onClose }) {
                 style={{ background: '#2E6DE7', color: 'white', textDecoration: 'none' }}
                 onMouseEnter={e => e.currentTarget.style.background = '#1d5cd4'}
                 onMouseLeave={e => e.currentTarget.style.background = '#2E6DE7'}
+                title={`Call ${contactNumber}`}
               >
-                <PhoneIcon c="w-4 h-4" />
+                <PhoneIcon className="w-4 h-4" />
                 Call {contactNumber}
               </a>
             )}
-            <button
-              onClick={onClose}
-              className="w-full py-2.5 rounded-2xl text-sm font-medium"
-              style={{ color: '#94A3B8', border: '1px solid #E2E8F7', background: 'white' }}
-            >
-              Close
-            </button>
+            <Button onClick={onClose} variant="subtle" className="w-full">Close</Button>
           </div>
         </div>
       </div>
