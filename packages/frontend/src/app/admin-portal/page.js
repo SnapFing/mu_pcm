@@ -932,24 +932,48 @@ function HeroesSection({ role, token }) {
 }
 
 // ── Groups ─────────────────────────────────────────────────────────────────
+// ── Groups ─────────────────────────────────────────────────────────────────
 function GroupsSection({ role }) {
   const { items, add, update, remove } = useGroups();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const blank = { name: "", leader: "", meetingDay: "Monday", time: "", members: "", description: "", status: "Active" };
+  const blank = {
+    name: "",
+    leader: "",
+    schedule: [],
+    members: "",
+    description: "",
+    status: "Active",
+  };
   const [form, setForm] = useState(blank);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.name.toLowerCase().includes(search.toLowerCase()));
+
+  // Schedule helpers
+  const addScheduleRow = () => setForm(p => ({ ...p, schedule: [...(p.schedule || []), { day: 'Monday', time: '' }] }));
+  const removeScheduleRow = (index) => setForm(p => ({ ...p, schedule: (p.schedule || []).filter((_, i) => i !== index) }));
+  const updateScheduleRow = (index, field, value) => setForm(p => {
+    const s = [...(p.schedule || [])];
+    s[index] = { ...s[index], [field]: value };
+    return { ...p, schedule: s };
+  });
+
   const save = () => {
     const data = { ...form, members: Number(form.members) || 0 };
     saveAndClose({ modal, form: data, add, update, setModal });
   };
+
   return (
     <div>
       <SHead title="Ministry Groups" sub={`${items.length} groups`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
       <Table
-        cols={[{ key: "name", label: "Group" }, { key: "leader", label: "Leader" }, { key: "meetingDay", label: "Day" }, { key: "time", label: "Time" }, { key: "members", label: "Members" }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r, description: r.description || "" }); setModal(r); }} onDelete={role !== "editor" ? remove : null}
+        cols={[
+          { key: "name", label: "Group" },
+          { key: "leader", label: "Leader" },
+          { key: "members", label: "Members" },
+          { key: "status", label: "Status" },
+        ]}
+        rows={filtered} onEdit={(r) => { setForm({ ...r, schedule: r.schedule || [] }); setModal(r); }} onDelete={role !== "editor" ? remove : null}
       />
       {modal && (
         <Modal title={modal === "add" ? "Create Group" : "Edit Group"} onClose={() => setModal(null)}>
@@ -958,10 +982,22 @@ function GroupsSection({ role }) {
             <div className="flex-1"><Field label="Leader"><Input value={form.leader} onChange={f("leader")} placeholder="Leader name" /></Field></div>
             <div className="flex-1"><Field label="Members"><Input type="number" value={form.members} onChange={f("members")} placeholder="0" /></Field></div>
           </div>
-          <div className="flex gap-3">
-            <div className="flex-1"><Field label="Meeting Day"><Sel value={form.meetingDay} onChange={f("meetingDay")} options={["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]} /></Field></div>
-            <div className="flex-1"><Field label="Time"><Input type="time" value={form.time} onChange={f("time")} /></Field></div>
-          </div>
+
+          {/* Schedule editor */}
+          <Field label="Meeting Schedule">
+            {(form.schedule || []).map((s, i) => (
+              <div key={i} className="flex items-center gap-2 mb-2">
+                <select value={s.day} onChange={e => updateScheduleRow(i, 'day', e.target.value)} className="flex-1 px-2 py-1.5 rounded-lg text-sm border" style={{ borderColor: '#E2E8F7' }}>
+                  {['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <input type="time" value={s.time} onChange={e => updateScheduleRow(i, 'time', e.target.value)} className="w-28 px-2 py-1.5 rounded-lg text-sm border" style={{ borderColor: '#E2E8F7' }} />
+                <button type="button" onClick={() => removeScheduleRow(i)} className="p-1 text-red-500 hover:bg-red-50 rounded">✕</button>
+              </div>
+            ))}
+            <button type="button" onClick={addScheduleRow} className="text-xs text-blue-600 underline mt-1">+ Add meeting time</button>
+            <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>Add one or more meeting days/times for this group.</p>
+          </Field>
+
           <Field label="Description"><Textarea value={form.description} onChange={f("description")} rows={2} placeholder="Brief description…" /></Field>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Active", "Inactive"]} /></Field>
           <MFooter onClose={() => setModal(null)} onSave={save} />

@@ -40,9 +40,11 @@ function GroupCard({ group, idx, onJoin }) {
         </div>
         {description && <p className="text-sm leading-relaxed flex-1" style={{ color: '#64748B' }}>{description}</p>}
         <div className="flex flex-wrap gap-2 pt-3" style={{ borderTop: '1px solid #F1F5F9' }}>
-          <span className="flex items-center gap-1.5 text-xs font-medium rounded-full px-3 py-1" style={{ background: '#F5F7FF', border: '1px solid #E2E8F7', color: '#475569' }}>
-            <CalIcon c="w-3 h-3" /> {meetingDay}{time ? ` · ${time}` : ''}
-          </span>
+          {(group.schedule && group.schedule.length > 0 ? group.schedule : (meetingDay ? [{ day: meetingDay, time: time || '' }] : [])).map((s, i) => (
+            <span key={i} className="flex items-center gap-1.5 text-xs font-medium rounded-full px-3 py-1" style={{ background: '#F5F7FF', border: '1px solid #E2E8F7', color: '#475569' }}>
+              <CalIcon c="w-3 h-3" /> {s.day}{s.time ? ` · ${s.time}` : ''}
+            </span>
+          ))}
           {members > 0 && (
             <span className="flex items-center gap-1.5 text-xs font-medium rounded-full px-3 py-1" style={{ background: '#F5F7FF', border: '1px solid #E2E8F7', color: '#475569' }}>
               <UsersIcon c="w-3 h-3" /> {members} members
