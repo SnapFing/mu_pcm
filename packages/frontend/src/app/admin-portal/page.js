@@ -971,6 +971,46 @@ function GroupsSection({ role }) {
   );
 }
 
+// ── Group Join Requests ────────────────────────────────────────────────────
+function GroupRequestsSection() {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const result = await requestJson(`${API}/api/groups/requests/all`);
+      if (result?.ok) setRequests(result.data || result);
+      else setRequests([]);
+    } catch (err) {
+      console.error(err);
+      setRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) return <div className="p-8 text-center text-slate-400">Loading...</div>;
+
+  return (
+    <div>
+      <SHead title="Group Join Requests" sub={`${requests.length} requests`} />
+      <Table
+        cols={[
+          { key: "name", label: "Name" },
+          { key: "email", label: "Email", clip: true },
+          { key: "groupName", label: "Group" },
+          { key: "phone", label: "Phone", clip: true },
+          { key: "submittedAt", label: "Date" },
+          { key: "status", label: "Status" },
+        ]}
+        rows={requests.map(r => ({ ...r, submittedAt: r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : '—' }))}
+      />
+    </div>
+  );
+}
+
 // ── Resources ──────────────────────────────────────────────────────────────
 function ResourcesSection({ role, token }) {
   const { items, add, update, remove } = useResources();
@@ -1628,6 +1668,8 @@ export default function AdminPage() {
       { key: "media", label: "Media", icon: Icons.media },
       { key: "heroes", label: "Heroes", icon: Icons.heroes },
       { key: "groups", label: "Groups", icon: Icons.groups, divider: true },
+      // Group join requests (admin+)
+      ...(user?.role !== 'editor' ? [{ key: "group-requests", label: "Group Requests", icon: Icons.users, badge: 0 }] : []),
       { key: "resources", label: "Resources", icon: Icons.resources },
     ];
     // Only admin+ can see prayers and contacts
@@ -1652,6 +1694,7 @@ export default function AdminPage() {
     media:         <MediaSection role={user?.role} />,
     heroes:        <HeroesSection role={user?.role} token={token} />,
     groups:        <GroupsSection role={user?.role} />,
+    'group-requests': <GroupRequestsSection />, 
     resources:     <ResourcesSection role={user?.role} token={token} />,
     prayer:        <PrayerSection role={user?.role} />,
     contact:       <ContactSection role={user?.role} />,

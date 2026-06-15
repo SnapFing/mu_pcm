@@ -63,7 +63,7 @@ function GroupCard({ group, idx, onJoin }) {
 }
 
 function JoinModal({ group, onClose }) {
-  const [form, setForm] = useState({ name: '', studentId: '', email: '', year: '', motivation: '' });
+  const [form, setForm] = useState({ name: '', studentId: '', email: '', year: '', motivation: '', phone: '' });
   const [submitted, setSubmitted] = useState(false);
   const f = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
   const inputStyle = { width: '100%', padding: '10px 12px', borderRadius: 10, fontSize: 13, border: '1px solid #E2E8F7', background: '#F5F7FF', color: '#0F2A4A', outline: 'none', fontFamily: "'Noto Sans', sans-serif" };
@@ -92,7 +92,7 @@ function JoinModal({ group, onClose }) {
           </button>
         </div>
         <div className="px-6 py-5 flex flex-col gap-4">
-          {[{ label: 'Full Name', key: 'name', placeholder: 'Your full name', type: 'text' }, { label: 'Student ID', key: 'studentId', placeholder: 'e.g. MU2024/001', type: 'text' }, { label: 'Email', key: 'email', placeholder: 'your@email.com', type: 'email' }, { label: 'Year of Study', key: 'year', placeholder: 'e.g. Year 2', type: 'text' }].map(({ label, key, placeholder, type }) => (
+          {[{ label: 'Full Name', key: 'name', placeholder: 'Your full name', type: 'text' }, { label: 'Student ID', key: 'studentId', placeholder: 'e.g. MU2024/001', type: 'text' }, { label: 'Email', key: 'email', placeholder: 'your@email.com', type: 'email' }, { label: 'Year of Study', key: 'year', placeholder: 'e.g. Year 2', type: 'text' }, { label: 'Phone (optional)', key: 'phone', placeholder: 'e.g. +260 977 123 456', type: 'tel' }].map(({ label, key, placeholder, type }) => (
             <div key={key}>
               <label style={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: '#0F2A4A', marginBottom: 6 }}>{label.toUpperCase()}</label>
               <input type={type} value={form[key]} onChange={f(key)} placeholder={placeholder} style={inputStyle} />
@@ -104,7 +104,20 @@ function JoinModal({ group, onClose }) {
           </div>
           <div className="flex gap-3 mt-2">
             <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: '1px solid #E2E8F7', color: '#64748B' }}>Cancel</button>
-            <button onClick={() => setSubmitted(true)} className="flex-1 py-2.5 rounded-xl text-sm font-bold" style={{ background: '#2E6DE7', color: 'white' }}>Submit Request</button>
+            <button onClick={async () => {
+              const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+              try {
+                const res = await fetch(`${API}/api/groups/${group.id}/join`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(form),
+                });
+                if (!res.ok) throw new Error('Failed to submit');
+                setSubmitted(true);
+              } catch (err) {
+                alert('Could not submit request. Please try again.');
+              }
+            }} className="flex-1 py-2.5 rounded-xl text-sm font-bold" style={{ background: '#2E6DE7', color: 'white' }}>Submit Request</button>
           </div>
         </div>
       </div>
