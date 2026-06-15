@@ -12,82 +12,18 @@ const footerLinks = [
   { label: 'Contact Us',      href: '/contact'          },
 ];
 
+import { FacebookIcon, InstagramIcon, YouTubeIcon, WhatsAppIcon, PinIcon, PhoneIcon, MailIcon, ClockIcon, ChevronRight } from '@/app/ui/Icon';
+
 const socialLinks = [
-  { label: 'Facebook',  href: 'https://facebook.com',       Icon: FbIcon  },
-  { label: 'Instagram', href: 'https://instagram.com',      Icon: IgIcon  },
-  { label: 'YouTube',   href: 'https://youtube.com/@mulungushisdapcmpublicity?si=RsiOtIMrXWs2XwfB',        Icon: YtIcon  },
-  { label: 'WhatsApp',  href: 'https://wa.me/260762062641', Icon: WaIcon  },
+  { label: 'Facebook',  href: 'https://facebook.com',       Icon: FacebookIcon  },
+  { label: 'Instagram', href: 'https://instagram.com',      Icon: InstagramIcon },
+  { label: 'YouTube',   href: 'https://youtube.com/@mulungushisdapcmpublicity?si=RsiOtIMrXWs2XwfB',        Icon: YouTubeIcon  },
+  { label: 'WhatsApp',  href: 'https://wa.me/260762062641', Icon: WhatsAppIcon  },
 ];
 
-function FbIcon() {
-  return (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/>
-    </svg>
-  );
-}
-function IgIcon() {
-  return (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-      <rect x="2" y="2" width="20" height="20" rx="5"/>
-      <circle cx="12" cy="12" r="4"/>
-      <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none"/>
-    </svg>
-  );
-}
-function YtIcon() {
-  return (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 001.46 6.42 29 29 0 001 12a29 29 0 00.46 5.58 2.78 2.78 0 001.95 1.95C5.12 20 12 20 12 20s6.88 0 8.59-.47a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58z"/>
-      <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="white"/>
-    </svg>
-  );
-}
-function WaIcon() {
-  return (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-      <path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.556 4.112 1.527 5.836L.057 23.214a.5.5 0 00.611.65l5.579-1.463A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.802 9.802 0 01-5.046-1.393l-.361-.216-3.747.983.998-3.648-.236-.374A9.818 9.818 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
-    </svg>
-  );
-}
+// Social icons use the shared stroke-based Icon components
 
-function PinIcon() {
-  return (
-    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-      <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
-    </svg>
-  );
-}
-function PhoneIcon() {
-  return (
-    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/>
-    </svg>
-  );
-}
-function MailIcon() {
-  return (
-    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-      <path d="M22 6l-10 7L2 6"/>
-    </svg>
-  );
-}
-function ClockIcon() {
-  return (
-    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-      <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-    </svg>
-  );
-}
-function ChevronRight() {
-  return (
-    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-      <path d="M9 18l6-6-6-6"/>
-    </svg>
-  );
-}
+// Footer uses shared Icon components (PinIcon, PhoneIcon, MailIcon, ClockIcon, ChevronRight)
 
 export default function Footer() {
   return (
