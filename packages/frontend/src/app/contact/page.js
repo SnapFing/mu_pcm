@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Navbar from '@/app/ui/Navbar';
 import Footer from '@/app/ui/Footer';
+import Button from '@/app/ui/Button';
 import { PageHeader } from '@/app/ui/PageHeader';
 import { useContacts } from '@/app/context/DataContext';
 
@@ -57,8 +58,7 @@ function ContactForm({ onSubmit }) {
       <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: 'rgba(46,109,231,0.1)', color: C.primary }}><CheckIcon c="w-8 h-8" /></div>
       <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.navy, marginBottom: 10 }}>Message Sent!</h3>
       <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.7, maxWidth: 340, margin: '0 auto 28px' }}>Thanks for reaching out, <strong>{form.name}</strong>. We'll get back to you soon.</p>
-      <button onClick={() => { setForm({ name: '', email: '', subject: '', message: '' }); setSubmitted(false); }}
-        className="px-8 py-2.5 rounded-full text-sm font-bold" style={{ background: C.primary, color: 'white' }}>Send Another</button>
+      <Button onClick={() => { setForm({ name: '', email: '', subject: '', message: '' }); setSubmitted(false); }} variant="primary" size="md">Send Another</Button>
     </div>
   );
 
@@ -93,11 +93,9 @@ function ContactForm({ onSubmit }) {
             style={{ ...inputStyle, resize: 'none' }}
             onFocus={e => e.target.style.borderColor = C.primary} onBlur={e => e.target.style.borderColor = C.border} />
         </div>
-        <button onClick={handleSend} disabled={loading || !valid}
-          className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2"
-          style={{ background: !valid ? '#CBD5E1' : C.primary, color: 'white', cursor: !valid ? 'not-allowed' : 'pointer' }}>
+        <Button onClick={handleSend} variant={valid ? 'primary' : 'subtle'} size="md" className="w-full" disabled={loading || !valid}>
           {loading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</> : 'Send Message'}
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import Button from '@/app/ui/Button';
 
 const navLinks = [
   { label: 'Home',      href: '/dashboard' },
@@ -106,11 +107,7 @@ export default function Navbar({ activePath = '' }) {
 
           {/* CTA + Hamburger */}
           <div className="flex items-center gap-3 shrink-0">
-            <a href="/about"
-              className="join-btn hidden sm:inline-flex items-center px-5 py-1.5 rounded-full text-[13px] font-bold transition-all"
-              style={{ background: '#2E6DE7', color: 'white' }}>
-              Join Us
-            </a>
+            <Button href="/about" variant="primary" size="md" className="hidden sm:inline-flex">Join Us</Button>
             <button onClick={() => setOpen(!open)}
               className="ham-btn lg:hidden w-9 h-9 flex items-center justify-center rounded-lg transition-all text-white"
               style={{
@@ -192,13 +189,7 @@ export default function Navbar({ activePath = '' }) {
 
         {/* Drawer footer — Join Us CTA */}
         <div className="px-4 py-5" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <a href="/about" onClick={() => setOpen(false)}
-            className="block w-full text-center py-3 rounded-full text-sm font-bold transition-all"
-            style={{ background: '#2E6DE7', color: 'white' }}
-            onMouseEnter={e => e.currentTarget.style.background = '#1d5cd4'}
-            onMouseLeave={e => e.currentTarget.style.background = '#2E6DE7'}>
-            Join Us
-          </a>
+          <Button href="/about" variant="primary" size="md" className="w-full text-center" onClick={() => setOpen(false)}>Join Us</Button>
         </div>
       </div>
     </>

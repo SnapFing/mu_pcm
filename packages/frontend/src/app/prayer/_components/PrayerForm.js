@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Button from '@/app/ui/Button';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const CATEGORIES = ['Personal Growth', 'Academic', 'Family', 'Health', 'Spiritual Guidance', 'Thanksgiving', 'Other'];
@@ -51,10 +52,7 @@ export default function PrayerForm() {
         <p style={{ fontSize: 13, color: '#64748B' }}>A short confirmation has been sent to <strong>{form.email}</strong>.</p>
       )}
       <p style={{ fontSize: 13, fontStyle: 'italic', color: '#94A3B8' }}>"The prayer of a righteous person is powerful and effective." — James 5:16</p>
-      <button onClick={() => { setSubmitted(false); setForm({ name: '', email: '', anonymous: false, category: '', request: '' }); }}
-        className="mt-2 px-6 py-2.5 rounded-full text-sm font-bold" style={{ background: '#2E6DE7', color: 'white' }}>
-        Submit Another Request
-      </button>
+      <Button onClick={() => { setSubmitted(false); setForm({ name: '', email: '', anonymous: false, category: '', request: '' }); }} variant="primary" size="md" className="mt-2">Submit Another Request</Button>
     </div>
   );
 
@@ -118,11 +116,9 @@ export default function PrayerForm() {
           style={{ background: '#F5F7FF', border: '1px solid #E2E8F7', color: '#1E293B', lineHeight: 1.7 }} />
         <p style={{ fontSize: 11, color: '#94A3B8', textAlign: 'right' }}>{form.request.length} characters</p>
       </div>
-      <button onClick={handleSubmit} disabled={loading || !form.category || !form.request.trim()}
-        className="w-full py-3 rounded-xl text-sm font-bold"
-        style={{ background: loading || !form.category || !form.request.trim() ? '#CBD5E1' : '#2E6DE7', color: 'white', cursor: !form.category || !form.request.trim() ? 'not-allowed' : 'pointer' }}>
+      <Button onClick={handleSubmit} variant={loading || !form.category || !form.request.trim() ? 'subtle' : 'primary'} size="md" className="w-full" disabled={loading || !form.category || !form.request.trim()}>
         {loading ? 'Submitting...' : 'Submit Prayer Request'}
-      </button>
+      </Button>
       <p style={{ fontSize: 12, color: '#94A3B8', textAlign: 'center', lineHeight: 1.6 }}>All requests are handled with care and confidentiality by our prayer team.</p>
     </div>
   );

@@ -200,7 +200,7 @@ export default function GroupsPage() {
             <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: 'rgba(255,255,255,0.6)' }} className="uppercase mb-3">Don't See Your Niche?</p>
             <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.3rem,2.5vw,1.8rem)', fontWeight: 700, marginBottom: 12 }}>Propose a New Group</h3>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)', maxWidth: 420, margin: '0 auto 24px' }}>Have a vision for a ministry that doesn't exist yet? Reach out and we'll help you start it.</p>
-            <a href="/contact" className="inline-flex items-center gap-2 px-7 py-3 rounded-full text-sm font-bold" style={{ background: 'white', color: '#2E6DE7' }}>Contact Us <ChevronR c="w-4 h-4" /></a>
+            <Button href="/contact" variant="secondary" size="lg" className="inline-flex items-center gap-2">Contact Us <ChevronR c="w-4 h-4" /></Button>
           </div>
         </div>
         {joining && <JoinModal group={joining} onClose={() => setJoining(null)} />}
