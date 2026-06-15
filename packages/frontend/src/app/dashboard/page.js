@@ -8,10 +8,12 @@ import SabbathGreeting from '@/app/ministry/SabbathGreeting';
 import VerseDisplay    from '@/app/ministry/VerseDisplay';
 import CountdownTimer  from '@/app/ministry/CountdownTimer';
 import { downloadICS } from '@/app/utils/calendar';
+import { useEvents }   from '@/app/context/DataContext';   // <-- add this import
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const userName = " ";
 
+// ── Icons (unchanged) ──────────────────────────────────────────────────────
 const Ico = ({ children, className = 'w-5 h-5' }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -59,8 +61,16 @@ const ACCENTS = ['#2E6DE7', '#7C3AED', '#0F2A4A', '#059669', '#F59E0B'];
 function fmtDate(dateStr) {
   if (!dateStr) return '';
   try {
-    return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    return new Date(dateStr).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   } catch { return dateStr; }
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return '';
+  const [h, m] = timeStr.split(':').map(Number);
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const hour   = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, '0')} ${suffix}`;
 }
 
 // ── Cards ──────────────────────────────────────────────────────────────────
@@ -89,22 +99,36 @@ function VerseCard() {
   );
 }
 
-function EventCard() {
+function EventCard({ nextEvent }) {
   const [rsvpDone, setRsvpDone] = React.useState(false);
- 
-  // Hardcoded next Vespers — swap for live data once events API is wired here
-  const nextEvent = {
-    title:       'Vespers',
-    date:        '2026-03-13',
-    time:        '19:00',
-    venue:       'Lecture Room 3',
-    description: 'Developing Christ-like Character',
-  };
  
   const handleAddToCalendar = (e) => {
     e.preventDefault();
-    downloadICS(nextEvent);
+    if (nextEvent) downloadICS(nextEvent);
   };
+
+  if (!nextEvent) {
+    return (
+      <div className="rounded-2xl overflow-hidden flex flex-col h-full"
+        style={{ background: 'white', border: '1px solid #E2E8F7', boxShadow: '0 1px 4px rgba(46,109,231,0.06)', borderTop: '3px solid #0F2A4A' }}>
+        <div className="px-6 pt-5 pb-3 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(15,42,74,0.08)', color: '#0F2A4A' }}>
+            <CalIcon c="w-4 h-4" />
+          </div>
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.2em', color: '#0F2A4A' }} className="uppercase">Next Gathering</p>
+            <p style={{ fontSize: 11, color: '#94A3B8' }}>Coming up soon</p>
+          </div>
+        </div>
+        <div className="flex-1 px-6 py-4 flex items-center justify-center" style={{ borderTop: '1px solid #E2E8F7' }}>
+          <p style={{ fontSize: 14, color: '#94A3B8' }}>No upcoming events</p>
+        </div>
+        <div className="px-6 py-4 flex justify-end" style={{ borderTop: '1px solid #E2E8F7', background: '#FAFBFF' }}>
+          <a href="/events" className="text-xs font-semibold" style={{ color: '#2E6DE7' }}>View all events <ChevronRight c="w-3.5 h-3.5" /></a>
+        </div>
+      </div>
+    );
+  }
  
   return (
     <div className="rounded-2xl overflow-hidden flex flex-col h-full"
@@ -120,22 +144,24 @@ function EventCard() {
       </div>
       <div className="flex-1 px-6 py-4 flex flex-col gap-4" style={{ borderTop: '1px solid #E2E8F7' }}>
         <div>
-          <h3 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 20, color: '#0F2A4A', lineHeight: 1.2 }}>Vespers</h3>
-          <p style={{ fontSize: 13, color: '#64748B', marginTop: 4 }}>Developing Christ-like Character</p>
+          <h3 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 20, color: '#0F2A4A', lineHeight: 1.2 }}>{nextEvent.title}</h3>
+          {nextEvent.description && <p style={{ fontSize: 13, color: '#64748B', marginTop: 4 }}>{nextEvent.description}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
-          {[{ Icon: ClockIcon, text: 'Fri 13 Mar · 19:00' }, { Icon: PinIcon, text: 'Lecture Room 3' }].map(({ Icon, text }) => (
-            <span key={text} className="flex items-center gap-1.5 rounded-full px-3 py-1"
+          <span className="flex items-center gap-1.5 rounded-full px-3 py-1"
+            style={{ background: '#F5F7FF', border: '1px solid #E2E8F7', fontSize: 11, color: '#475569', fontWeight: 500 }}>
+            <ClockIcon c="w-3 h-3" /> {fmtDate(nextEvent.date)}{nextEvent.time ? ` · ${formatTime(nextEvent.time)}` : ''}
+          </span>
+          {nextEvent.venue && (
+            <span className="flex items-center gap-1.5 rounded-full px-3 py-1"
               style={{ background: '#F5F7FF', border: '1px solid #E2E8F7', fontSize: 11, color: '#475569', fontWeight: 500 }}>
-              <Icon c="w-3 h-3" /> {text}
+              <PinIcon c="w-3 h-3" /> {nextEvent.venue}
             </span>
-          ))}
+          )}
         </div>
-        <CountdownTimer targetDate="2026-03-13T19:00:00+02:00" />
+        <CountdownTimer targetDate={`${nextEvent.date}T${nextEvent.time || '00:00'}:00+02:00`} />
       </div>
       <div className="px-6 py-4 flex justify-between items-center" style={{ borderTop: '1px solid #E2E8F7', background: '#FAFBFF' }}>
- 
-        {/* Add to Calendar — downloads .ics */}
         <button
           onClick={handleAddToCalendar}
           className="flex items-center gap-1.5 text-xs font-medium transition-colors"
@@ -145,8 +171,6 @@ function EventCard() {
         >
           <CalIcon c="w-3.5 h-3.5" /> Add to Calendar
         </button>
- 
-        {/* I'm Coming — inline confirmation, no backend needed */}
         {rsvpDone ? (
           <span className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold"
             style={{ background: 'rgba(5,150,105,0.1)', color: '#059669' }}>
@@ -190,9 +214,10 @@ function MembershipCard() {
         </div>
         {[
           { label: 'Amount', value: 'ZMW 50.00 / semester' },
-          { label: 'Pay to', value: 'Agness Bwalya (Treasurer)' },
+          { label: 'Pay to', value: 'Prince Bwalya (Treasurer)' },
           { label: 'Mobile Money', value: 'MTN: 0976 123 456' },
           { label: 'Reference', value: 'Name + Student ID' },
+          { label: 'Please ensure you get your receipt upon any payments'}
         ].map(({ label, value }) => (
           <div key={label} className="flex items-start justify-between gap-3 pb-2.5" style={{ borderBottom: '1px solid #F1F5F9' }}>
             <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, flexShrink: 0 }}>{label}</span>
@@ -209,44 +234,75 @@ function MembershipCard() {
 }
 
 // ── Carousel ───────────────────────────────────────────────────────────────
-const CARDS = [VerseCard, EventCard, MembershipCard];
-function InfoCarousel() {
+function InfoCarousel({ nextEvent }) {
+  const cards = [
+    <VerseCard key="verse" />,
+    <EventCard key="event" nextEvent={nextEvent} />,
+    <MembershipCard key="membership" />,
+  ];
   const [index, setIndex] = useState(0);
   const timerRef = useRef(null);
-  const TOTAL = CARDS.length;
-  const startTimer = () => { clearInterval(timerRef.current); timerRef.current = setInterval(() => setIndex(i => (i + 1) % TOTAL), 6000); };
-  useEffect(() => { startTimer(); return () => clearInterval(timerRef.current); }, []);
+  const TOTAL = cards.length;
+
+  const startTimer = () => {
+    clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => setIndex(i => (i + 1) % TOTAL), 6000);
+  };
+
+  useEffect(() => {
+    startTimer();
+    return () => clearInterval(timerRef.current);
+  }, []);
+
   const prev = () => { setIndex(i => (i - 1 + TOTAL) % TOTAL); startTimer(); };
   const next = () => { setIndex(i => (i + 1) % TOTAL); startTimer(); };
+
   return (
-    <div>
-      <div className="relative">
-        <div className="absolute right-0 top-0 bottom-0 w-16 z-10 pointer-events-none" style={{ background: 'linear-gradient(to right, transparent, white)' }} />
-        <div style={{ overflow: 'hidden' }}>
-          <div className="flex gap-5" style={{ transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)', transform: `translateX(calc(-${index * 52.1}%))` }}>
-            {[...CARDS, ...CARDS].map((Card, i) => (
-              <div key={i} style={{ minWidth: '48%', flexShrink: 0 }}><Card /></div>
-            ))}
-          </div>
+    <div className="relative">
+      {/* Card container */}
+      <div className="relative overflow-hidden">
+        <div
+          className="flex transition-transform duration-500 ease-in-out"
+          style={{ transform: `translateX(-${index * 100}%)` }}
+        >
+          {cards.map((card, i) => (
+            <div key={i} className="w-full flex-shrink-0 px-1">
+              {card}
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* Dots and arrows */}
       <div className="flex items-center justify-between mt-5">
         <div className="flex items-center gap-2">
           {Array.from({ length: TOTAL }).map((_, i) => (
-            <button key={i} onClick={() => { setIndex(i); startTimer(); }} className="rounded-full transition-all duration-300"
-              style={{ width: index === i ? 22 : 7, height: 7, background: index === i ? '#2E6DE7' : '#CBD5E1' }} />
+            <button
+              key={i}
+              onClick={() => { setIndex(i); startTimer(); }}
+              className="rounded-full transition-all duration-300"
+              style={{
+                width: index === i ? 22 : 7,
+                height: 7,
+                background: index === i ? '#2E6DE7' : '#CBD5E1',
+              }}
+            />
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={prev} className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: '#F5F7FF', color: '#64748B', border: '1px solid #E2E8F7' }}><ChevronLeft c="w-4 h-4" /></button>
-          <button onClick={next} className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: '#2E6DE7', color: 'white' }}><ChevronRight c="w-4 h-4" /></button>
+          <button onClick={prev} className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: '#F5F7FF', color: '#64748B', border: '1px solid #E2E8F7' }}>
+            <ChevronLeft c="w-4 h-4" />
+          </button>
+          <button onClick={next} className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: '#2E6DE7', color: 'white' }}>
+            <ChevronRight c="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Live Announcements + Events Section ────────────────────────────────────
+// ── Live Announcements + Events Section (unchanged) ────────────────────────
 function WhatsHappeningSection() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -261,7 +317,6 @@ function WhatsHappeningSection() {
         const announcements = await annRes.json();
         const events = await evtRes.json();
 
-        // Tag announcements
         const taggedAnn = (Array.isArray(announcements) ? announcements : [])
           .filter(a => a.status === 'Active')
           .slice(0, 3)
@@ -273,7 +328,6 @@ function WhatsHappeningSection() {
             displayDate: fmtDate(a.date),
           }));
 
-        // Tag upcoming events — sort by date, take first 3
         const today = new Date().toISOString().split('T')[0];
         const taggedEvt = (Array.isArray(events) ? events : [])
           .filter(e => e.status === 'Upcoming' || (e.date && e.date >= today))
@@ -287,7 +341,6 @@ function WhatsHappeningSection() {
             displayDate: fmtDate(e.date),
           }));
 
-        // Merge: announcements first, then events, max 6 total
         setItems([...taggedAnn, ...taggedEvt].slice(0, 6));
       } catch (err) {
         console.error('WhatsHappening fetch error:', err);
@@ -344,6 +397,13 @@ function WhatsHappeningSection() {
 
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function Dashboard() {
+  // Fetch the next upcoming event for the carousel
+  const { items: events } = useEvents();
+  const upcoming = events
+    .filter(e => e.status === 'Upcoming')
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const nextEvent = upcoming[0] || null;
+
   return (
     <>
       <style>{`
@@ -403,10 +463,9 @@ export default function Dashboard() {
                 <h2 className="serif font-bold" style={{ fontSize: 'clamp(1.7rem, 3vw, 2.4rem)', color: '#0F2A4A' }}>What's On Today</h2>
               </div>
             </div>
-            <InfoCarousel />
+            <InfoCarousel nextEvent={nextEvent} />
           </section>
 
-          {/* LIVE Announcements + Upcoming Events */}
           <section className="py-16" style={{ borderBottom: '1px solid #E2E8F7' }}>
             <div className="flex items-end justify-between mb-10">
               <div>
@@ -463,4 +522,3 @@ export default function Dashboard() {
     </>
   );
 }
-
