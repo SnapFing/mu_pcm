@@ -84,3 +84,37 @@ export const ChevronRight = (props) => (
     <path d="M9 18l6-6-6-6" />
   </Svg>
 );
+
+export const UsersIcon = (props) => (
+  <Svg {...props}>
+    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 00-3-3.87" />
+  </Svg>
+);
+
+export const CalendarIcon = (props) => (
+  <Svg {...props}>
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <path d="M16 2v4M8 2v4M3 10h18" />
+  </Svg>
+);
+
+export const CheckIcon = (props) => (
+  <Svg {...props}>
+    <path d="M20 6L9 17l-5-5" />
+  </Svg>
+);
+
+export const XIcon = (props) => (
+  <Svg {...props}>
+    <path d="M18 6L6 18M6 6l12 12" />
+  </Svg>
+);
+
+export const SearchIcon = (props) => (
+  <Svg {...props}>
+    <circle cx="11" cy="11" r="8" />
+    <path d="M21 21l-4.35-4.35" />
+  </Svg>
+);

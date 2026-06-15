@@ -1,19 +1,16 @@
 'use client';
 import ErrorBoundary from '@/app/ui/ErrorBoundary';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Navbar from '@/app/ui/Navbar';
 import Footer from '@/app/ui/Footer';
 import { PageHeader } from '@/app/ui/PageHeader';
 import { useGroups } from '@/app/context/DataContext';
 import Skeleton, { CardSkeleton } from '@/app/ui/Skeleton';
+import Button from '@/app/ui/Button';
+import { UsersIcon, CalendarIcon, ChevronRight, SearchIcon, XIcon, CheckIcon } from '@/app/ui/Icon';
 
-const Ico = ({ children, c = 'w-5 h-5' }) => (
-  <svg className={c} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">{children}</svg>
-);
-const UsersIcon = ({ c }) => <Ico c={c}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></Ico>;
-const CalIcon   = ({ c }) => <Ico c={c}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></Ico>;
-const ChevronR  = ({ c }) => <Ico c={c}><path d="M9 18l6-6-6-6"/></Ico>;
+// Use shared Icon components (UsersIcon, CalendarIcon, ChevronRight)
 
 function GroupCard({ group, idx, onJoin }) {
   const { name, leader, meetingDay, time, members, description, status } = group;
@@ -26,8 +23,8 @@ function GroupCard({ group, idx, onJoin }) {
       onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 4px rgba(46,109,231,0.06)'}>
       <div className="p-6 flex flex-col gap-4 flex-1">
         <div className="flex items-start justify-between gap-3">
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: accentBg, color: accent }}>
-            <UsersIcon c="w-5 h-5" />
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: accentBg, color: accent }}>
+            <UsersIcon className="w-5 h-5" />
           </div>
           <span className="text-[10px] font-bold px-2.5 py-1 rounded-full"
             style={{ background: status === 'Active' ? 'rgba(46,109,231,0.08)' : 'rgba(239,68,68,0.08)', color: status === 'Active' ? '#2E6DE7' : '#EF4444', border: `1px solid ${status === 'Active' ? 'rgba(46,109,231,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
@@ -41,13 +38,13 @@ function GroupCard({ group, idx, onJoin }) {
         {description && <p className="text-sm leading-relaxed flex-1" style={{ color: '#64748B' }}>{description}</p>}
         <div className="flex flex-wrap gap-2 pt-3" style={{ borderTop: '1px solid #F1F5F9' }}>
           {(group.schedule && group.schedule.length > 0 ? group.schedule : (meetingDay ? [{ day: meetingDay, time: time || '' }] : [])).map((s, i) => (
-            <span key={i} className="flex items-center gap-1.5 text-xs font-medium rounded-full px-3 py-1" style={{ background: '#F5F7FF', border: '1px solid #E2E8F7', color: '#475569' }}>
-              <CalIcon c="w-3 h-3" /> {s.day}{s.time ? ` · ${s.time}` : ''}
+              <span key={i} className="flex items-center gap-1.5 text-xs font-medium rounded-full px-3 py-1" style={{ background: '#F5F7FF', border: '1px solid #E2E8F7', color: '#475569' }}>
+              <CalendarIcon className="w-3 h-3" /> {s.day}{s.time ? ` · ${s.time}` : ''}
             </span>
           ))}
           {members > 0 && (
             <span className="flex items-center gap-1.5 text-xs font-medium rounded-full px-3 py-1" style={{ background: '#F5F7FF', border: '1px solid #E2E8F7', color: '#475569' }}>
-              <UsersIcon c="w-3 h-3" /> {members} members
+              <UsersIcon className="w-3 h-3" /> {members} members
             </span>
           )}
         </div>
@@ -70,27 +67,27 @@ function JoinModal({ group, onClose }) {
   const f = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
   const inputStyle = { width: '100%', padding: '10px 12px', borderRadius: 10, fontSize: 13, border: '1px solid #E2E8F7', background: '#F5F7FF', color: '#0F2A4A', outline: 'none', fontFamily: "'Noto Sans', sans-serif" };
   if (submitted) return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(15,42,74,0.6)', backdropFilter: 'blur(4px)' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(15,42,74,0.6)', backdropFilter: 'blur(4px)' }} role="dialog" aria-modal="true" aria-labelledby="join-submitted-title">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center">
         <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(46,109,231,0.1)', color: '#2E6DE7' }}>
-          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+          <CheckIcon className="w-8 h-8" />
         </div>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: '#0F2A4A', marginBottom: 8 }}>Request Submitted!</h3>
+        <h3 id="join-submitted-title" style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: '#0F2A4A', marginBottom: 8 }}>Request Submitted!</h3>
         <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.7, marginBottom: 24 }}>Your request to join <strong>{group.name}</strong> has been sent.</p>
-        <button onClick={onClose} className="px-8 py-2.5 rounded-full text-sm font-bold" style={{ background: '#2E6DE7', color: 'white' }}>Done</button>
+        <Button onClick={onClose} variant="primary">Done</Button>
       </div>
     </div>
   );
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(15,42,74,0.6)', backdropFilter: 'blur(4px)' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(15,42,74,0.6)', backdropFilter: 'blur(4px)' }} role="dialog" aria-modal="true" aria-labelledby="join-title" onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 sticky top-0 bg-white" style={{ borderBottom: '1px solid #E2E8F7' }}>
           <div>
             <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, fontWeight: 700, color: '#0F2A4A' }}>Join {group.name}</h3>
             <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>Led by {group.leader}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg" style={{ background: '#F5F7FF' }}>
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth={2} strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          <button onClick={onClose} className="p-1.5 rounded-lg" style={{ background: '#F5F7FF' }} aria-label="Close dialog">
+            <XIcon className="w-4 h-4 text-slate-600" />
           </button>
         </div>
         <div className="px-6 py-5 flex flex-col gap-4">
@@ -151,7 +148,7 @@ export default function GroupsPage() {
             ))}
           </div>
           <div className="relative mb-10 max-w-sm">
-            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search groups…" className="pl-10 pr-4 py-2.5 rounded-xl text-sm w-full outline-none" style={{ border: '1px solid #E2E8F7', background: '#F5F7FF', color: '#0F2A4A' }} />
           </div>
           {loading ? (
@@ -200,7 +197,7 @@ export default function GroupsPage() {
             <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: 'rgba(255,255,255,0.6)' }} className="uppercase mb-3">Don't See Your Niche?</p>
             <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.3rem,2.5vw,1.8rem)', fontWeight: 700, marginBottom: 12 }}>Propose a New Group</h3>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)', maxWidth: 420, margin: '0 auto 24px' }}>Have a vision for a ministry that doesn't exist yet? Reach out and we'll help you start it.</p>
-            <Button href="/contact" variant="secondary" size="lg" className="inline-flex items-center gap-2">Contact Us <ChevronR c="w-4 h-4" /></Button>
+            <Button href="/contact" variant="secondary" size="lg" className="inline-flex items-center gap-2">Contact Us <ChevronRight className="w-4 h-4" /></Button>
           </div>
         </div>
         {joining && <JoinModal group={joining} onClose={() => setJoining(null)} />}
