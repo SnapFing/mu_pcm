@@ -6,6 +6,7 @@ import Navbar from '@/app/ui/Navbar';
 import Footer from '@/app/ui/Footer';
 import { PageHeader } from '@/app/ui/PageHeader';
 import { useResources } from '@/app/context/DataContext';
+import { DocumentIcon, DownloadIcon, SearchIcon } from '@/app/ui/Icon';
 import Skeleton, { CardSkeleton } from '@/app/ui/Skeleton';
 
 const CATEGORIES = ['All', 'Planning', 'Study', 'Spiritual', 'Health', 'General'];
@@ -22,7 +23,7 @@ function ResourceCard({ resource, idx }) {
       onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 28px rgba(46,109,231,0.12)'}
       onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 4px rgba(46,109,231,0.06)'}>
       <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${fileColor}18`, color: fileColor }}>
-        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+        <DocumentIcon className="w-5 h-5" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 mb-2">
@@ -33,12 +34,12 @@ function ResourceCard({ resource, idx }) {
         {fileUrl ? (
           <a href={fileUrl} target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: accent }}>
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            <DownloadIcon className="w-3.5 h-3.5" />
             {fileType === 'Link' ? 'Open Link' : 'Download'}
           </a>
         ) : (
           <span className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: '#94A3B8' }}>
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            <DownloadIcon className="w-3.5 h-3.5" />
             No file yet
           </span>
         )}
@@ -70,7 +71,7 @@ export default function ResourcesPage() {
               ))}
             </div>
             <div className="relative sm:ml-auto">
-              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search resources…" className="pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none" style={{ border: '1px solid #E2E8F7', background: '#F5F7FF', color: '#0F2A4A', width: 190 }} />
             </div>
           </div>
@@ -84,9 +85,7 @@ export default function ResourcesPage() {
                 <div className="text-center py-20 px-5">
                   <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center"
                     style={{ background: 'rgba(46,109,231,0.06)', color: '#2E6DE7' }}>
-                    <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-                      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
-                    </svg>
+                    <DocumentIcon className="w-7 h-7" />
                   </div>
                   <h3 className="font-bold text-lg mb-2" style={{ color: '#0F2A4A' }}>No resources published yet</h3>
                   <p style={{ color: '#94A3B8', fontSize: 14, maxWidth: 340, margin: '0 auto' }}>

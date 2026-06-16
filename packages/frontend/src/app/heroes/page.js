@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import ErrorBoundary from '@/app/ui/ErrorBoundary';
 
 import { useState } from 'react';
@@ -7,12 +7,7 @@ import Footer  from '@/app/ui/Footer';
 import { PageHeader } from '@/app/ui/PageHeader';
 import { useHeroes }  from '@/app/context/DataContext';
 import Skeleton, { CardSkeleton } from '@/app/ui/Skeleton';
-
-const StarIcon = () => (
-  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-  </svg>
-);
+import { SearchIcon, StarIcon } from '@/app/ui/Icon';
 
 function HeroCard({ hero, idx }) {
   const { name, role, year = "Current", bio, image } = hero;
@@ -38,7 +33,7 @@ function HeroCard({ hero, idx }) {
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(to top, rgba(15,42,74,0.35), transparent)' }} />
         <span style={{ position: 'absolute', top: 12, right: 12, fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 9999, background: 'rgba(255,255,255,0.92)', color: accent }}>{year}</span>
         <div style={{ position: 'absolute', top: 12, left: 12, width: 28, height: 28, borderRadius: '50%', background: accent, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <StarIcon />
+          <StarIcon className="w-4 h-4" />
         </div>
       </div>
       <div className="p-5 flex flex-col gap-3 flex-1">
@@ -69,7 +64,7 @@ export default function HeroesPage() {
         <PageHeader eyebrow="Celebrating Excellence" title="Campus Heroes" subtitle="Honouring students and leaders who have made a lasting impact on our ministry." />
         <div className="max-w-7xl mx-auto px-5 sm:px-8 py-16">
           <div className="relative mb-12 max-w-sm">
-            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search heroes…"
               className="pl-10 pr-4 py-2.5 rounded-xl text-sm w-full outline-none"
               style={{ border: '1px solid #E2E8F7', background: '#F5F7FF', color: '#0F2A4A' }} />
@@ -84,9 +79,7 @@ export default function HeroesPage() {
                 <div className="text-center py-20 px-5">
                   <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center"
                     style={{ background: 'rgba(124,58,237,0.06)', color: '#7C3AED' }}>
-                    <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                    </svg>
+                    <StarIcon className="w-7 h-7" />
                   </div>
                   <h3 className="font-bold text-lg mb-2" style={{ color: '#0F2A4A' }}>No heroes featured yet</h3>
                   <p style={{ color: '#94A3B8', fontSize: 14, maxWidth: 340, margin: '0 auto' }}>

@@ -1,7 +1,8 @@
-'use client';
+"use client";
 import ErrorBoundary from '@/app/ui/ErrorBoundary';
 
 import { useState } from 'react';
+import { SearchIcon, DocumentIcon, ChevronRight, XIcon } from '@/app/ui/Icon';
 import Navbar from '@/app/ui/Navbar';
 import Footer from '@/app/ui/Footer';
 import { PageHeader } from '@/app/ui/PageHeader';
@@ -28,8 +29,8 @@ function Modal({ journal, onClose }) {
             <span className="text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: colors.bg, color: colors.text }}>{journal.category}</span>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: '#0F2A4A', marginTop: 8 }}>{journal.title}</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 shrink-0">
-            <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 shrink-0" aria-label="Close article">
+            <XIcon className="w-4 h-4" />
           </button>
         </div>
         <div className="px-6 pt-4 pb-2 flex items-center gap-3">
@@ -70,7 +71,7 @@ function JournalCard({ journal, idx, onRead }) {
         </span>
       </div>
       <h3 className="font-bold leading-snug flex-1" style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, color: '#0F2A4A' }}>{title}</h3>
-      {body && (
+        {body && (
         <p className="text-sm leading-relaxed" style={{ color: '#64748B', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{body}</p>
       )}
       <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid #F1F5F9' }}>
@@ -83,7 +84,7 @@ function JournalCard({ journal, idx, onRead }) {
         {body && (
           <button onClick={() => onRead(journal)} className="flex items-center gap-1 text-xs font-semibold" style={{ color: accent }}>
             Read more
-            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+            <ChevronRight className="w-3 h-3" />
           </button>
         )}
       </div>
@@ -118,7 +119,7 @@ export default function JournalsPage() {
               ))}
             </div>
             <div className="relative sm:ml-auto">
-              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…" className="pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none" style={{ border: '1px solid #E2E8F7', background: '#F5F7FF', color: '#0F2A4A', width: 180 }} />
             </div>
           </div>
@@ -133,9 +134,7 @@ export default function JournalsPage() {
                 <div className="text-center py-20 px-5">
                   <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center"
                     style={{ background: 'rgba(46,109,231,0.06)', color: '#2E6DE7' }}>
-                    <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-                      <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
-                    </svg>
+                    <DocumentIcon className="w-7 h-7" />
                   </div>
                   <h3 className="font-bold text-lg mb-2" style={{ color: '#0F2A4A' }}>No articles published yet</h3>
                   <p style={{ color: '#94A3B8', fontSize: 14, maxWidth: 340, margin: '0 auto' }}>

@@ -4,17 +4,11 @@ import { useState } from 'react';
 import Navbar from '@/app/ui/Navbar';
 import Footer from '@/app/ui/Footer';
 import Button from '@/app/ui/Button';
+import { MailIcon, PhoneIcon, PinIcon, CheckIcon } from '@/app/ui/Icon';
 import { PageHeader } from '@/app/ui/PageHeader';
 import { useContacts } from '@/app/context/DataContext';
 
-const Ico = ({ children, c = 'w-5 h-5' }) => (
-  <svg className={c} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">{children}</svg>
-);
-const MailIcon   = ({ c }) => <Ico c={c}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></Ico>;
-const PhoneIcon  = ({ c }) => <Ico c={c}><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.21 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.31 7.78a16 16 0 006.13 6.13l1.14-1.14a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></Ico>;
-const MapPinIcon = ({ c }) => <Ico c={c}><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></Ico>;
-const CheckIcon  = ({ c }) => <Ico c={c}><path d="M20 6L9 17l-5-5"/></Ico>;
+// Using shared icons
 
 const C = { primary: '#2E6DE7', navy: '#0F2A4A', border: '#E2E8F7', white: '#F5F7FF' };
 const inputStyle = { width: '100%', padding: '11px 14px', borderRadius: 12, fontSize: 14, border: `1px solid ${C.border}`, background: C.white, color: C.navy, outline: 'none', fontFamily: "'Noto Sans', sans-serif", transition: 'border-color 0.15s' };
@@ -120,7 +114,7 @@ export default function ContactPage() {
                 <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.4rem,2.5vw,1.9rem)', fontWeight: 700, color: C.navy, marginBottom: 8 }}>We'd Love to Hear From You</h2>
                 <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.75 }}>Reach out via the form, or find us at the PCM Office on campus. We respond within 24 hours.</p>
               </div>
-              <InfoCard icon={<MapPinIcon c="w-5 h-5" />} label="Address" value="PCM OFFICE, Mulungushi University Great North Road Campus , Kapiri" />
+              <InfoCard icon={<PinIcon c="w-5 h-5" />} label="Address" value="PCM OFFICE, Mulungushi University Great North Road Campus , Kapiri" />
               <InfoCard icon={<MailIcon   c="w-5 h-5" />} label="Email"   value="mulungushisdapcmpublicity@gmail.com" href="mailto:mulungushisdapcmpublicity@gmail.com" />
               <InfoCard icon={<PhoneIcon  c="w-5 h-5" />} label="Phone"   value="+260 762 062 641" href="tel:+260762062641" />
               <div className="rounded-2xl p-5" style={{ background: 'white', border: `1px solid ${C.border}` }}>

@@ -4,6 +4,7 @@ import React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import Navbar          from '@/app/ui/Navbar';
 import Footer          from '@/app/ui/Footer';
+import Button          from '@/app/ui/Button';
 import SabbathGreeting from '@/app/ministry/SabbathGreeting';
 import VerseDisplay    from '@/app/ministry/VerseDisplay';
 import CountdownTimer  from '@/app/ministry/CountdownTimer';
@@ -13,43 +14,23 @@ import { useEvents }   from '@/app/context/DataContext';   // <-- add this impor
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const userName = " ";
 
-// ── Icons (unchanged) ──────────────────────────────────────────────────────
-const Ico = ({ children, className = 'w-5 h-5' }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-    {children}
-  </svg>
-);
-const ChevronRight = ({ c = 'w-4 h-4' }) => <Ico className={c}><path d="M9 18l6-6-6-6"/></Ico>;
-const ChevronLeft  = ({ c = 'w-4 h-4' }) => <Ico className={c}><path d="M15 18l-6-6 6-6"/></Ico>;
-const CalIcon      = ({ c = 'w-5 h-5' }) => <Ico className={c}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></Ico>;
-const PrayIcon     = ({ c = 'w-5 h-5' }) => <Ico className={c}><path d="M12 22s-8-5.25-8-11a8 8 0 0116 0c0 5.75-8 11-8 11z"/></Ico>;
-const BookIcon     = ({ c = 'w-5 h-5' }) => <Ico className={c}><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></Ico>;
-const JournalIcon  = ({ c = 'w-5 h-5' }) => <Ico className={c}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></Ico>;
-const MediaIcon    = ({ c = 'w-5 h-5' }) => <Ico className={c}><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></Ico>;
-const StarIcon     = ({ c = 'w-5 h-5' }) => <Ico className={c}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></Ico>;
-const UsersIcon    = ({ c = 'w-5 h-5' }) => <Ico className={c}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></Ico>;
-const ClockIcon    = ({ c = 'w-5 h-5' }) => <Ico className={c}><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></Ico>;
-const CrossIcon    = ({ c = 'w-5 h-5' }) => <Ico className={c}><path d="M12 3v18M4 9h16"/></Ico>;
-const PinIcon      = ({ c = 'w-4 h-4' }) => <Ico className={c}><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></Ico>;
-const CreditIcon   = ({ c = 'w-5 h-5' }) => <Ico className={c}><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></Ico>;
-const AlertIcon    = ({ c = 'w-4 h-4' }) => <Ico className={c}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></Ico>;
-const BellIcon     = ({ c = 'w-4 h-4' }) => <Ico className={c}><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></Ico>;
+// ── Icon wrappers (use shared Icon exports)
+import { ChevronRight as IconChevronRight, ChevronLeft as IconChevronLeft, CalendarIcon as IconCalendar, ClockIcon as IconClock, PinIcon as IconPin, BookIcon as IconBook, MediaIcon as IconMedia, StarIcon as IconStar, UsersIcon as IconUsers, CrossIcon as IconCross, CreditIcon as IconCredit, AlertIcon as IconAlert, BellIcon as IconBell } from '@/app/ui/Icon';
 
-const stats = [
-  { value: '340+', label: 'Members',       Icon: UsersIcon },
-  { value: '12',   label: 'Weekly Events', Icon: CalIcon   },
-  { value: '24h',  label: 'Prayer Chain',  Icon: ClockIcon },
-  { value: '6',    label: 'Ministries',    Icon: CrossIcon },
-];
-
-const quickLinks = [
-  { href: '/events',    Icon: CalIcon,     label: 'Events'    },
-  { href: '/about',     Icon: UsersIcon,   label: 'About Us'  },
-  { href: '/prayer',    Icon: PrayIcon,    label: 'Prayer'    },
-  { href: '/resources', Icon: BookIcon,    label: 'Resources' },
-  { href: '/journals',  Icon: JournalIcon, label: 'Journals'  },
-  { href: '/media',     Icon: MediaIcon,   label: 'Media'     },
+const ChevronRight = ({ c = 'w-4 h-4' }) => <IconChevronRight className={c} />;
+const ChevronLeft = ({ c = 'w-4 h-4' }) => <IconChevronLeft className={c} />;
+const CalIcon = ({ c = 'w-5 h-5' }) => <IconCalendar className={c} />;
+const PrayIcon = ({ c = 'w-5 h-5' }) => <IconPin className={c} />;
+const BookIcon = ({ c = 'w-5 h-5' }) => <IconBook className={c} />;
+const JournalIcon = ({ c = 'w-5 h-5' }) => <IconBook className={c} />;
+const MediaIcon = ({ c = 'w-5 h-5' }) => <IconMedia className={c} />;
+const StarIcon = ({ c = 'w-5 h-5' }) => <IconStar className={c} />;
+const UsersIcon = ({ c = 'w-5 h-5' }) => <IconUsers className={c} />;
+const ClockIcon = ({ c = 'w-5 h-5' }) => <IconClock className={c} />;
+const CrossIcon = ({ c = 'w-5 h-5' }) => <IconCross className={c} />;
+const CreditIcon = ({ c = 'w-5 h-5' }) => <IconCredit className={c} />;
+const AlertIcon = ({ c = 'w-4 h-4' }) => <IconAlert className={c} />;
+const BellIcon = ({ c = 'w-4 h-4' }) => <IconBell className={c} />;
   { href: '/heroes',    Icon: StarIcon,    label: 'Heroes'    },
   { href: '/groups',    Icon: UsersIcon,   label: 'Groups'    },  
 ];
@@ -92,7 +73,7 @@ function VerseCard() {
       </div>
       <div className="px-6 py-4">
         <a href="/resources" className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: '#2E6DE7' }}>
-          More devotional resources <ChevronRight c="w-3.5 h-3.5" />
+          More devotional resources <IconChevronRight className="w-3.5 h-3.5" />
         </a>
       </div>
     </div>
@@ -124,7 +105,7 @@ function EventCard({ nextEvent }) {
           <p style={{ fontSize: 14, color: '#94A3B8' }}>No upcoming events</p>
         </div>
         <div className="px-6 py-4 flex justify-end" style={{ borderTop: '1px solid #E2E8F7', background: '#FAFBFF' }}>
-          <a href="/events" className="text-xs font-semibold" style={{ color: '#2E6DE7' }}>View all events <ChevronRight c="w-3.5 h-3.5" /></a>
+          <a href="/events" className="text-xs font-semibold" style={{ color: '#2E6DE7' }}>View all events <IconChevronRight className="w-3.5 h-3.5" /></a>
         </div>
       </div>
     );
@@ -227,7 +208,7 @@ function MembershipCard() {
       </div>
       <div className="px-6 py-4 flex justify-between items-center" style={{ borderTop: '1px solid #E2E8F7', background: '#FAFBFF' }}>
         <span style={{ fontSize: 11, color: '#94A3B8' }}>Questions? Contact treasurer</span>
-        <a href="/contact" className="px-4 py-1.5 rounded-full text-xs font-bold" style={{ background: '#7C3AED', color: 'white' }}>Contact Us</a>
+        <Button href="/contact" variant="primary" size="sm" className="px-4 py-1.5">Contact Us</Button>
       </div>
     </div>
   );

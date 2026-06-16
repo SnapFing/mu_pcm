@@ -8,8 +8,7 @@
 
 import { useState, useEffect } from 'react';
 import Button from '@/app/ui/Button';
-import { MenuIcon } from '@/app/ui/Icon';
-import { XIcon } from '@/app/ui/Icon';
+import { MenuIcon, XIcon } from '@/app/ui/Icon';
 
 const navLinks = [
   { label: 'Home',      href: '/dashboard' },
@@ -24,16 +23,7 @@ const navLinks = [
   { label: 'Contact',   href: '/contact'   },
 ];
 
-const MenuIcon  = () => (
-  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-    <path d="M3 12h18M3 6h18M3 18h18"/>
-  </svg>
-);
-const CloseIcon = () => (
-  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-    <path d="M18 6L6 18M6 6l12 12"/>
-  </svg>
-);
+/* Using shared icons from Icon.js */
 
 export default function Navbar({ activePath = '' }) {
   const [open,     setOpen]     = useState(false);
@@ -170,7 +160,7 @@ export default function Navbar({ activePath = '' }) {
             style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
             onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.18)'}
             onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}>
-            <CloseIcon />
+            <XIcon />
           </button>
         </div>
 

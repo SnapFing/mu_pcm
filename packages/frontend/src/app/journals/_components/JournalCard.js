@@ -2,15 +2,8 @@
  * journals/_components/JournalCard.js
  */
 
-'use client';
-
-function DownloadIcon() {
-  return (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-    </svg>
-  );
-}
+"use client";
+import { DocumentIcon, DownloadIcon } from '@/app/ui/Icon';
 
 const categoryColors = {
   Academic:             { bg: 'rgba(46,109,231,0.08)',  text: '#2E6DE7'  },
@@ -31,10 +24,7 @@ export function JournalCard({ journal }) {
       {/* PDF icon */}
       <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
         style={{ background: colors.bg, color: colors.text }}>
-        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-          <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
-        </svg>
+        <DocumentIcon className="w-5 h-5" />
       </div>
 
       <div className="flex-1 min-w-0">
@@ -51,7 +41,7 @@ export function JournalCard({ journal }) {
           style={{ color: '#2E6DE7' }}
           onMouseEnter={e => e.currentTarget.style.color = '#1d5cd4'}
           onMouseLeave={e => e.currentTarget.style.color = '#2E6DE7'}>
-          <DownloadIcon /> Download PDF
+          <DownloadIcon className="w-4 h-4" /> Download PDF
         </a>
       </div>
     </div>

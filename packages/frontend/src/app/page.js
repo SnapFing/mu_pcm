@@ -2,22 +2,7 @@ import Link from 'next/link';
 import Navbar from '@/app/ui/Navbar';
 import Footer from '@/app/ui/Footer';
 import Button from '@/app/ui/Button';
-
-// Reusable SVG icon (matches the Ico pattern used everywhere else)
-const Ico = ({ children, size = 20 }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.8}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    {children}
-  </svg>
-);
+import { PinIcon, BookIcon, UsersIcon, MediaIcon } from '@/app/ui/Icon';
 
 export default function LandingPage() {
   return (
@@ -230,46 +215,26 @@ export default function LandingPage() {
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            {
-              icon: (
-                <Ico size={28}>
-                  <path d="M12 22s-8-5.25-8-11a8 8 0 0116 0c0 5.75-8 11-8 11z" />
-                </Ico>
-              ),
+              {
+                icon: <PinIcon className="w-7 h-7" size={28} />,
               title: 'Prayer & Worship',
               desc: 'Weekly vespers, Sabbath services, and prayer chains that lift our campus to heaven.',
               href: '/prayer',
             },
             {
-              icon: (
-                <Ico size={28}>
-                  <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
-                </Ico>
-              ),
+                icon: <BookIcon className="w-7 h-7" size={28} />,
               title: 'Bible Study',
               desc: 'Small groups, personal devotionals, and journal resources to deepen your walk with God.',
               href: '/journals',
             },
             {
-              icon: (
-                <Ico size={28}>
-                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-                </Ico>
-              ),
+                icon: <UsersIcon className="w-7 h-7" size={28} />,
               title: 'Community Service',
               desc: 'Health expos, outreach programs, and support for vulnerable students and local communities.',
               href: '/groups',
             },
             {
-              icon: (
-                <Ico size={28}>
-                  <circle cx="12" cy="12" r="10" />
-                  <polygon points="10 8 16 12 10 16 10 8" />
-                </Ico>
-              ),
+                icon: <MediaIcon className="w-7 h-7" size={28} />,
               title: 'Music & Arts',
               desc: 'Choir, praise teams, and creative ministries that use your talents to glorify God.',
               href: '/media',

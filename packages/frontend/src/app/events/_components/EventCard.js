@@ -9,24 +9,7 @@ import { useState } from 'react';
 import Button from '@/app/ui/Button';
 import { CalendarIcon, ClockIcon, PinIcon, PhoneIcon, XIcon } from '@/app/ui/Icon';
 
-// ── Icons ──────────────────────────────────────────────────────────────────
-const Ico = ({ d, c = 'w-4 h-4' }) => (
-  <svg className={c} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-    <path d={d} />
-  </svg>
-);
-
-const CalIcon   = ({ c }) => <Ico c={c} d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />;
-const ClockIcon = ({ c }) => (
-  <svg className={c || 'w-4 h-4'} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-  </svg>
-);
-const PinIcon   = ({ c }) => <Ico c={c} d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z M12 7a3 3 0 100 6 3 3 0 000-6z" />;
-const PhoneIcon = ({ c }) => <Ico c={c} d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z" />;
-const CloseIcon = ({ c }) => <Ico c={c} d="M18 6L6 18M6 6l12 12" />;
-const ExtIcon   = ({ c }) => <Ico c={c} d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />;
+// Using shared icons from Icon.js
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function formatDate(dateStr) {
@@ -150,13 +133,13 @@ function EventModal({ event, onClose }) {
               {formatDate(date)}
             </div>
             {time && (
-              <div className="flex items-center gap-3" style={{ fontSize: 14, color: '#475569' }}>
+                <div className="flex items-center gap-3" style={{ fontSize: 14, color: '#475569' }}>
                 <span style={{ color: '#2E6DE7' }}><ClockIcon className="w-4 h-4" /></span>
                 {formatTime(time)}
               </div>
             )}
             {venue && (
-              <div className="flex items-center gap-3" style={{ fontSize: 14, color: '#475569' }}>
+                <div className="flex items-center gap-3" style={{ fontSize: 14, color: '#475569' }}>
                 <span style={{ color: '#2E6DE7', flexShrink: 0 }}><PinIcon className="w-4 h-4" /></span>
                 <span>{venue}</span>
               </div>
@@ -185,14 +168,14 @@ function EventModal({ event, onClose }) {
                 />
               </div>
               <a
-                href={mapExternalHref(query)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold"
-                style={{ color: '#2E6DE7' }}
-              >
-                Get directions
-              </a>
+                  href={mapExternalHref(query)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold"
+                  style={{ color: '#2E6DE7' }}
+                >
+                  Get directions
+                </a>
             </div>
           )}
 
@@ -299,15 +282,7 @@ export default function EventCard({ event }) {
         </div>
 
         <div className="px-5 pb-5 flex gap-2">
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
-            style={{ background: '#2E6DE7', color: 'white' }}
-            onMouseEnter={e => e.currentTarget.style.background = '#1d5cd4'}
-            onMouseLeave={e => e.currentTarget.style.background = '#2E6DE7'}
-          >
-            More Info
-          </button>
+          <Button onClick={() => setShowModal(true)} variant="primary" className="flex-1">More Info</Button>
 
           {contactNumber && (
             <a
@@ -318,7 +293,7 @@ export default function EventCard({ event }) {
               onMouseLeave={e => { e.currentTarget.style.background = '#F5F7FF'; }}
               title={`Call ${contactNumber}`}
             >
-              <PhoneIcon c="w-4 h-4" />
+              <PhoneIcon className="w-4 h-4" />
               Call
             </a>
           )}

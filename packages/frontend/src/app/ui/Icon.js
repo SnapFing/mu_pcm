@@ -124,3 +124,87 @@ export const MenuIcon = (props) => (
     <path d="M3 12h18M3 6h18M3 18h18" />
   </Svg>
 );
+
+export const ChevronLeft = (props) => (
+  <Svg {...props}>
+    <path d="M15 18l-6-6 6-6" />
+  </Svg>
+);
+
+export const DocumentIcon = (props) => (
+  <Svg {...props}>
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+    <path d="M14 2v6h6" />
+  </Svg>
+);
+
+export const DownloadIcon = (props) => (
+  <Svg {...props}>
+    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </Svg>
+);
+
+export const PlayIcon = (props) => (
+  <Svg {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M10 8l6 4-6 4V8z" fill="none" />
+  </Svg>
+);
+
+export const ExternalIcon = (props) => (
+  <Svg {...props}>
+    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+    <polyline points="15 3 21 3 21 9" />
+    <line x1="10" y1="14" x2="21" y2="3" />
+  </Svg>
+);
+
+export const StarIcon = (props) => (
+  <Svg {...props}>
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </Svg>
+);
+
+export const AlertIcon = (props) => (
+  <Svg {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </Svg>
+);
+
+export const CrossIcon = (props) => (
+  <Svg {...props}>
+    <path d="M12 3v18M4 9h16" />
+  </Svg>
+);
+
+export const CreditIcon = (props) => (
+  <Svg {...props}>
+    <rect x="1" y="4" width="22" height="16" rx="2" />
+    <path d="M1 10h22" />
+  </Svg>
+);
+
+export const BellIcon = (props) => (
+  <Svg {...props}>
+    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 01-3.46 0" />
+  </Svg>
+);
+
+export const BookIcon = (props) => (
+  <Svg {...props}>
+    <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+  </Svg>
+);
+
+export const MediaIcon = (props) => (
+  <Svg {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M10 8l6 4-6 4V8z" />
+  </Svg>
+);

@@ -7,6 +7,8 @@ import Navbar from '@/app/ui/Navbar';
 import Footer from '@/app/ui/Footer';
 import { PageHeader } from '@/app/ui/PageHeader';
 import { useMedia } from '@/app/context/DataContext';
+import { ClockIcon, PlayIcon, YouTubeIcon, ExternalIcon, XIcon } from '@/app/ui/Icon';
+import Button from '@/app/ui/Button';
 
 const TABS = ['All Media', 'Sermons', 'Event Videos', 'Photo Gallery'];
 
@@ -30,45 +32,7 @@ function formatDate(value = '') {
   return parsed.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-// ── Icons ──────────────────────────────────────────────────────────────────
-function ClockIcon() {
-  return (
-    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-      <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-    </svg>
-  );
-}
-function PlayIcon() {
-  return (
-    <svg className="w-10 h-10" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="12" fill="rgba(46,109,231,0.9)"/>
-      <polygon points="10 8 16 12 10 16 10 8" fill="white"/>
-    </svg>
-  );
-}
-function YoutubeIcon() {
-  return (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 001.46 6.42 29 29 0 001 12a29 29 0 00.46 5.58 2.78 2.78 0 001.95 1.95C5.12 20 12 20 12 20s6.88 0 8.59-.47a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58z"/>
-      <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="white"/>
-    </svg>
-  );
-}
-function ExternalIcon() {
-  return (
-    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-      <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
-      <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-    </svg>
-  );
-}
-function CloseIcon() {
-  return (
-    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-      <path d="M18 6L6 18M6 6l12 12"/>
-    </svg>
-  );
-}
+// Using shared icons from Icon.js
 
 // ── Video Player Modal ─────────────────────────────────────────────────────
 function VideoModal({ item, onClose }) {
@@ -95,7 +59,7 @@ function VideoModal({ item, onClose }) {
             style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}
             onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
             onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}>
-            <CloseIcon />
+            <XIcon className="w-5 h-5" />
           </button>
         </div>
 
@@ -124,7 +88,7 @@ function VideoModal({ item, onClose }) {
             style={{ background: '#FF0000', color: 'white' }}
             onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
             onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-            <YoutubeIcon /> Open on YouTube <ExternalIcon />
+            <YouTubeIcon className="w-4 h-4" /> Open on YouTube <ExternalIcon className="w-4 h-4" />
           </a>
         </div>
       </div>
@@ -196,7 +160,7 @@ function MediaCard({ item, onPlay }) {
         {hasVideo && (
           <span className="absolute top-3 right-3 flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full"
             style={{ background: '#FF0000', color: 'white' }}>
-            <YoutubeIcon /> YT
+            <YouTubeIcon className="w-4 h-4" /> YT
           </span>
         )}
       </div>
@@ -221,14 +185,9 @@ function MediaCard({ item, onPlay }) {
       {/* Footer actions — only when video available */}
       {hasVideo && (
         <div className="px-5 pb-5 flex gap-2" onClick={e => e.stopPropagation()}>
-          <button
-            onClick={() => onPlay(item)}
-            className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2"
-            style={{ background: '#2E6DE7', color: 'white' }}
-            onMouseEnter={e => e.currentTarget.style.background = '#1d5cd4'}
-            onMouseLeave={e => e.currentTarget.style.background = '#2E6DE7'}>
+          <Button onClick={() => onPlay(item)} variant="primary" className="flex-1 flex items-center justify-center gap-2">
             ▶ Play Here
-          </button>
+          </Button>
           <a
             href={`https://www.youtube.com/watch?v=${youtubeId}`}
             target="_blank"
@@ -237,7 +196,7 @@ function MediaCard({ item, onPlay }) {
             style={{ background: '#F5F7FF', color: '#FF0000', border: '1px solid #E2E8F7' }}
             onMouseEnter={e => e.currentTarget.style.background = '#FFE8E8'}
             onMouseLeave={e => e.currentTarget.style.background = '#F5F7FF'}>
-            <YoutubeIcon /> YouTube
+            <YouTubeIcon className="w-4 h-4" /> YouTube
           </a>
         </div>
       )}
