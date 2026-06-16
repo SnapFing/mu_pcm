@@ -235,6 +235,7 @@ export function DataProvider({ children }) {
   const journals      = useCollectionState("journals");
   const media         = useCollectionState("media");
   const heroes        = useCollectionState("heroes");
+  const banners       = useCollectionState("banners");
   const groups        = useCollectionState("groups");
   const resources     = useCollectionState("resources");
   const prayers       = useCollectionState("prayers", { requiresAuthToLoad: true });
@@ -247,6 +248,7 @@ export function DataProvider({ children }) {
     journals:      journals.items,
     media:         media.items,
     heroes:        heroes.items,
+    banners:       banners.items,
     groups:        groups.items,
     resources:     resources.items,
     prayers:       prayers.items,
@@ -260,7 +262,7 @@ export function DataProvider({ children }) {
     <DataContext.Provider value={{
       state, reset,
       announcements, events, journals, media,
-      heroes, groups, resources, prayers, contacts,
+      heroes, banners, groups, resources, prayers, contacts,
       about: aboutState.about,
       aboutState,
       setAbout: aboutState.setAbout,
@@ -279,7 +281,7 @@ export const useGroups        = () => useContext(DataContext).groups;
 export const useResources     = () => useContext(DataContext).resources;
 export const usePrayers       = () => useContext(DataContext).prayers;
 export const useContacts      = () => useContext(DataContext).contacts;
-
+export const useBanners       = () => useContext(DataContext).banners;
 export function useAbout() {
   const ctx = useContext(DataContext);
   return { about: ctx.about, setAbout: ctx.setAbout, aboutState: ctx.aboutState };

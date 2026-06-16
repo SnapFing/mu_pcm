@@ -1,5 +1,9 @@
 /**
  * dashboard/_hooks/useGreeting.js
+ *
+ * FIX: This file was named "userGreeting.js" — renamed to "useGreeting.js"
+ * (React hook naming convention: hooks must start with "use").
+ *
  * Extracts the day/time greeting logic from SabbathGreeting.
  * Returns { heading, subline, badge, badgeStyle }
  */

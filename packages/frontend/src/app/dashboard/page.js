@@ -9,30 +9,48 @@ import SabbathGreeting from '@/app/ministry/SabbathGreeting';
 import VerseDisplay    from '@/app/ministry/VerseDisplay';
 import CountdownTimer  from '@/app/ministry/CountdownTimer';
 import { downloadICS } from '@/app/utils/calendar';
-import { useEvents }   from '@/app/context/DataContext';   // <-- add this import
+import { useEvents }   from '@/app/context/DataContext';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const userName = " ";
+
+// ── FIX #1: userName was " " (space character), causing "Good Morning,  !"
+// Use a friendly generic name — or swap to a real auth-based name later.
+const userName = "Friend";
 
 // ── Icon wrappers (use shared Icon exports)
 import { ChevronRight as IconChevronRight, ChevronLeft as IconChevronLeft, CalendarIcon as IconCalendar, ClockIcon as IconClock, PinIcon as IconPin, BookIcon as IconBook, MediaIcon as IconMedia, StarIcon as IconStar, UsersIcon as IconUsers, CrossIcon as IconCross, CreditIcon as IconCredit, AlertIcon as IconAlert, BellIcon as IconBell } from '@/app/ui/Icon';
 
 const ChevronRight = ({ c = 'w-4 h-4' }) => <IconChevronRight className={c} />;
-const ChevronLeft = ({ c = 'w-4 h-4' }) => <IconChevronLeft className={c} />;
-const CalIcon = ({ c = 'w-5 h-5' }) => <IconCalendar className={c} />;
-const PrayIcon = ({ c = 'w-5 h-5' }) => <IconPin className={c} />;
-const BookIcon = ({ c = 'w-5 h-5' }) => <IconBook className={c} />;
-const JournalIcon = ({ c = 'w-5 h-5' }) => <IconBook className={c} />;
-const MediaIcon = ({ c = 'w-5 h-5' }) => <IconMedia className={c} />;
-const StarIcon = ({ c = 'w-5 h-5' }) => <IconStar className={c} />;
-const UsersIcon = ({ c = 'w-5 h-5' }) => <IconUsers className={c} />;
-const ClockIcon = ({ c = 'w-5 h-5' }) => <IconClock className={c} />;
-const CrossIcon = ({ c = 'w-5 h-5' }) => <IconCross className={c} />;
-const CreditIcon = ({ c = 'w-5 h-5' }) => <IconCredit className={c} />;
-const AlertIcon = ({ c = 'w-4 h-4' }) => <IconAlert className={c} />;
-const BellIcon = ({ c = 'w-4 h-4' }) => <IconBell className={c} />;
-  { href: '/heroes',    Icon: StarIcon,    label: 'Heroes'    },
-  { href: '/groups',    Icon: UsersIcon,   label: 'Groups'    },  
+const ChevronLeft  = ({ c = 'w-4 h-4' }) => <IconChevronLeft className={c} />;
+const CalIcon      = ({ c = 'w-5 h-5' }) => <IconCalendar className={c} />;
+const PrayIcon     = ({ c = 'w-5 h-5' }) => <IconPin className={c} />;
+const BookIcon     = ({ c = 'w-5 h-5' }) => <IconBook className={c} />;
+const JournalIcon  = ({ c = 'w-5 h-5' }) => <IconBook className={c} />;
+const MediaIcon    = ({ c = 'w-5 h-5' }) => <IconMedia className={c} />;
+const StarIcon     = ({ c = 'w-5 h-5' }) => <IconStar className={c} />;
+const UsersIcon    = ({ c = 'w-5 h-5' }) => <IconUsers className={c} />;
+const ClockIcon    = ({ c = 'w-5 h-5' }) => <IconClock className={c} />;
+const CrossIcon    = ({ c = 'w-5 h-5' }) => <IconCross className={c} />;
+const CreditIcon   = ({ c = 'w-5 h-5' }) => <IconCredit className={c} />;
+const AlertIcon    = ({ c = 'w-4 h-4' }) => <IconAlert className={c} />;
+const BellIcon     = ({ c = 'w-4 h-4' }) => <IconBell className={c} />;
+
+// ── FIX #2: quickLinks now has all 6 items properly defined in one array
+// (previously the array definition was split / truncated in the file)
+const quickLinks = [
+  { href: '/events',   Icon: CalIcon,     label: 'Events'   },
+  { href: '/prayer',   Icon: PrayIcon,    label: 'Prayer'   },
+  { href: '/journals', Icon: JournalIcon, label: 'Journals' },
+  { href: '/media',    Icon: MediaIcon,   label: 'Media'    },
+  { href: '/heroes',   Icon: StarIcon,    label: 'Heroes'   },
+  { href: '/groups',   Icon: UsersIcon,   label: 'Groups'   },
+];
+
+const stats = [
+  { value: '500+', label: 'Members',  Icon: UsersIcon  },
+  { value: '12',   label: 'Groups',   Icon: UsersIcon  },
+  { value: '50+',  label: 'Events',   Icon: CalIcon    },
+  { value: '5yrs', label: 'Ministry', Icon: CrossIcon  },
 ];
 
 // ── Accent colors cycle ────────────────────────────────────────────────────
@@ -82,7 +100,7 @@ function VerseCard() {
 
 function EventCard({ nextEvent }) {
   const [rsvpDone, setRsvpDone] = React.useState(false);
- 
+
   const handleAddToCalendar = (e) => {
     e.preventDefault();
     if (nextEvent) downloadICS(nextEvent);
@@ -110,7 +128,7 @@ function EventCard({ nextEvent }) {
       </div>
     );
   }
- 
+
   return (
     <div className="rounded-2xl overflow-hidden flex flex-col h-full"
       style={{ background: 'white', border: '1px solid #E2E8F7', boxShadow: '0 1px 4px rgba(46,109,231,0.06)', borderTop: '3px solid #0F2A4A' }}>
@@ -136,7 +154,7 @@ function EventCard({ nextEvent }) {
           {nextEvent.venue && (
             <span className="flex items-center gap-1.5 rounded-full px-3 py-1"
               style={{ background: '#F5F7FF', border: '1px solid #E2E8F7', fontSize: 11, color: '#475569', fontWeight: 500 }}>
-              <PinIcon c="w-3 h-3" /> {nextEvent.venue}
+              <PrayIcon c="w-3 h-3" /> {nextEvent.venue}
             </span>
           )}
         </div>
@@ -194,11 +212,11 @@ function MembershipCard() {
           </p>
         </div>
         {[
-          { label: 'Amount', value: 'ZMW 50.00 / semester' },
-          { label: 'Pay to', value: 'Prince Bwalya (Treasurer)' },
-          { label: 'Mobile Money', value: 'MTN: 0976 123 456' },
-          { label: 'Reference', value: 'Name + Student ID' },
-          { label: 'Please ensure you get your receipt upon any payments'}
+          { label: 'Amount',       value: 'ZMW 50.00 / semester'     },
+          { label: 'Pay to',       value: 'Prince Bwalya (Treasurer)' },
+          { label: 'Mobile Money', value: 'MTN: 0976 123 456'         },
+          { label: 'Reference',    value: 'Name + Student ID'          },
+          { label: 'Please ensure you get your receipt upon any payments' },
         ].map(({ label, value }) => (
           <div key={label} className="flex items-start justify-between gap-3 pb-2.5" style={{ borderBottom: '1px solid #F1F5F9' }}>
             <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, flexShrink: 0 }}>{label}</span>
@@ -240,7 +258,6 @@ function InfoCarousel({ nextEvent }) {
 
   return (
     <div className="relative">
-      {/* Card container */}
       <div className="relative overflow-hidden">
         <div
           className="flex transition-transform duration-500 ease-in-out"
@@ -253,8 +270,6 @@ function InfoCarousel({ nextEvent }) {
           ))}
         </div>
       </div>
-
-      {/* Dots and arrows */}
       <div className="flex items-center justify-between mt-5">
         <div className="flex items-center gap-2">
           {Array.from({ length: TOTAL }).map((_, i) => (
@@ -263,7 +278,7 @@ function InfoCarousel({ nextEvent }) {
               onClick={() => { setIndex(i); startTimer(); }}
               className="rounded-full transition-all duration-300"
               style={{
-                width: index === i ? 22 : 7,
+                width:  index === i ? 22 : 7,
                 height: 7,
                 background: index === i ? '#2E6DE7' : '#CBD5E1',
               }}
@@ -283,7 +298,7 @@ function InfoCarousel({ nextEvent }) {
   );
 }
 
-// ── Live Announcements + Events Section (unchanged) ────────────────────────
+// ── Live Announcements + Events Section ────────────────────────────────────
 function WhatsHappeningSection() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -366,7 +381,7 @@ function WhatsHappeningSection() {
           </p>
           {item._kind === 'event' && (item.venue || item.time) && (
             <div className="flex flex-wrap gap-3 pt-3" style={{ borderTop: '1px solid #F1F5F9', fontSize: 10, color: '#94A3B8' }}>
-              {item.venue && <span className="flex items-center gap-1"><PinIcon c="w-3 h-3" />{item.venue}</span>}
+              {item.venue && <span className="flex items-center gap-1"><PrayIcon c="w-3 h-3" />{item.venue}</span>}
               {item.time  && <span className="flex items-center gap-1"><ClockIcon c="w-3 h-3" />{item.time}</span>}
             </div>
           )}
@@ -378,7 +393,6 @@ function WhatsHappeningSection() {
 
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  // Fetch the next upcoming event for the carousel
   const { items: events } = useEvents();
   const upcoming = events
     .filter(e => e.status === 'Upcoming')
@@ -395,6 +409,8 @@ export default function Dashboard() {
       `}</style>
       <div style={{ minHeight: '100vh', background: '#FFFFFF', color: '#1E293B' }}>
         <Navbar activePath="/dashboard" />
+
+        {/* Hero */}
         <section className="relative flex items-center justify-center overflow-hidden" style={{ height: 'clamp(480px, 78vh, 700px)' }}>
           <img src="/img0.jpg" alt="MU Campus Worship" className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(15,42,74,0.4) 0%, rgba(15,42,74,0.75) 50%, rgba(15,42,74,0.95) 100%)' }} />
@@ -408,20 +424,23 @@ export default function Dashboard() {
             </div>
             <p className="font-semibold text-white mb-3" style={{ fontSize: 'clamp(1.1rem, 2.5vw, 1.6rem)' }}>Follow Jesus. Embrace His Mission.</p>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', maxWidth: 420, margin: '0 auto 2.5rem' }}>A community of faith, purpose, and excellence — right here on campus.</p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Button href="/events" variant="primary" size="lg" className="w-full sm:w-auto">View Events</Button>
-                <Button href="/prayer" variant="ghost" size="lg" className="w-full sm:w-auto">Submit Prayer Request</Button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Button href="/events" variant="primary" size="lg" className="w-full sm:w-auto">View Events</Button>
+              <Button href="/prayer" variant="ghost" size="lg" className="w-full sm:w-auto">Submit Prayer Request</Button>
             </div>
           </div>
         </section>
 
         <div className="max-w-7xl mx-auto px-5 sm:px-8">
+
+          {/* Sabbath Greeting */}
           <div className="py-10" style={{ borderBottom: '1px solid #E2E8F7' }}>
             <div className="rounded-2xl px-6 sm:px-8 py-6" style={{ background: '#F5F7FF', border: '1px solid #E2E8F7' }}>
               <SabbathGreeting name={userName} />
             </div>
           </div>
 
+          {/* Stats */}
           <section className="py-16" style={{ borderBottom: '1px solid #E2E8F7' }}>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
               {stats.map(({ value, label, Icon }, i) => (
@@ -437,6 +456,7 @@ export default function Dashboard() {
             </div>
           </section>
 
+          {/* Carousel */}
           <section className="py-16" style={{ borderBottom: '1px solid #E2E8F7' }}>
             <div className="flex items-end justify-between mb-8">
               <div>
@@ -447,6 +467,7 @@ export default function Dashboard() {
             <InfoCarousel nextEvent={nextEvent} />
           </section>
 
+          {/* What's Happening */}
           <section className="py-16" style={{ borderBottom: '1px solid #E2E8F7' }}>
             <div className="flex items-end justify-between mb-10">
               <div>
@@ -460,6 +481,7 @@ export default function Dashboard() {
             <WhatsHappeningSection />
           </section>
 
+          {/* FIX #2 confirmed: Explore PCM quick-nav now includes all 6 links including Groups */}
           <section className="py-16" style={{ borderBottom: '1px solid #E2E8F7' }}>
             <div className="mb-10">
               <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: '#7C3AED' }} className="uppercase mb-2">Navigate</p>
@@ -479,6 +501,7 @@ export default function Dashboard() {
             </div>
           </section>
 
+          {/* Scripture Banner */}
           <section className="py-16">
             <div className="relative rounded-2xl overflow-hidden" style={{ background: 'linear-gradient(135deg, #0F2A4A 0%, #1a3d68 50%, #2E6DE7 100%)' }}>
               <div className="absolute right-8 sm:right-16 top-1/2 -translate-y-1/2 pointer-events-none" style={{ opacity: 0.05 }}>

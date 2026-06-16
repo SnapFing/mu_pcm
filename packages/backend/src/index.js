@@ -33,6 +33,7 @@ app.use('/api/events',        require('./routes/events'));
 app.use('/api/journals',      require('./routes/journals'));
 app.use('/api/media',         require('./routes/media'));
 app.use('/api/heroes',        require('./routes/heroes'));
+app.use('/api/banners',       require('./routes/banners'));
 app.use('/api/groups',        require('./routes/groups'));
 app.use('/api/resources',     require('./routes/resources'));
 app.use('/api/about',         require('./routes/about'));

@@ -17,6 +17,7 @@ import {
   useJournals,
   useMedia,
   useHeroes,
+  useBanners,
   useGroups,
   useResources,
   usePrayers,
@@ -932,7 +933,6 @@ function HeroesSection({ role, token }) {
 }
 
 // ── Groups ─────────────────────────────────────────────────────────────────
-// ── Groups ─────────────────────────────────────────────────────────────────
 function GroupsSection({ role }) {
   const { items, add, update, remove } = useGroups();
   const [modal, setModal] = useState(null);
@@ -1667,6 +1667,129 @@ function OverviewSection({ setSection, role }) {
   );
 }
 
+function BannersSection({ token }) {
+  const { items, add, update, remove } = useBanners();
+  const [modal, setModal] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const blank = { caption: '', status: 'Active', order: items.length + 1, image: '' };
+  const [form, setForm] = useState(blank);
+  const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file, file.name);
+      const res = await fetch(`${API}/api/uploads`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Upload failed');
+      setForm((p) => ({ ...p, image: data.url }));
+    } catch (err) {
+      alert(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const save = () => saveAndClose({ modal, form, add, update, setModal });
+
+  return (
+    <div>
+      <SHead
+        title="Banner Slides"
+        sub="Landing page hero carousel — group photos, church sessions, campus life"
+        onAdd={() => { setForm({ ...blank, order: items.length + 1 }); setModal('add'); }}
+      />
+      <Table
+        cols={[
+          { key: 'image',   label: 'Image' },
+          { key: 'caption', label: 'Caption', clip: true },
+          { key: 'order',   label: 'Order' },
+          { key: 'status',  label: 'Status' },
+        ]}
+        rows={items.map((r) => ({
+          ...r,
+          image: r.image
+            ? <img src={r.image} alt="slide" className="w-16 h-10 object-cover rounded" />
+            : <span className="text-xs text-slate-400">No image</span>,
+        }))}
+        onEdit={(r) => { setForm({ ...r }); setModal(r); }}
+        onDelete={remove}
+      />
+      {modal && (
+        <Modal
+          title={modal === 'add' ? 'Add Banner Slide' : 'Edit Banner Slide'}
+          onClose={() => setModal(null)}
+        >
+          <Field label="Slide Image">
+            {form.image && (
+              <div className="relative mb-2">
+                <img src={form.image} alt="preview" className="w-full h-32 object-cover rounded-lg" />
+                <button
+                  type="button"
+                  onClick={() => setForm((p) => ({ ...p, image: '' }))}
+                  className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center bg-red-500 text-white text-xs"
+                >✕</button>
+              </div>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              disabled={uploading}
+              className="text-sm"
+            />
+            {uploading && <p className="text-xs mt-1" style={{ color: '#64748B' }}>Uploading…</p>}
+            <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>
+              Group photos, church sessions, campus life images. Landscape orientation works best.
+            </p>
+          </Field>
+
+          <Field label="Caption (optional)">
+            <Input
+              value={form.caption}
+              onChange={f('caption')}
+              placeholder="e.g. Sabbath worship service — July 2025"
+            />
+          </Field>
+
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <Field label="Display Order">
+                <Input
+                  type="number"
+                  value={form.order}
+                  onChange={f('order')}
+                  placeholder="1"
+                />
+              </Field>
+            </div>
+            <div className="flex-1">
+              <Field label="Status">
+                <Sel
+                  value={form.status}
+                  onChange={f('status')}
+                  options={['Active', 'Inactive']}
+                />
+              </Field>
+            </div>
+          </div>
+
+          <MFooter onClose={() => setModal(null)} onSave={save} />
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+
 // ═══════════════════════════════════════════════════════════════════════════
 // ROOT ADMIN PAGE
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1703,6 +1826,7 @@ export default function AdminPage() {
       { key: "journals", label: "Journals", icon: Icons.journals },
       { key: "media", label: "Media", icon: Icons.media },
       { key: "heroes", label: "Heroes", icon: Icons.heroes },
+      { key: "banners", label: "Banner Slides", icon: Icons.media },
       { key: "groups", label: "Groups", icon: Icons.groups, divider: true },
       // Group join requests (admin+)
       ...(user?.role !== 'editor' ? [{ key: "group-requests", label: "Group Requests", icon: Icons.users, badge: 0 }] : []),
@@ -1729,6 +1853,7 @@ export default function AdminPage() {
     journals:      <JournalsSection role={user?.role} />,
     media:         <MediaSection role={user?.role} />,
     heroes:        <HeroesSection role={user?.role} token={token} />,
+    banners:       <BannersSection token={token} />,
     groups:        <GroupsSection role={user?.role} />,
     'group-requests': <GroupRequestsSection />, 
     resources:     <ResourcesSection role={user?.role} token={token} />,

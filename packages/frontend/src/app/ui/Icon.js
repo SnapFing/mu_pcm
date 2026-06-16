@@ -22,6 +22,7 @@ export function Svg({ children, size = 16, className = '', title, ...props }) {
   );
 }
 
+
 export const FacebookIcon = (props) => (
   <Svg {...props}>
     <path d="M18 2h-3a4 4 0 00-4 4v3H8v4h3v8h4v-8h3l1-4h-4V6a1 1 0 011-1h3" />
@@ -84,6 +85,7 @@ export const ChevronRight = (props) => (
     <path d="M9 18l6-6-6-6" />
   </Svg>
 );
+export const ChevronRightIcon = ChevronRight;  // ← ADD THIS
 
 export const UsersIcon = (props) => (
   <Svg {...props}>
@@ -201,10 +203,104 @@ export const BookIcon = (props) => (
     <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
   </Svg>
 );
+export const BookOpenIcon = BookIcon; 
 
 export const MediaIcon = (props) => (
   <Svg {...props}>
     <circle cx="12" cy="12" r="10" />
     <path d="M10 8l6 4-6 4V8z" />
+  </Svg>
+);
+export const ShieldIcon = (props) => (
+  <Svg {...props}>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </Svg>
+);
+
+export const SparklesIcon = (props) => (
+  <Svg {...props}>
+    <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" />
+    <path d="M19 10l.75 2.25L22 13l-2.25.75L19 16l-.75-2.25L16 13l2.25-.75L19 10z" />
+    <path d="M5 10l.75 2.25L8 13l-2.25.75L5 16l-.75-2.25L2 13l2.25-.75L5 10z" />
+  </Svg>
+);
+
+export const CheckCircle2Icon = (props) => (
+  <Svg {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M16 10l-4 4-2-2" />
+  </Svg>
+);
+
+export const CompassIcon = (props) => (
+  <Svg {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M14.5 9.5l-5 5L12 12l2.5-2.5z" />
+    <path d="M9.5 14.5l5-5L12 12l-2.5 2.5z" />
+  </Svg>
+);
+
+export const FeatherIcon = (props) => (
+  <Svg {...props}>
+    <path d="M21 2c-2 2-5 5-5 9 0 1.5.5 3 1 4l-6 6H5l2-6-6-6 6-6 6 2c1-.5 2.5-1 4-1z" />
+    <path d="M5 12l6 6" />
+  </Svg>
+);
+
+export const UtensilsIcon = (props) => (
+  <Svg {...props}>
+    <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2" />
+    <path d="M7 2v20" />
+    <path d="M21 15V2a5 5 0 00-5 5v6h3.5" />
+    <path d="M19.5 13V22" />
+  </Svg>
+);
+
+export const MusicIcon = (props) => (
+  <Svg {...props}>
+    <circle cx="9" cy="18" r="4" />
+    <path d="M13 4v12l7-3" />
+  </Svg>
+);
+
+export const HeartPulseIcon = (props) => (
+  <Svg {...props}>
+    <path d="M20 12h-2l-2-4-4 8-2-4H4" />
+    <path d="M12 2a4 4 0 00-4 4c0 3 4 8 4 8s4-5 4-8a4 4 0 00-4-4z" />
+  </Svg>
+);
+
+export const AwardIcon = (props) => (
+  <Svg {...props}>
+    <circle cx="12" cy="8" r="6" />
+    <path d="M12 2v6M12 14v8M8 22h8" />
+    <path d="M16 16l2 6M8 16l-2 6" />
+  </Svg>
+);
+
+export const ArrowRightIcon = (props) => (
+  <Svg {...props}>
+    <path d="M5 12h14M12 5l7 7-7 7" />
+  </Svg>
+);
+
+export const HelpCircleIcon = (props) => (
+  <Svg {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01" />
+  </Svg>
+);
+
+export const Volume2Icon = (props) => (
+  <Svg {...props}>
+    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+    <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07" />
+  </Svg>
+);
+
+export const GraduationCapIcon = (props) => (
+  <Svg {...props}>
+    <path d="M22 10l-10-4L2 10l10 4 10-4z" />
+    <path d="M6 12v5c0 2 3 4 6 4s6-2 6-4v-5" />
   </Svg>
 );
