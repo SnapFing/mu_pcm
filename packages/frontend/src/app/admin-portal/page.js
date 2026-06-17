@@ -1803,16 +1803,35 @@ function StudentRegistrationsSection() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Registration Approval Workflow:
   const approve = async (uid) => {
     if (!confirm('Approve this student?')) return;
-    await requestJson(`${API}/api/students/${uid}/approve`, { method: 'POST' });
-    load();
+    try {
+      const result = await requestJson(`${API}/api/students/${uid}/approve`, { method: 'POST' });
+      if (!result.ok) {
+        alert(result.error || 'Approval failed. The user may not exist or the token may have expired.');
+        return;
+      }
+      await load(); // refresh the list
+    } catch (err) {
+      alert('Network error: ' + err.message);
+    }
   };
 
+
+  // Rejection Workflow:
   const reject = async (uid) => {
     if (!confirm('Permanently reject and delete this student? This cannot be undone.')) return;
-    await requestJson(`${API}/api/students/${uid}`, { method: 'DELETE' });
-    load();
+    try {
+      const result = await requestJson(`${API}/api/students/${uid}`, { method: 'DELETE' });
+      if (!result.ok) {
+        alert(result.error || 'Rejection failed. The user may not exist or the token may have expired.');
+        return;
+      }
+      await load(); // refresh the list
+    } catch (err) {
+      alert('Network error: ' + err.message);
+    }
   };
 
   if (loading) return <div className="p-8 text-center text-slate-400">Loading...</div>;

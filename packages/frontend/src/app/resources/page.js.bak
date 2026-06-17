@@ -38,57 +38,42 @@ export default function RegisterPage() {
 
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!form.email || !form.password || !form.name) return;
-  setLoading(true);
-  setError('');
-  let cred = null;                                          // ← track credential
-  try {
-    const auth = getFirebaseAuth();
-    cred = await createUserWithEmailAndPassword(auth, form.email, form.password);
-    const idToken = await cred.user.getIdToken();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.email || !form.password || !form.name) return;
+    setLoading(true);
+    setError('');
+    try {
+      const auth = getFirebaseAuth();
+      const cred = await createUserWithEmailAndPassword(auth, form.email, form.password);
+      const idToken = await cred.user.getIdToken();
 
-    const res = await fetch(`${API}/api/students`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${idToken}`,
-      },
-      body: JSON.stringify({
-        name: form.name,
-        email: form.email,
-        studentId: form.category === 'Ordinary' ? form.studentId : undefined,
-        department: form.category === 'Ordinary' ? form.department : undefined,
-        year: form.category === 'Ordinary' ? form.year : undefined,
-        phone: form.phone,
-        category: form.category,
-        joinedBands: form.initialBand ? [form.initialBand] : [],
-      }),
-    });
+      const res = await fetch(`${API}/api/students`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          studentId: form.category === 'Ordinary' ? form.studentId : undefined,
+          department: form.category === 'Ordinary' ? form.department : undefined,
+          year: form.category === 'Ordinary' ? form.year : undefined,
+          phone: form.phone,
+          category: form.category,
+          joinedBands: form.initialBand ? [form.initialBand] : [],
+        }),
+      });
 
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || 'Profile creation failed');  // ← real error now
-    }
-    setDone(true);
+      if (!res.ok) throw new Error('Profile creation failed');
+      setDone(true);
     } catch (err) {
-  // Clean up the Firebase user if the backend call failed
-  if (cred) {
-    await cred.user.delete().catch(() => {});
-  }
-  const friendlyErrors = {
-    'auth/email-already-in-use': 'An account with this email already exists. Try logging in instead.',
-    'auth/weak-password': 'Password must be at least 6 characters.',
-    'auth/invalid-email': 'Please enter a valid email address.',
-    'auth/network-request-failed': 'Network error. Check your connection and try again.',
+      setError(err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
   };
-  const code = err.code || '';
-  setError(friendlyErrors[code] || err.message || 'Registration failed');
-} finally {
-  setLoading(false);
-}
-};
 
   if (done) {
     return (

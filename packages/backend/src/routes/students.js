@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { admin, db } = require('../firebase');
+const { verifyToken, requireRole } = require('../middleware/auth');
 
 router.post('/', async (req, res) => {
   try {
@@ -71,11 +72,12 @@ router.get('/me', async (req, res) => {
 // ── Admin: list all students (or filter by status) ──────────────────────────
 router.get('/admin', verifyToken, requireRole('admin'), async (req, res) => {
   try {
-    const { status } = req.query;  // optional ?status=pending
-    let query = db.collection('students').orderBy('createdAt', 'desc');
-    if (status) query = query.where('status', '==', status);
-    const snap = await query.limit(200).get();
-    const students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const snap = await db.collection('students').orderBy('createdAt', 'desc').limit(200).get();
+    let students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const { status } = req.query;
+    if (status) {
+      students = students.filter(s => s.status === status);
+    }
     res.json(students);
   } catch (err) {
     res.status(500).json({ error: err.message });
