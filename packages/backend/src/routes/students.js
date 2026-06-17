@@ -105,7 +105,7 @@ router.post('/:uid/approve', verifyToken, requireRole('admin'), async (req, res)
         to: student.email,
         subject: '🎉 Your MU SDA PCM account has been approved!',
         html: `<p>Dear ${student.name},</p>
-               <p>Your account has been approved. You can now log in at <a href="https://mu-pcm.vercel.app/login">mupcm.vercel.app/login</a>.</p>
+               <p>Your account has been approved. You can now log in at <a href="https://mu-pcm.vercel.app/login">mu-pcm.vercel.app/login</a>.</p>
                <p>Welcome to the community!</p>`,
       });
     }
