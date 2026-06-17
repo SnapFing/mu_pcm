@@ -1,8 +1,9 @@
 'use client';
 import { useState } from 'react';
+
 import { useRouter } from 'next/navigation';
 import { getFirebaseAuth } from '@/lib/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -10,6 +11,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Handle login form submission
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,6 +28,26 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // Handle forgot password
+
+  const handleForgotPassword = async () => {
+  if (!email) return alert('Enter your email first');
+  const auth = getFirebaseAuth();
+  if (!auth) return;
+  try {
+    const resetUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/reset-password`
+      : '/reset-password';
+    await sendPasswordResetEmail(auth, email, {
+      url: resetUrl,
+      handleCodeInApp: true,
+    });
+    alert('Password reset email sent to ' + email);
+  } catch (err) {
+    setError(err.message || 'Failed to send reset email');
+  }
+};
 
   const labelStyle = {
     fontSize: 13, fontWeight: 600, color: '#1E293B', marginBottom: 6, display: 'block',
@@ -72,6 +95,14 @@ export default function LoginPage() {
             {loading ? 'Logging in...' : 'Log In'}
           </button>
         </form>
+
+        <button
+          onClick={handleForgotPassword}
+          className="text-xs font-medium underline mt-2"
+          style={{ color: '#2E6DE7', background: 'none', border: 'none', cursor: 'pointer' }}
+        >
+          Forgot password?
+        </button>
 
         <p className="text-center text-xs mt-4" style={{ color: '#64748B' }}>
           Don't have an account?{' '}

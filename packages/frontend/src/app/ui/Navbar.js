@@ -7,8 +7,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import { getAuth, onIdTokenChanged } from 'firebase/auth';
-import { getApps } from 'firebase/app';
+import { getFirebaseAuth } from '@/lib/firebase';
+import { onIdTokenChanged, signOut } from 'firebase/auth';
 import Button from '@/app/ui/Button';
 import { MenuIcon, XIcon } from '@/app/ui/Icon';
 
@@ -25,20 +25,23 @@ const navLinks = [
   { label: 'Contact',   href: '/contact'   },
 ];
 
-/* Using shared icons from Icon.js */
-
 export default function Navbar({ activePath = '' }) {
   const [open,     setOpen]     = useState(false);
   const [scrolled, setScrolled] = useState(false);
-
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-      if (!getApps().length) return;
-      const auth = getAuth();
-      const unsub = onIdTokenChanged(auth, (u) => setUser(u));
-      return unsub;
-    }, []);
+    const auth = getFirebaseAuth();
+    if (!auth) return;
+    const unsub = onIdTokenChanged(auth, (u) => setUser(u));
+    return unsub;
+  }, []);
+
+  const handleLogout = async () => {
+    const auth = getFirebaseAuth();
+    if (auth) await signOut(auth);
+    window.location.href = '/';
+  };
 
   const isDashboard = activePath === '/dashboard';
 
@@ -97,8 +100,8 @@ export default function Navbar({ activePath = '' }) {
               return (
                 <a key={href} href={href}
                   className="nav-link px-3.5 py-2 rounded-lg text-[13px] font-medium transition-all relative"
-                          style={{ color: isActive ? 'white' : 'rgba(255,255,255,0.72)', background: isActive ? 'rgba(46,109,231,0.28)' : 'transparent' }}
-                          aria-current={isActive ? 'page' : undefined}>
+                  style={{ color: isActive ? 'white' : 'rgba(255,255,255,0.72)', background: isActive ? 'rgba(46,109,231,0.28)' : 'transparent' }}
+                  aria-current={isActive ? 'page' : undefined}>
                   {label}
                   {isActive && (
                     <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full"
@@ -111,9 +114,18 @@ export default function Navbar({ activePath = '' }) {
 
           {/* CTA + Hamburger */}
           <div className="flex items-center gap-3 shrink-0">
-            {!user && (
+            {user ? (
+              <button
+                onClick={handleLogout}
+                className="hidden sm:inline-flex text-white/80 hover:text-white text-sm font-semibold transition-colors"
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                Logout
+              </button>
+            ) : (
               <Button href="/register" variant="primary" size="md" className="hidden sm:inline-flex">Join Us</Button>
             )}
+
             <button onClick={() => setOpen(!open)}
               className="ham-btn lg:hidden w-9 h-9 flex items-center justify-center rounded-lg transition-all text-white"
               style={{
@@ -150,7 +162,7 @@ export default function Navbar({ activePath = '' }) {
       <div
         className="fixed top-0 right-0 bottom-0 z-50 lg:hidden flex flex-col"
         style={{
-          width:      'min(52vw, 320px)',   /* half-ish screen, max 320px */
+          width:      'min(52vw, 320px)',
           background: 'rgba(10,26,46,0.97)',
           backdropFilter: 'blur(20px)',
           borderLeft: '1px solid rgba(255,255,255,0.08)',
@@ -195,9 +207,19 @@ export default function Navbar({ activePath = '' }) {
           })}
         </nav>
 
-        {/* Drawer footer — Join Us CTA */}
+        {/* Drawer footer */}
         <div className="px-4 py-5" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <Button href="/about" variant="primary" size="md" className="w-full text-center" onClick={() => setOpen(false)}>Join Us</Button>
+          {user ? (
+            <button
+              onClick={() => { handleLogout(); setOpen(false); }}
+              className="w-full py-3 rounded-xl text-sm font-bold text-white text-center"
+              style={{ background: '#2E6DE7', border: 'none', cursor: 'pointer' }}
+            >
+              Logout
+            </button>
+          ) : (
+            <Button href="/register" variant="primary" size="md" className="w-full text-center" onClick={() => setOpen(false)}>Join Us</Button>
+          )}
         </div>
       </div>
     </>

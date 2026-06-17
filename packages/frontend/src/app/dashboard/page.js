@@ -1,17 +1,16 @@
 'use client';
 import React from 'react';
-import { getAuth, onIdTokenChanged } from 'firebase/auth';
-import { getApps } from 'firebase/app';
-
 import { useState, useEffect, useRef } from 'react';
-import Navbar          from '@/app/ui/Navbar';
-import Footer          from '@/app/ui/Footer';
-import Button          from '@/app/ui/Button';
+import Navbar from '@/app/ui/Navbar';
+import Footer from '@/app/ui/Footer';
+import Button from '@/app/ui/Button';
 import SabbathGreeting from '@/app/ministry/SabbathGreeting';
-import VerseDisplay    from '@/app/ministry/VerseDisplay';
-import CountdownTimer  from '@/app/ministry/CountdownTimer';
+import VerseDisplay from '@/app/ministry/VerseDisplay';
+import CountdownTimer from '@/app/ministry/CountdownTimer';
 import { downloadICS } from '@/app/utils/calendar';
-import { useEvents }   from '@/app/context/DataContext';
+import { useEvents } from '@/app/context/DataContext';
+import { getFirebaseAuth } from '@/lib/firebase';
+import { onIdTokenChanged } from 'firebase/auth';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -400,10 +399,10 @@ export default function Dashboard() {
   // ── Student name for greeting ──────────────────────────────────────
   const [studentName, setStudentName] = useState(null);
 
-  useEffect(() => {
-      if (!getApps().length) return;
-      const auth = getAuth();
-      const unsub = onIdTokenChanged(auth, async (user) => {
+    useEffect(() => {
+        const auth = getFirebaseAuth();
+        if (!auth) return;
+        const unsub = onIdTokenChanged(auth, async (user) => {
       if (user) {
         try {
           const idToken = await user.getIdToken();
