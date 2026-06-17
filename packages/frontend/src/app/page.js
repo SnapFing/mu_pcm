@@ -1,5 +1,7 @@
 'use client';
 import { useState } from 'react';
+
+import { getAuth, onIdTokenChanged } from 'firebase/auth';
 import Link from 'next/link';
 //import Navbar from '@/app/ui/Navbar';
 import Footer from '@/app/ui/Footer';
@@ -16,6 +18,16 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 function HeroCarousel() {
   const [slides, setSlides] = useState([]);
   const [index, setIndex] = useState(0);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+useEffect(() => {
+  const auth = getAuth();
+  if (!auth) return;
+  const unsub = onIdTokenChanged(auth, (user) => {
+    setIsLoggedIn(!!user);
+  });
+  return unsub;
+}, []);
 
   useEffect(() => {
     fetch(`${API}/api/banners`)
@@ -92,19 +104,33 @@ function HeroCarousel() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <Link
-            href="/dashboard"
-            className="w-full sm:w-auto bg-[#2E6DE7] hover:bg-[#2E6DE7]/90 text-white font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 group"
-          >
-            Continue as Guest
-            <ArrowRightIcon className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Link>
-          <Link
-            href="/register"
-            className="w-full sm:w-auto bg-white/10 hover:bg-white/15 text-white font-bold px-8 py-4 rounded-xl border border-white/20 hover:border-white/40 transition-all flex items-center justify-center gap-2"
-          >
-            Sign Up as Student
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            {isLoggedIn ? (
+              <Link
+                href="/dashboard"
+                className="w-full sm:w-auto bg-[#2E6DE7] hover:bg-[#2E6DE7]/90 text-white font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 group"
+              >
+                Go to Dashboard
+                <ArrowRightIcon className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="w-full sm:w-auto bg-[#2E6DE7] hover:bg-[#2E6DE7]/90 text-white font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 group"
+                >
+                  Continue as Guest
+                  <ArrowRightIcon className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+                <Link
+                  href="/register"
+                  className="w-full sm:w-auto bg-white/10 hover:bg-white/15 text-white font-bold px-8 py-4 rounded-xl border border-white/20 hover:border-white/40 transition-all flex items-center justify-center gap-2"
+                >
+                  Sign Up as Student
+                </Link>
+              </>
+            )}
+          </div>
         </div>
 
         <p className="mt-8 text-xs text-white/40">

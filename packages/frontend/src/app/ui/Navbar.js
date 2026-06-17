@@ -7,6 +7,8 @@
  */
 
 import { useState, useEffect } from 'react';
+import { getAuth, onIdTokenChanged } from 'firebase/auth';
+import { getApps } from 'firebase/app';
 import Button from '@/app/ui/Button';
 import { MenuIcon, XIcon } from '@/app/ui/Icon';
 
@@ -28,6 +30,15 @@ const navLinks = [
 export default function Navbar({ activePath = '' }) {
   const [open,     setOpen]     = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+      if (!getApps().length) return;
+      const auth = getAuth();
+      const unsub = onIdTokenChanged(auth, (u) => setUser(u));
+      return unsub;
+    }, []);
 
   const isDashboard = activePath === '/dashboard';
 
@@ -100,7 +111,9 @@ export default function Navbar({ activePath = '' }) {
 
           {/* CTA + Hamburger */}
           <div className="flex items-center gap-3 shrink-0">
-            <Button href="/about" variant="primary" size="md" className="hidden sm:inline-flex">Join Us</Button>
+            {!user && (
+              <Button href="/register" variant="primary" size="md" className="hidden sm:inline-flex">Join Us</Button>
+            )}
             <button onClick={() => setOpen(!open)}
               className="ham-btn lg:hidden w-9 h-9 flex items-center justify-center rounded-lg transition-all text-white"
               style={{

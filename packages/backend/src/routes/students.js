@@ -2,10 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { admin, db } = require('../firebase');
 
-// POST /api/students – create or update student profile
 router.post('/', async (req, res) => {
   try {
-    // Verify the Firebase ID token
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'No token provided' });
@@ -14,7 +12,10 @@ router.post('/', async (req, res) => {
     const decoded = await admin.auth().verifyIdToken(idToken);
     const uid = decoded.uid;
 
-    const { name, studentId, department, year, phone } = req.body;
+    // Disable the account until admin approves
+    await admin.auth().updateUser(uid, { disabled: true });
+
+    const { name, studentId, department, year, phone, category, initialBand } = req.body;
     await db.collection('students').doc(uid).set(
       {
         email: decoded.email,
@@ -23,12 +24,26 @@ router.post('/', async (req, res) => {
         department: department || '',
         year: year || '',
         phone: phone || '',
+        category: category || 'Ordinary',
+        joinedBands: initialBand ? [initialBand] : [],
+        status: 'pending',               // ← NEW
         createdAt: new Date().toISOString(),
       },
       { merge: true }
     );
 
-    res.json({ success: true });
+    // Notify admin (optional)
+    const { sendEmail } = require('../utils/email');
+    const notifyEmail = process.env.NOTIFY_EMAIL || process.env.EMAIL_USER;
+    if (notifyEmail) {
+      sendEmail({
+        to: notifyEmail,
+        subject: `🆕 New student registration – ${name}`,
+        html: `<p>${name} (${decoded.email}) has registered and is waiting for approval.</p>`,
+      });
+    }
+
+    res.json({ success: true, message: 'Registration pending approval' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -48,6 +63,65 @@ router.get('/me', async (req, res) => {
       return res.status(404).json({ error: 'Student profile not found' });
     }
     res.json({ id: doc.id, ...doc.data() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Admin: list all students (or filter by status) ──────────────────────────
+router.get('/admin', verifyToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { status } = req.query;  // optional ?status=pending
+    let query = db.collection('students').orderBy('createdAt', 'desc');
+    if (status) query = query.where('status', '==', status);
+    const snap = await query.limit(200).get();
+    const students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    res.json(students);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Admin: approve a student ────────────────────────────────────────────────
+router.post('/:uid/approve', verifyToken, requireRole('admin'), async (req, res) => {
+  try {
+    const uid = req.params.uid;
+    // Enable Firebase Auth user
+    await admin.auth().updateUser(uid, { disabled: false });
+    // Update Firestore status
+    await db.collection('students').doc(uid).update({
+      status: 'approved',
+      approvedAt: new Date().toISOString(),
+      approvedBy: req.user.uid,
+    });
+    // Send welcome email
+    const studentDoc = await db.collection('students').doc(uid).get();
+    const student = studentDoc.data();
+    if (student && student.email) {
+      const { sendEmail } = require('../utils/email');
+      sendEmail({
+        to: student.email,
+        subject: '🎉 Your MU SDA PCM account has been approved!',
+        html: `<p>Dear ${student.name},</p>
+               <p>Your account has been approved. You can now log in at <a href="https://mupcm.vercel.app/login">mupcm.vercel.app/login</a>.</p>
+               <p>Welcome to the community!</p>`,
+      });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Admin: reject / delete student ─────────────────────────────────────────
+router.delete('/:uid', verifyToken, requireRole('admin'), async (req, res) => {
+  try {
+    const uid = req.params.uid;
+    // Delete Firebase Auth user
+    await admin.auth().deleteUser(uid).catch(() => {});
+    // Delete Firestore document
+    await db.collection('students').doc(uid).delete();
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

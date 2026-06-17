@@ -1789,6 +1789,60 @@ function BannersSection({ token }) {
   );
 }
 
+function StudentRegistrationsSection() {
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const result = await requestJson(`${API}/api/students/admin?status=pending`);
+      if (result.ok) setStudents(result.data);
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const approve = async (uid) => {
+    if (!confirm('Approve this student?')) return;
+    await requestJson(`${API}/api/students/${uid}/approve`, { method: 'POST' });
+    load();
+  };
+
+  const reject = async (uid) => {
+    if (!confirm('Permanently reject and delete this student? This cannot be undone.')) return;
+    await requestJson(`${API}/api/students/${uid}`, { method: 'DELETE' });
+    load();
+  };
+
+  if (loading) return <div className="p-8 text-center text-slate-400">Loading...</div>;
+
+  return (
+    <div>
+      <SHead title="Student Registrations" sub={`${students.length} pending`} />
+      <Table
+        cols={[
+          { key: 'name', label: 'Name' },
+          { key: 'email', label: 'Email', clip: true },
+          { key: 'category', label: 'Category' },
+          { key: 'studentId', label: 'Student ID', clip: true },
+          { key: 'createdAt', label: 'Applied' },
+        ]}
+        rows={students.map(s => ({ ...s, createdAt: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '—' }))}
+        extra={(row) => (
+          <>
+            <button onClick={() => approve(row.id)} className="p-1.5 rounded-lg hover:bg-emerald-100" title="Approve">
+              <Icon d={Icons.check} size={14} className="text-emerald-600" />
+            </button>
+            <button onClick={() => reject(row.id)} className="p-1.5 rounded-lg hover:bg-red-100" title="Reject">
+              <Icon d={Icons.trash} size={14} className="text-red-500" />
+            </button>
+          </>
+        )}
+      />
+    </div>
+  );
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ROOT ADMIN PAGE
@@ -1833,10 +1887,11 @@ export default function AdminPage() {
       { key: "resources", label: "Resources", icon: Icons.resources },
     ];
     // Only admin+ can see prayers and contacts
-    if (user?.role !== 'editor') {
+     if (user?.role !== 'editor') {
       base.push(
         { key: "prayer", label: "Prayer Requests", icon: Icons.prayer, badge: unreadPrayers },
         { key: "contact", label: "Contact Inbox", icon: Icons.contact, badge: unreadContacts, divider: true },
+        { key: "student-registrations", label: "Student Registrations", icon: Icons.users },
       );
     }
     base.push({ key: "about", label: "About Editor", icon: Icons.about });
@@ -1861,6 +1916,7 @@ export default function AdminPage() {
     contact:       <ContactSection role={user?.role} />,
     about:         <AboutSection />,
     users:         <UsersSection token={token} />,
+    'student-registrations': <StudentRegistrationsSection />,
   };
 
   const current = nav.find((n) => n.key === section);
@@ -1930,8 +1986,10 @@ export default function AdminPage() {
                   )}
                 </button>
               </div>
+              
             );
           })}
+          
         </nav>
 
         <div className="px-3 py-3.5 border-t" style={{ borderColor: "rgba(255,255,255,0.07)" }}>

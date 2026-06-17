@@ -1,5 +1,7 @@
 'use client';
 import React from 'react';
+import { getAuth, onIdTokenChanged } from 'firebase/auth';
+import { getApps } from 'firebase/app';
 
 import { useState, useEffect, useRef } from 'react';
 import Navbar          from '@/app/ui/Navbar';
@@ -12,10 +14,6 @@ import { downloadICS } from '@/app/utils/calendar';
 import { useEvents }   from '@/app/context/DataContext';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-
-// ── FIX #1: userName was " " (space character), causing "Good Morning,  !"
-// Use a friendly generic name — or swap to a real auth-based name later.
-const userName = "Friend";
 
 // ── Icon wrappers (use shared Icon exports)
 import { ChevronRight as IconChevronRight, ChevronLeft as IconChevronLeft, CalendarIcon as IconCalendar, ClockIcon as IconClock, PinIcon as IconPin, BookIcon as IconBook, MediaIcon as IconMedia, StarIcon as IconStar, UsersIcon as IconUsers, CrossIcon as IconCross, CreditIcon as IconCredit, AlertIcon as IconAlert, BellIcon as IconBell } from '@/app/ui/Icon';
@@ -398,6 +396,37 @@ export default function Dashboard() {
     .filter(e => e.status === 'Upcoming')
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   const nextEvent = upcoming[0] || null;
+
+  // ── Student name for greeting ──────────────────────────────────────
+  const [studentName, setStudentName] = useState(null);
+
+  useEffect(() => {
+      if (!getApps().length) return;
+      const auth = getAuth();
+      const unsub = onIdTokenChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const idToken = await user.getIdToken();
+          const res = await fetch(`${API}/api/students/me`, {
+            headers: { Authorization: `Bearer ${idToken}` },
+          });
+          if (res.ok) {
+            const profile = await res.json();
+            setStudentName(profile.name);
+          } else {
+            setStudentName(null);
+          }
+        } catch {
+          setStudentName(null);
+        }
+      } else {
+        setStudentName(null);
+      }
+    });
+    return unsub;
+  }, []);
+
+  const userName = studentName || "Friend";
 
   return (
     <>
