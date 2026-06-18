@@ -90,9 +90,10 @@ router.post('/invite', ...requireSuperAdmin, async (req, res) => {
     );
 
     // Send password-reset email so they can log in
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const resetLink = await admin.auth().generatePasswordResetLink(email, {
-      url: 'https://mu-pcm.vercel.app/admin-portal',
-      handleCodeInApp: true,
+      url: `${frontendUrl}/admin-portal`,
+      // NO handleCodeInApp – we want the web flow, not mobile app flow
     });
 
         // Send password-reset email to the invited user

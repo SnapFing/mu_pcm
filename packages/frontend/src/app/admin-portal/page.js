@@ -325,7 +325,7 @@ function LoginGate({ onLogin }) {
       const resetUrl = typeof window !== "undefined"
         ? `${window.location.origin}/admin-portal`
         : "/admin-portal";
-      await sendPasswordResetEmail(auth, email, { url: resetUrl, handleCodeInApp: true});
+      await sendPasswordResetEmail(auth, email, { url: resetUrl });
       alert("Password reset email sent to " + email);
     } catch (err) {
       setError(err.message || "Failed to send reset email");
