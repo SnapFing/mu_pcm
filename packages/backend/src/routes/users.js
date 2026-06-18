@@ -1,4 +1,5 @@
 const express = require('express');
+const { sendEmail } = require('../utils/email');
 const router = express.Router();
 const admin = require('firebase-admin');
 const { db } = require('../firebase');
@@ -94,12 +95,33 @@ router.post('/invite', ...requireSuperAdmin, async (req, res) => {
       handleCodeInApp: true,
     });
 
+        // Send password-reset email to the invited user
+    sendEmail({
+      to: email,
+      subject: `You've been invited as a ${role} – MU SDA PCM Admin Portal`,
+      html: `
+        <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px;border:1px solid #e2e8f7;border-radius:8px;">
+          <div style="background:#0F2A4A;padding:16px 24px;border-radius:6px 6px 0 0;margin:-24px -24px 24px;">
+            <h2 style="color:white;margin:0;font-size:16px;">MU SDA PCM – Admin Invitation</h2>
+          </div>
+          <p style="font-size:14px;color:#334155;">Hello ${displayName || email},</p>
+          <p style="font-size:14px;color:#334155;">You have been invited to join the <strong>MU SDA PCM Admin Portal</strong> as a <strong>${role}</strong>.</p>
+          <p style="font-size:14px;color:#334155;">Click the button below to set your password and log in:</p>
+          <div style="text-align:center;margin:24px 0;">
+            <a href="${resetLink}" style="background:#2E6DE7;color:white;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;">Set Your Password</a>
+          </div>
+          <p style="font-size:12px;color:#94A3B8;">This link will expire after a few hours. If you did not expect this invitation, please ignore this email.</p>
+          <hr style="border:none;border-top:1px solid #E2E8F7;margin:16px 0;">
+          <p style="font-size:12px;color:#94A3B8;">MU SDA PCM &middot; Mulungushi University, Kabwe, Zambia</p>
+        </div>
+      `,
+    });
+
     res.status(201).json({
       id: uid,
       email,
       role,
-      message: 'User invited. Send them the reset link to set their password.',
-      resetLink, // in production, email this rather than returning it
+      message: 'User invited successfully. They will receive an email to set their password.',
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
