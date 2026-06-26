@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { initializeApp, getApps } from "firebase/app";
+import MembersRegisterSection from './MembersRegisterSection';
+import MinutesSection from './MinutesSection';
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
@@ -1890,7 +1892,23 @@ export default function AdminPage() {
   const unreadContacts = contacts.filter((x) => x.status === "Unread").length;
   const totalUnread    = unreadPrayers + unreadContacts;
 
+  // Admin Navigation Bar
   const nav = useMemo(() => {
+
+    const isSuper = user?.role === 'super_admin';
+    const isAdmin = user?.role === 'admin' || isSuper;
+    const isSecretary = user?.role === 'secretary';
+
+    // Secretary-only sidebar
+    if (isSecretary) {
+      return [
+        { key: "student-registrations", label: "Student Registrations", icon: Icons.users },
+        { key: "members-register", label: "Members Register", icon: Icons.journals },
+        { key: "minutes", label: "Meeting Minutes", icon: Icons.about },
+      ];
+    }
+
+
     const base = [
       { key: "overview", label: "Overview", icon: Icons.dashboard },
       { key: "announcements", label: "Announcements", icon: Icons.announce },
@@ -1935,6 +1953,8 @@ export default function AdminPage() {
     about:         <AboutSection />,
     users:         <UsersSection token={token} />,
     'student-registrations': <StudentRegistrationsSection />,
+    'members-register': <MembersRegisterSection token={token} />,
+    'minutes': <MinutesSection token={token} />,
   };
 
   const current = nav.find((n) => n.key === section);

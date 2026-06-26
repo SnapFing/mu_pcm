@@ -6,7 +6,7 @@ const admin = require('firebase-admin');
  *   admin        → manage all content, view users
  *   editor       → create / update content, no delete
  */
-const ROLES = ['editor', 'admin', 'super_admin'];
+const ROLES = ['secretary', 'editor', 'admin', 'super_admin'];
 
 const roleLevel = (role) => ROLES.indexOf(role);
 
@@ -78,10 +78,14 @@ const requireAdmin = [verifyToken, requireRole('admin')];
 /** Super admin only */
 const requireSuperAdmin = [verifyToken, requireRole('super_admin')];
 
+// Secretary only
+const requireSecretary = [verifyToken, requireRole('secretary')];
+
 module.exports = {
   verifyToken,
   requireRole,
   authenticate,       // editor+
   requireAdmin,       // admin+
   requireSuperAdmin,  // super_admin only
+  requireSecretary,   // secretary only
 };

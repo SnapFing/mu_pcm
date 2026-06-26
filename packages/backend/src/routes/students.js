@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { admin, db } = require('../firebase');
-const { verifyToken, requireRole } = require('../middleware/auth');
+const { verifyToken, requireRole, requireAnyRole } = require('../middleware/auth');
 
 router.post('/', async (req, res) => {
   try {
@@ -27,7 +27,12 @@ router.post('/', async (req, res) => {
         phone: phone || '',
         category: category || 'Ordinary',
         joinedBands: initialBand ? [initialBand] : [],
-        status: 'pending',               // ← NEW
+        homeAddress: (req.body.homeAddress || '').trim().slice(0, 300),
+        churchName: (req.body.churchName || '').trim().slice(0, 160),
+        hostel: (req.body.hostel || '').trim().slice(0, 120),
+        roomNumber: (req.body.roomNumber || '').trim().slice(0, 60),
+        locality: (req.body.locality || '').trim().slice(0, 200),
+        status: 'pending',
         createdAt: new Date().toISOString(),
       },
       { merge: true }
@@ -69,8 +74,8 @@ router.get('/me', async (req, res) => {
   }
 });
 
-// ── Admin: list all students (or filter by status) ──────────────────────────
-router.get('/admin', verifyToken, requireRole('admin'), async (req, res) => {
+// ── Admin/Secretary: list all students (or filter by status) ────────────────
+router.get('/admin', verifyToken, requireAnyRole('admin', 'secretary'), async (req, res) => {
   try {
     const snap = await db.collection('students').orderBy('createdAt', 'desc').limit(200).get();
     let students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -84,8 +89,8 @@ router.get('/admin', verifyToken, requireRole('admin'), async (req, res) => {
   }
 });
 
-// ── Admin: approve a student ────────────────────────────────────────────────
-router.post('/:uid/approve', verifyToken, requireRole('admin'), async (req, res) => {
+// ── Admin/Secretary: approve a student ──────────────────────────────────────
+router.post('/:uid/approve', verifyToken, requireAnyRole('admin', 'secretary'), async (req, res) => {
   try {
     const uid = req.params.uid;
     // Enable Firebase Auth user
@@ -101,11 +106,12 @@ router.post('/:uid/approve', verifyToken, requireRole('admin'), async (req, res)
     const student = studentDoc.data();
     if (student && student.email) {
       const { sendEmail } = require('../utils/email');
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       sendEmail({
         to: student.email,
         subject: '🎉 Your MU SDA PCM account has been approved!',
         html: `<p>Dear ${student.name},</p>
-               <p>Your account has been approved. You can now log in at <a href="https://mu-pcm.vercel.app/login">mu-pcm.vercel.app/login</a>.</p>
+               <p>Your account has been approved. You can now log in at <a href="${frontendUrl}/login">${frontendUrl}/login</a>.</p>
                <p>Welcome to the community!</p>`,
       });
     }
@@ -115,8 +121,8 @@ router.post('/:uid/approve', verifyToken, requireRole('admin'), async (req, res)
   }
 });
 
-// ── Admin: reject / delete student ─────────────────────────────────────────
-router.delete('/:uid', verifyToken, requireRole('admin'), async (req, res) => {
+// ── Admin/Secretary: reject / delete student ───────────────────────────────
+router.delete('/:uid', verifyToken, requireAnyRole('admin', 'secretary'), async (req, res) => {
   try {
     const uid = req.params.uid;
     // Delete Firebase Auth user
@@ -124,6 +130,20 @@ router.delete('/:uid', verifyToken, requireRole('admin'), async (req, res) => {
     // Delete Firestore document
     await db.collection('students').doc(uid).delete();
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Admin/Secretary: full member register ──────────────────────────────────
+router.get('/register', verifyToken, requireAnyRole('admin', 'secretary'), async (req, res) => {
+  try {
+    const snap = await db.collection('students')
+      .orderBy('name', 'asc')
+      .limit(500)
+      .get();
+    const members = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    res.json(members);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

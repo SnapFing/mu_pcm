@@ -1,22 +1,8 @@
 'use client';
 import { useState } from 'react';
 import Button from '@/app/ui/Button';
-import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-
-const firebaseConfig = {
-  apiKey:            process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain:        process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId:         process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket:     process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId:             process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
-
-function getFirebaseAuth() {
-  if (!getApps().length) initializeApp(firebaseConfig);
-  return getAuth();
-}
+import { getFirebaseAuth } from '@/lib/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -29,6 +15,11 @@ export default function RegisterPage() {
     department: '',
     year: '',
     phone: '',
+    homeAddress: '',
+    churchName: '',
+    hostel: '',
+    roomNumber: '',
+    locality: '',
     category: 'Ordinary',
     initialBand: '',
   });
@@ -38,57 +29,61 @@ export default function RegisterPage() {
 
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!form.email || !form.password || !form.name) return;
-  setLoading(true);
-  setError('');
-  let cred = null;                                          // ← track credential
-  try {
-    const auth = getFirebaseAuth();
-    cred = await createUserWithEmailAndPassword(auth, form.email, form.password);
-    const idToken = await cred.user.getIdToken();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.email || !form.password || !form.name) return;
+    setLoading(true);
+    setError('');
+    let cred = null;
+    try {
+      const auth = getFirebaseAuth();
+      cred = await createUserWithEmailAndPassword(auth, form.email, form.password);
+      const idToken = await cred.user.getIdToken();
 
-    const res = await fetch(`${API}/api/students`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${idToken}`,
-      },
-      body: JSON.stringify({
-        name: form.name,
-        email: form.email,
-        studentId: form.category === 'Ordinary' ? form.studentId : undefined,
-        department: form.category === 'Ordinary' ? form.department : undefined,
-        year: form.category === 'Ordinary' ? form.year : undefined,
-        phone: form.phone,
-        category: form.category,
-        joinedBands: form.initialBand ? [form.initialBand] : [],
-      }),
-    });
+      const res = await fetch(`${API}/api/students`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          studentId: form.category === 'Ordinary' ? form.studentId : undefined,
+          department: form.category === 'Ordinary' ? form.department : undefined,
+          year: form.category === 'Ordinary' ? form.year : undefined,
+          phone: form.phone,
+          category: form.category,
+          joinedBands: form.initialBand ? [form.initialBand] : [],
+          homeAddress: form.homeAddress,
+          churchName: form.churchName,
+          hostel: form.hostel,
+          roomNumber: form.roomNumber,
+          locality: form.locality,
+        }),
+      });
 
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || 'Profile creation failed');  // ← real error now
-    }
-    setDone(true);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Profile creation failed');
+      }
+      setDone(true);
     } catch (err) {
-  // Clean up the Firebase user if the backend call failed
-  if (cred) {
-    await cred.user.delete().catch(() => {});
-  }
-  const friendlyErrors = {
-    'auth/email-already-in-use': 'An account with this email already exists. Try logging in instead.',
-    'auth/weak-password': 'Password must be at least 6 characters.',
-    'auth/invalid-email': 'Please enter a valid email address.',
-    'auth/network-request-failed': 'Network error. Check your connection and try again.',
+      if (cred) {
+        await cred.user.delete().catch(() => {});
+      }
+      const friendlyErrors = {
+        'auth/email-already-in-use': 'An account with this email already exists. Try logging in instead.',
+        'auth/weak-password': 'Password must be at least 6 characters.',
+        'auth/invalid-email': 'Please enter a valid email address.',
+        'auth/network-request-failed': 'Network error. Check your connection and try again.',
+      };
+      const code = err.code || '';
+      setError(friendlyErrors[code] || err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
   };
-  const code = err.code || '';
-  setError(friendlyErrors[code] || err.message || 'Registration failed');
-} finally {
-  setLoading(false);
-}
-};
 
   if (done) {
     return (
@@ -148,7 +143,7 @@ export default function RegisterPage() {
             <select value={form.category} onChange={set('category')} style={inputStyle}>
               <option value="Ordinary">Ordinary — Baptised Adventist student or employee</option>
               <option value="Associate">Associate — Non-Adventist, committed to our ideals</option>
-              <option value="Honourary">Honourary — Church member over 35 (Patron/Matron)</option>
+              <option value="Honourary">Honourary — Church member over 35 (Patron/Matron/Other)</option>
             </select>
           </div>
 
@@ -172,6 +167,31 @@ export default function RegisterPage() {
           <div>
             <label style={labelStyle}>Phone (optional)</label>
             <input type="tel" placeholder="+260 977 123 456" value={form.phone} onChange={set('phone')} style={inputStyle} />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Room Number</label>
+            <input placeholder="e.g. Room 12, David Livingstone Hostel" value={form.roomNumber} onChange={set('roomNumber')} style={inputStyle} />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Hostel / Campus Accommodation</label>
+            <input placeholder="e.g. Luswefwa Hostel" value={form.hostel} onChange={set('hostel')} style={inputStyle} />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Area / Locality (if not accommodated on campus)</label>
+            <input placeholder="e.g. Green House, Across" value={form.locality} onChange={set('locality')} style={inputStyle} />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Home Address</label>
+            <input placeholder="Your permanent home address" value={form.homeAddress} onChange={set('homeAddress')} style={inputStyle} />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Local Church Name</label>
+            <input placeholder="e.g. Kabwe Central SDA Church" value={form.churchName} onChange={set('churchName')} style={inputStyle} />
           </div>
 
           <div>

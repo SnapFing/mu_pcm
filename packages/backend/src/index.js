@@ -28,6 +28,7 @@ app.use('/api/prayers',       require('./routes/prayers'));
 app.use('/api/contacts',      require('./routes/contacts'));
 app.use('/api/about',         require('./routes/about'));
 app.use('/api/users',         require('./routes/users'));
+app.use('/api/minutes',       require('./routes/minutes'));
 
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);
