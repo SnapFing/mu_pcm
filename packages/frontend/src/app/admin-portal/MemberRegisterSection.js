@@ -33,10 +33,10 @@ export default function MembersRegisterSection({ token }) {
   );
 
   const exportToCSV = () => {
-    const headers = ['Name', 'Email', 'Phone', 'Student ID', 'Department', 'Year', 'Room', 'Home Address', 'Church', 'Category', 'Status'];
+    const headers = ['Name', 'Email', 'Phone', 'Student ID', 'Department', 'Year', 'Room', 'Hostel', 'Locality', 'Home Address', 'Church', 'Category', 'Status'];
     const rows = filtered.map(m => [
       m.name, m.email, m.phone, m.studentId, m.department, m.year,
-      m.roomNumber, m.homeAddress, m.churchName, m.category, m.status
+      m.roomNumber, m.hostel, m.locality, m.homeAddress, m.churchName, m.category, m.status
     ]);
     const csv = [headers, ...rows].map(r => r.map(c => `"${c || ''}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -79,7 +79,7 @@ export default function MembersRegisterSection({ token }) {
         <table className="w-full text-sm" style={{ fontFamily: "'Noto Sans',sans-serif" }}>
           <thead>
             <tr style={{ background: '#F5F7FF' }}>
-              {['Name', 'Email', 'Phone', 'Room', 'Church', 'Category', 'Status', ''].map(h => (
+              {['Name', 'Email', 'Phone', 'Hostel/Locality', 'Church', 'Category', 'Status', ''].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-xs font-semibold" style={{ color: '#0F2A4A' }}>{h.toUpperCase()}</th>
               ))}
             </tr>
@@ -91,7 +91,9 @@ export default function MembersRegisterSection({ token }) {
                 <td className="px-4 py-3" style={{ color: '#334155' }}>{m.name}</td>
                 <td className="px-4 py-3" style={{ color: '#334155' }}>{m.email}</td>
                 <td className="px-4 py-3" style={{ color: '#334155' }}>{m.phone || '—'}</td>
-                <td className="px-4 py-3" style={{ color: '#334155' }}>{m.roomNumber || '—'}</td>
+                <td className="px-4 py-3" style={{ color: '#334155' }}>
+                  {m.hostel || m.locality ? `${m.hostel || ''}${m.hostel && m.locality ? ', ' : ''}${m.locality || ''}` : '—'}
+                </td>
                 <td className="px-4 py-3" style={{ color: '#334155' }}>{m.churchName || '—'}</td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
@@ -135,6 +137,8 @@ export default function MembersRegisterSection({ token }) {
                 ['Department', selected.department],
                 ['Year', selected.year],
                 ['Room Number', selected.roomNumber],
+                ['Hostel', selected.hostel],
+                ['Locality', selected.locality],
                 ['Home Address', selected.homeAddress],
                 ['Church', selected.churchName],
                 ['Category', selected.category],
