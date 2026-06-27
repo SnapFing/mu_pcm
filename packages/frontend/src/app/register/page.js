@@ -112,7 +112,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-10" style={{ background: '#F5F7FF' }}>
-      <div className="w-full max-w-md rounded-2xl p-8" style={{ background: 'white', boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}>
+      <div className="w-full max-w-4xl rounded-2xl p-8" style={{ background: 'white', boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}>
         <h2 className="text-2xl font-bold mb-2 text-center" style={{ color: '#0F2A4A' }}>Join the Community</h2>
         <p className="text-center mb-6" style={{ color: '#475569', fontSize: 13 }}>
           Create your student account to get started.
@@ -124,7 +124,8 @@ export default function RegisterPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+          {/* ── Left Column ───────────────────────────────────────────── */}
           <div>
             <label style={labelStyle}>Full Name *</label>
             <input required placeholder="John Mwanza" value={form.name} onChange={set('name')} style={inputStyle} />
@@ -137,7 +138,6 @@ export default function RegisterPage() {
             <label style={labelStyle}>Password * (min. 6 characters)</label>
             <input required type="password" placeholder="••••••••" value={form.password} onChange={set('password')} style={inputStyle} />
           </div>
-
           <div>
             <label style={labelStyle}>Membership Category</label>
             <select value={form.category} onChange={set('category')} style={inputStyle}>
@@ -160,6 +160,7 @@ export default function RegisterPage() {
               <div>
                 <label style={labelStyle}>Year of Study</label>
                 <select value={form.year} onChange={set('year')} style={inputStyle}>
+                  <option value="">— Select year —</option>
                   <option value="First Year">First Year</option>
                   <option value="Second Year">Second Year</option>
                   <option value="Third Year">Third Year</option>
@@ -167,39 +168,36 @@ export default function RegisterPage() {
                   <option value="Fifth Year">Fifth Year</option>
                 </select>
               </div>
+              {/* placeholder to keep grid alignment */}
+              <div className="hidden md:block" />
             </>
           )}
-
           <div>
             <label style={labelStyle}>Phone (optional)</label>
             <input type="tel" placeholder="+260 977 123 456" value={form.phone} onChange={set('phone')} style={inputStyle} />
           </div>
 
+          {/* ── Right Column ──────────────────────────────────────────── */}
           <div>
             <label style={labelStyle}>Room Number</label>
             <input placeholder="e.g. Room 12, David Livingstone Hostel" value={form.roomNumber} onChange={set('roomNumber')} style={inputStyle} />
           </div>
-
           <div>
             <label style={labelStyle}>Hostel / Campus Accommodation</label>
             <input placeholder="e.g. Luswefwa Hostel" value={form.hostel} onChange={set('hostel')} style={inputStyle} />
           </div>
-
           <div>
             <label style={labelStyle}>Area / Locality (if not accommodated on campus)</label>
             <input placeholder="e.g. Green House, Across" value={form.locality} onChange={set('locality')} style={inputStyle} />
           </div>
-
           <div>
             <label style={labelStyle}>Home Address</label>
             <input placeholder="Your permanent home address" value={form.homeAddress} onChange={set('homeAddress')} style={inputStyle} />
           </div>
-
           <div>
             <label style={labelStyle}>Local Church Name</label>
             <input placeholder="e.g. Kabwe Central SDA Church" value={form.churchName} onChange={set('churchName')} style={inputStyle} />
           </div>
-
           <div>
             <label style={labelStyle}>Band / Committee Interest (optional)</label>
             <select value={form.initialBand} onChange={set('initialBand')} style={inputStyle}>
@@ -215,13 +213,16 @@ export default function RegisterPage() {
             </select>
           </div>
 
-          <button
-            type="submit" disabled={loading}
-            className="w-full py-3 rounded-xl text-sm font-bold text-white mt-2"
-            style={{ background: loading ? '#94A3B8' : '#2E6DE7', cursor: loading ? 'not-allowed' : 'pointer' }}
-          >
-            {loading ? 'Creating your account...' : 'Sign Up'}
-          </button>
+          {/* ── Submit Button (full width) ─────────────────────────────── */}
+          <div className="md:col-span-2">
+            <button
+              type="submit" disabled={loading}
+              className="w-full py-3 rounded-xl text-sm font-bold text-white mt-4"
+              style={{ background: loading ? '#94A3B8' : '#2E6DE7', cursor: loading ? 'not-allowed' : 'pointer' }}
+            >
+              {loading ? 'Creating your account...' : 'Sign Up'}
+            </button>
+          </div>
         </form>
 
         <p className="text-center text-xs mt-4" style={{ color: '#64748B' }}>

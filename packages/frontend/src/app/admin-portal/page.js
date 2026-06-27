@@ -1952,7 +1952,7 @@ export default function AdminPage() {
     contact:       <ContactSection role={user?.role} />,
     about:         <AboutSection />,
     users:         <UsersSection token={token} />,
-    'student-registrations': <StudentRegistrationsSection />,
+    'student-registrations': <MemberRegistersSection/>,
     'member-register': <MemberRegistersSection token={token} />,
     'minutes': <MinutesSection token={token} />,
   };
