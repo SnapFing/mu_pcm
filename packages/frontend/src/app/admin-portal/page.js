@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { initializeApp, getApps } from "firebase/app";
-import MembersRegisterSection from './MembersRegisterSection';
+import MemberRegistersSection from './MemberRegistersSection';
 import MinutesSection from './MinutesSection';
 import { 
   getAuth, 
@@ -1953,7 +1953,7 @@ export default function AdminPage() {
     about:         <AboutSection />,
     users:         <UsersSection token={token} />,
     'student-registrations': <StudentRegistrationsSection />,
-    'members-register': <MembersRegisterSection token={token} />,
+    'member-register': <MemberRegistersSection token={token} />,
     'minutes': <MinutesSection token={token} />,
   };
 

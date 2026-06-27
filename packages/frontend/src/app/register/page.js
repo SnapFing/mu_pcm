@@ -159,7 +159,13 @@ export default function RegisterPage() {
               </div>
               <div>
                 <label style={labelStyle}>Year of Study</label>
-                <input placeholder="Year 2" value={form.year} onChange={set('year')} style={inputStyle} />
+                <select value={form.year} onChange={set('year')} style={inputStyle}>
+                  <option value="First Year">First Year</option>
+                  <option value="Second Year">Second Year</option>
+                  <option value="Third Year">Third Year</option>
+                  <option value="Fourth Year">Fourth Year</option>
+                  <option value="Fifth Year">Fifth Year</option>
+                </select>
               </div>
             </>
           )}
