@@ -33,10 +33,10 @@ export default function MembersRegisterSection({ token }) {
   );
 
   const exportToCSV = () => {
-    const headers = ['Name', 'Email', 'Phone', 'Student ID', 'Department', 'Year', 'Room', 'Hostel', 'Locality', 'Home Address', 'Church', 'Category', 'Status'];
+    const headers = ['Name', 'Email', 'Phone', 'Student ID', 'Department', 'Year', 'Room', 'Hostel', 'Locality', 'Home Address', 'Church', 'Category', 'Status', 'Frozen'];
     const rows = filtered.map(m => [
       m.name, m.email, m.phone, m.studentId, m.department, m.year,
-      m.roomNumber, m.hostel, m.locality, m.homeAddress, m.churchName, m.category, m.status
+      m.roomNumber, m.hostel, m.locality, m.homeAddress, m.churchName, m.category, m.status, m.frozen ? 'Yes' : 'No'
     ]);
     const csv = [headers, ...rows].map(r => r.map(c => `"${c || ''}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -102,14 +102,56 @@ export default function MembersRegisterSection({ token }) {
                     'bg-amber-100 text-amber-700'
                   }`}>{m.category}</span>
                 </td>
+                {/* ── Status + Frozen badge ─────────────────────────────── */}
                 <td className="px-4 py-3">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    m.frozen ? 'bg-yellow-100 text-yellow-700' :
                     m.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
                     'bg-orange-100 text-orange-700'
-                  }`}>{m.status}</span>
+                  }`}>{m.frozen ? 'Frozen' : m.status}</span>
                 </td>
+                {/* ── Actions ────────────────────────────────────────────── */}
                 <td className="px-4 py-3">
-                  <button onClick={() => setSelected(m)} className="text-blue-600 text-xs font-semibold hover:underline">View</button>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <button onClick={() => setSelected(m)}
+                      className="text-blue-600 text-xs font-semibold hover:underline">View</button>
+
+                    {/* Freeze / Unfreeze */}
+                    <button
+                      onClick={async () => {
+                        const freeze = !m.frozen;
+                        const action = freeze ? 'freeze' : 'unfreeze';
+                        if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} ${m.name}?`)) return;
+                        const res = await fetch(`${API}/api/students/${m.id}/freeze`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                          body: JSON.stringify({ disabled: freeze }),
+                        });
+                        if (res.ok) load();
+                        else { const d = await res.json().catch(() => ({})); alert(d.error || 'Failed'); }
+                      }}
+                      className="text-xs font-semibold hover:underline"
+                      style={{ color: m.frozen ? '#059669' : '#F59E0B' }}
+                    >
+                      {m.frozen ? 'Unfreeze' : 'Freeze'}
+                    </button>
+
+                    {/* Delete */}
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`Permanently delete ${m.name}? This cannot be undone.`)) return;
+                        const res = await fetch(`${API}/api/students/${m.id}`, {
+                          method: 'DELETE',
+                          headers: { Authorization: `Bearer ${token}` },
+                        });
+                        if (res.ok) load();
+                        else { const d = await res.json().catch(() => ({})); alert(d.error || 'Failed'); }
+                      }}
+                      className="text-xs font-semibold text-red-500 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -142,7 +184,7 @@ export default function MembersRegisterSection({ token }) {
                 ['Home Address', selected.homeAddress],
                 ['Church', selected.churchName],
                 ['Category', selected.category],
-                ['Status', selected.status],
+                ['Status', selected.frozen ? 'Frozen' : selected.status],
                 ['Joined Bands', (selected.joinedBands || []).join(', ')],
               ].map(([label, val]) => (
                 <div key={label} className="flex justify-between border-b pb-2" style={{ borderColor: '#F1F5F9' }}>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { initializeApp, getApps } from "firebase/app";
+import StudentRegistrationsSection from './StudentRegistrationsSection';
 import MemberRegistersSection from './MemberRegistersSection';
 import MinutesSection from './MinutesSection';
 import { 
@@ -110,25 +111,27 @@ const C = {
 // ═══════════════════════════════════════════════════════════════════════════
 // AUTH CONTEXT
 // ═══════════════════════════════════════════════════════════════════════════
+
+
 function useAdminAuth() {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+  const [user, setUser]       = useState(null);
+  const [token, setToken]     = useState(null);
   const [loading, setLoading] = useState(true);
 
   const login = useCallback(async (email, password) => {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error("Firebase not configured");
-    const cred = await signInWithEmailAndPassword(auth, email, password);
+    const cred    = await signInWithEmailAndPassword(auth, email, password);
     const idToken = await cred.user.getIdToken();
-    setToken(idToken);
     const profile = await fetchAdminProfile(idToken);
     const userData = {
-      uid: cred.user.uid,
-      email: cred.user.email,
-      role: profile.role,
+      uid:         cred.user.uid,
+      email:       cred.user.email,
+      role:        profile.role,
       displayName: profile.displayName,
-      active: profile.active,
+      active:      profile.active,
     };
+    setToken(idToken);
     setUser(userData);
     return userData;
   }, []);
@@ -140,43 +143,16 @@ function useAdminAuth() {
     setToken(null);
   }, []);
 
-useEffect(() => {
-  const auth = getFirebaseAuth();
-  if (!auth) {
-    setLoading(false);
-    return;
-  }
-
-  return onIdTokenChanged(auth, async (fbUser) => {
-    if (!fbUser) {
-      setUser(null);
-      setToken(null);
+  // Single listener — onIdTokenChanged fires on sign-in, sign-out,
+  // and when Firebase silently refreshes the token (every ~60 min).
+  useEffect(() => {
+    const auth = getFirebaseAuth();
+    if (!auth) {
       setLoading(false);
       return;
     }
-    try {
-      const idToken = await fbUser.getIdToken();
-      setToken(idToken);
-      const profile = await fetchAdminProfile(idToken);
-      setUser({
-        uid: fbUser.uid,
-        email: fbUser.email,
-        role: profile.role,
-        displayName: profile.displayName,
-        active: profile.active,
-      });
-    } catch (err) {
-      console.error("Auth state change error:", err);
-      await signOut(auth);
-      setUser(null);
-      setToken(null);
-    } finally {
-      setLoading(false);
-    }
-  });
-  
 
-    return onAuthStateChanged(auth, async (fbUser) => {
+    const unsub = onIdTokenChanged(auth, async (fbUser) => {
       if (!fbUser) {
         setUser(null);
         setToken(null);
@@ -188,14 +164,14 @@ useEffect(() => {
         setToken(idToken);
         const profile = await fetchAdminProfile(idToken);
         setUser({
-          uid: fbUser.uid,
-          email: fbUser.email,
-          role: profile.role,
+          uid:         fbUser.uid,
+          email:       fbUser.email,
+          role:        profile.role,
           displayName: profile.displayName,
-          active: profile.active,
+          active:      profile.active,
         });
       } catch (err) {
-        console.error("Auth state change error:", err);
+        console.error("[auth] session error:", err.message);
         await signOut(auth);
         setUser(null);
         setToken(null);
@@ -203,6 +179,8 @@ useEffect(() => {
         setLoading(false);
       }
     });
+
+    return unsub; // single, clean unsubscribe on unmount
   }, []);
 
   return { user, token, loading, login, logout };
@@ -1570,6 +1548,24 @@ function UsersSection({ token }) {
             <button onClick={() => handleStatus(row.uid, row.active === "Active" ? false : true)} className={`p-1.5 rounded-lg hover:bg-amber-100 ${row.active === "Active" ? "text-red-500" : "text-emerald-600"}`} title={row.active === "Active" ? "Deactivate" : "Activate"}>
               <Icon d={row.active === "Active" ? Icons.close : Icons.check} size={14} />
             </button>
+
+            
+            <button
+              onClick={async () => {
+                if (!confirm(`Send password reset email to ${row.email}?`)) return;
+                const res = await fetch(`${API}/api/users/${row.uid}/reset-password`, {
+                  method: 'POST',
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) alert(`Reset email sent to ${row.email}`);
+                else alert(data.error || 'Failed to send reset email');
+              }}
+              className="p-1.5 rounded-lg hover:bg-blue-100"
+              title="Send password reset email"
+            >
+              <Icon d={Icons.reset} size={14} className="text-blue-500" />
+            </button>
           </>
         )}
       />
@@ -1593,6 +1589,7 @@ function UsersSection({ token }) {
           </Field>
           <MFooter onClose={() => setModal(null)} onSave={() => handleRoleChange(modal.uid, modal.currentRole)} />
         </Modal>
+      
       )}
     </div>
   );
@@ -1790,79 +1787,6 @@ function BannersSection({ token }) {
   );
 }
 
-function StudentRegistrationsSection() {
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    try {
-      const result = await requestJson(`${API}/api/students/admin?status=pending`);
-      if (result.ok) setStudents(result.data);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  // Registration Approval Workflow:
-  const approve = async (uid) => {
-    if (!confirm('Approve this student?')) return;
-    try {
-      const result = await requestJson(`${API}/api/students/${uid}/approve`, { method: 'POST' });
-      if (!result.ok) {
-        alert(result.error || 'Approval failed. The user may not exist or the token may have expired.');
-        return;
-      }
-      await load(); // refresh the list
-    } catch (err) {
-      alert('Network error: ' + err.message);
-    }
-  };
-
-
-  // Rejection Workflow:
-  const reject = async (uid) => {
-    if (!confirm('Permanently reject and delete this student? This cannot be undone.')) return;
-    try {
-      const result = await requestJson(`${API}/api/students/${uid}`, { method: 'DELETE' });
-      if (!result.ok) {
-        alert(result.error || 'Rejection failed. The user may not exist or the token may have expired.');
-        return;
-      }
-      await load(); // refresh the list
-    } catch (err) {
-      alert('Network error: ' + err.message);
-    }
-  };
-
-  if (loading) return <div className="p-8 text-center text-slate-400">Loading...</div>;
-
-  return (
-    <div>
-      <SHead title="Student Registrations" sub={`${students.length} pending`} />
-      <Table
-        cols={[
-          { key: 'name', label: 'Name' },
-          { key: 'email', label: 'Email', clip: true },
-          { key: 'category', label: 'Category' },
-          { key: 'studentId', label: 'Student ID', clip: true },
-          { key: 'createdAt', label: 'Applied' },
-        ]}
-        rows={students.map(s => ({ ...s, createdAt: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '—' }))}
-        extra={(row) => (
-          <>
-            <button onClick={() => approve(row.id)} className="p-1.5 rounded-lg hover:bg-emerald-100" title="Approve">
-              <Icon d={Icons.check} size={14} className="text-emerald-600" />
-            </button>
-            <button onClick={() => reject(row.id)} className="p-1.5 rounded-lg hover:bg-red-100" title="Reject">
-              <Icon d={Icons.trash} size={14} className="text-red-500" />
-            </button>
-          </>
-        )}
-      />
-    </div>
-  );
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ROOT ADMIN PAGE
@@ -1922,15 +1846,20 @@ export default function AdminPage() {
       ...(user?.role !== 'editor' ? [{ key: "group-requests", label: "Group Requests", icon: Icons.users, badge: 0 }] : []),
       { key: "resources", label: "Resources", icon: Icons.resources },
     ];
+
     // Only admin+ can see prayers and contacts
      if (user?.role !== 'editor') {
       base.push(
         { key: "prayer", label: "Prayer Requests", icon: Icons.prayer, badge: unreadPrayers },
         { key: "contact", label: "Contact Inbox", icon: Icons.contact, badge: unreadContacts, divider: true },
         { key: "student-registrations", label: "Student Registrations", icon: Icons.users },
+        { key: "members-register",      label: "Members Register",     icon: Icons.journals },
+        { key: "minutes",               label: "Meeting Minutes",      icon: Icons.about },
+  
       );
     }
     base.push({ key: "about", label: "About Editor", icon: Icons.about });
+    
     if (user?.role === "super_admin") {
       base.push({ key: "users", label: "Manage Users", icon: Icons.users, divider: true });
     }
@@ -1952,9 +1881,9 @@ export default function AdminPage() {
     contact:       <ContactSection role={user?.role} />,
     about:         <AboutSection />,
     users:         <UsersSection token={token} />,
-    'student-registrations': <MemberRegistersSection/>,
-    'member-register': <MemberRegistersSection token={token} />,
-    'minutes': <MinutesSection token={token} />,
+    'student-registrations': <StudentRegistrationsSection token={token} />,
+    'members-register':      <MemberRegistersSection token={token} />,
+    'minutes':               <MinutesSection token={token} />,
   };
 
   const current = nav.find((n) => n.key === section);
@@ -2066,7 +1995,7 @@ export default function AdminPage() {
                 <span className="text-xs" style={{ color: "#EF4444" }}>{totalUnread} unread</span>
               </div>
             )}
-            <span className="text-xs" style={{ color: "#94A3B8" }}>mupcm.vercel.app</span>
+            <span className="text-xs" style={{ color: "#94A3B8" }}>Leaders' Control Panel</span>
           </div>
         </header>
         <div className="flex-1 overflow-y-auto px-6 py-6">{sectionMap[section]}</div>

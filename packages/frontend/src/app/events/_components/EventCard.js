@@ -261,7 +261,7 @@ export default function EventCard({ event }) {
 
           <div className="flex flex-col gap-1.5 pt-3" style={{ borderTop: '1px solid #F1F5F9' }}>
             <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: '#475569' }}>
-              <span style={{ color: '#2E6DE7' }}><CalIcon c="w-3.5 h-3.5" /></span>
+              <span style={{ color: '#2E6DE7' }}><PhoneIcon c="w-3.5 h-3.5" /></span>
               {formatDateShort(date)}
             </span>
             <div className="flex items-center gap-4">

@@ -2,10 +2,23 @@ import { useState, useEffect, useCallback } from 'react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+const inputStyle = {
+  width: '100%',
+  padding: '11px 14px',
+  borderRadius: 12,
+  fontSize: 14,
+  border: '1px solid #E2E8F7',
+  background: '#FFFFFF',
+  color: '#0F2A4A',
+  outline: 'none',
+  fontFamily: "'Noto Sans', sans-serif",
+  transition: 'border-color 0.15s',
+};
+
 export default function MinutesSection({ token }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState(null); // 'add' | {id, ...data}
+  const [modal, setModal] = useState(null);
   const blank = { title: '', meetingDate: '', body: '', agenda: '', fileUrl: '' };
   const [form, setForm] = useState(blank);
   const [uploading, setUploading] = useState(false);
@@ -117,19 +130,49 @@ export default function MinutesSection({ token }) {
             <div className="px-6 py-5 space-y-4">
               <div>
                 <label className="block text-xs font-semibold mb-1.5" style={{ color: '#0F2A4A' }}>TITLE</label>
-                <input value={form.title} onChange={f('title')} className="w-full px-3 py-2 rounded-lg border text-sm" style={{ borderColor: '#E2E8F7' }} placeholder="e.g. Executive Meeting Minutes" />
+                <input
+                  value={form.title}
+                  onChange={f('title')}
+                  style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = '#2E6DE7'}
+                  onBlur={e => e.target.style.borderColor = '#E2E8F7'}
+                  placeholder="e.g. Executive Meeting Minutes"
+                />
               </div>
               <div>
                 <label className="block text-xs font-semibold mb-1.5" style={{ color: '#0F2A4A' }}>MEETING DATE</label>
-                <input type="date" value={form.meetingDate} onChange={f('meetingDate')} className="w-full px-3 py-2 rounded-lg border text-sm" style={{ borderColor: '#E2E8F7' }} />
+                <input
+                  type="date"
+                  value={form.meetingDate}
+                  onChange={f('meetingDate')}
+                  style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = '#2E6DE7'}
+                  onBlur={e => e.target.style.borderColor = '#E2E8F7'}
+                />
               </div>
               <div>
                 <label className="block text-xs font-semibold mb-1.5" style={{ color: '#0F2A4A' }}>AGENDA</label>
-                <textarea value={form.agenda} onChange={f('agenda')} rows={3} className="w-full px-3 py-2 rounded-lg border text-sm resize-none" style={{ borderColor: '#E2E8F7' }} placeholder="Agenda items…" />
+                <textarea
+                  value={form.agenda}
+                  onChange={f('agenda')}
+                  rows={3}
+                  style={{ ...inputStyle, resize: 'none' }}
+                  onFocus={e => e.target.style.borderColor = '#2E6DE7'}
+                  onBlur={e => e.target.style.borderColor = '#E2E8F7'}
+                  placeholder="Agenda items…"
+                />
               </div>
               <div>
                 <label className="block text-xs font-semibold mb-1.5" style={{ color: '#0F2A4A' }}>MINUTES BODY</label>
-                <textarea value={form.body} onChange={f('body')} rows={6} className="w-full px-3 py-2 rounded-lg border text-sm resize-none" style={{ borderColor: '#E2E8F7' }} placeholder="Full minutes…" />
+                <textarea
+                  value={form.body}
+                  onChange={f('body')}
+                  rows={6}
+                  style={{ ...inputStyle, resize: 'none' }}
+                  onFocus={e => e.target.style.borderColor = '#2E6DE7'}
+                  onBlur={e => e.target.style.borderColor = '#E2E8F7'}
+                  placeholder="Full minutes…"
+                />
               </div>
               <div>
                 <label className="block text-xs font-semibold mb-1.5" style={{ color: '#0F2A4A' }}>ATTACHMENT</label>

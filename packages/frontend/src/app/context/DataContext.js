@@ -6,11 +6,46 @@ import { getAuth } from "firebase/auth";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-async function authHeaders() {
-  const requestHeaders = {
-    "Content-Type": "application/json",
-  };
+// ── Sanitise raw backend error messages ──────────────────────────────────
+// Prevents internal Firebase / OAuth2 error strings from reaching the UI.
+// Returns a clean, user-facing message instead.
+function sanitiseError(raw) {
+  if (!raw || typeof raw !== "string") return "Something went wrong. Please try again.";
 
+  const lower = raw.toLowerCase();
+
+  // Firebase Admin / Google credential errors
+  if (
+    lower.includes("oauth2") ||
+    lower.includes("credential") ||
+    lower.includes("initializeapp") ||
+    lower.includes("google api") ||
+    lower.includes("service account") ||
+    lower.includes("private key")
+  ) {
+    return "The server is temporarily unavailable. Please try again in a moment.";
+  }
+
+  // Network / fetch errors
+  if (
+    lower.includes("fetch failed") ||
+    lower.includes("econnrefused") ||
+    lower.includes("network") ||
+    lower.includes("enotfound")
+  ) {
+    return "Cannot reach the server. Check your connection and try again.";
+  }
+
+  // Generic Firebase errors — surface these as-is (they're already readable)
+  if (lower.includes("auth/")) return raw;
+
+  // Anything else — return as-is (it's a known application error)
+  return raw;
+}
+
+// ── Auth headers ─────────────────────────────────────────────────────────
+async function authHeaders() {
+  const requestHeaders = { "Content-Type": "application/json" };
   try {
     if (getApps().length) {
       const user = getAuth().currentUser;
@@ -20,11 +55,8 @@ async function authHeaders() {
       }
     }
   } catch (err) {
-    // Do not block requests if Firebase isn't ready or token retrieval fails
-    // Log for debugging but return minimal headers so public reads still work
-    console.warn('[authHeaders] token fetch failed:', err?.message || err);
+    console.warn("[authHeaders] token fetch failed:", err?.message || err);
   }
-
   return requestHeaders;
 }
 
@@ -44,34 +76,46 @@ async function readJson(res) {
   }
 }
 
+// ── requestJson ───────────────────────────────────────────────────────────
 export async function requestJson(url, options = {}) {
-  const res = await fetch(url, {
-    ...options,
-    headers: { ...(await authHeaders()), ...(options.headers || {}) },
-  });
-  const data = await readJson(res);
+  try {
+    const res = await fetch(url, {
+      ...options,
+      headers: { ...(await authHeaders()), ...(options.headers || {}) },
+    });
+    const data = await readJson(res);
 
-  if (!res.ok) {
+    if (!res.ok) {
+      const raw = data?.error || data?.message || `Request failed (${res.status})`;
+      return {
+        ok: false,
+        status: res.status,
+        error: sanitiseError(raw),
+        data,
+      };
+    }
+
+    return { ok: true, status: res.status, data };
+  } catch (err) {
+    // Network-level failure (backend not running, DNS failure, etc.)
     return {
       ok: false,
-      status: res.status,
-      error: data?.error || data?.message || `Request failed with status ${res.status}`,
-      data,
+      status: 0,
+      error: sanitiseError(err.message || "Network error"),
+      data: null,
     };
   }
-
-  return { ok: true, status: res.status, data };
 }
 
 function hasFirebaseUser() {
   return getApps().length && getAuth().currentUser;
 }
 
+// ── useCollectionState ────────────────────────────────────────────────────
 function useCollectionState(key, { requiresAuthToLoad = false } = {}) {
-  const [items, setItems] = useState([]);
+  const [items, setItems]     = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
+  const [error, setError]     = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -85,17 +129,19 @@ function useCollectionState(key, { requiresAuthToLoad = false } = {}) {
       setLoading(true);
       const result = await requestJson(`${API}/api/${key}`, { cache: "no-store" });
       if (!result.ok) {
-        console.error(`[${key}] fetch failed:`, result.data || result.error);
+        console.warn(`[${key}] fetch failed:`, result.error);
+        // Store the sanitised error (never the raw Firebase string)
         setError(result.error);
         setItems([]);
         return result;
       }
 
+      setError("");
       setItems(Array.isArray(result.data) ? result.data : []);
       return result;
     } catch (err) {
-      const message = err.message || "Unable to load items.";
-      console.error(`[${key}] fetch error:`, err);
+      const message = sanitiseError(err.message || "Unable to load items.");
+      console.warn(`[${key}] fetch error:`, err);
       setError(message);
       setItems([]);
       return { ok: false, error: message };
@@ -106,80 +152,60 @@ function useCollectionState(key, { requiresAuthToLoad = false } = {}) {
 
   useEffect(() => { load(); }, [load]);
 
-
   const add = useCallback(async (item) => {
     try {
       const result = await requestJson(`${API}/api/${key}`, {
         method: "POST",
         body: JSON.stringify(item),
       });
-      if (!result.ok) {
-        console.error(`[${key}] add failed:`, result.data || result.error);
-        return { ok: false, error: result.error || "Unable to update item." };
-      }
+      if (!result.ok) return { ok: false, error: result.error || "Unable to add item." };
       const created = { ...item, id: result.data?.id };
       setItems((prev) => [created, ...prev]);
       await load();
       return { ok: true, item: created };
     } catch (err) {
-      console.error(`[${key}] add error:`, err);
-      return { ok: false, error: err.message || "Unable to add item." };
+      return { ok: false, error: sanitiseError(err.message) || "Unable to add item." };
     }
-
   }, [key, load]);
-
 
   const update = useCallback(async (item) => {
     try {
       const { id, ...payload } = item;
       if (!id) return { ok: false, error: "Missing item id." };
-
       const result = await requestJson(`${API}/api/${key}/${id}`, {
         method: "PUT",
         body: JSON.stringify(payload),
       });
-      if (!result.ok) {
-        console.error(`[${key}] update failed:`, result.data || result.error);
-        return { ok: false, error: result.error || "Unable to update item." };
-      }
-
+      if (!result.ok) return { ok: false, error: result.error || "Unable to update item." };
       const updated = { ...payload, id };
       setItems((prev) => prev.map((x) => (x.id === id ? { ...x, ...updated } : x)));
       await load();
       return { ok: true, item: updated };
     } catch (err) {
-      console.error(`[${key}] update error:`, err);
-      return { ok: false, error: err.message || "Unable to update item." };
+      return { ok: false, error: sanitiseError(err.message) || "Unable to update item." };
     }
-
   }, [key, load]);
 
   const remove = useCallback(async (id) => {
     try {
       if (!id) return { ok: false, error: "Missing item id." };
-
       const result = await requestJson(`${API}/api/${key}/${id}`, { method: "DELETE" });
-      if (!result.ok) {
-        console.error(`[${key}] delete failed:`, result.data || result.error);
-        return { ok: false, error: result.error || "Unable to delete item." };
-      }
-
+      if (!result.ok) return { ok: false, error: result.error || "Unable to delete item." };
       setItems((prev) => prev.filter((x) => x.id !== id));
       return { ok: true };
     } catch (err) {
-      console.error(`[${key}] remove error:`, err);
-      return { ok: false, error: err.message || "Unable to delete item." };
+      return { ok: false, error: sanitiseError(err.message) || "Unable to delete item." };
     }
   }, [key]);
 
   return { items, loading, error, load, add, update, remove };
 }
 
-
+// ── useAboutState ─────────────────────────────────────────────────────────
 function useAboutState() {
   const [about, setAboutLocal] = useState(emptyAbout);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [loading, setLoading]  = useState(true);
+  const [error, setError]      = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -187,16 +213,13 @@ function useAboutState() {
       setError("");
       const result = await requestJson(`${API}/api/about`, { cache: "no-store" });
       if (!result.ok) {
-        console.error("[about] fetch failed:", result.data || result.error);
         setError(result.error);
         return result;
       }
-
       setAboutLocal({ ...emptyAbout, ...(result.data || {}) });
       return result;
     } catch (err) {
-      const message = err.message || "Unable to load about content.";
-      console.error("[about] fetch error:", err);
+      const message = sanitiseError(err.message || "Unable to load about content.");
       setError(message);
       return { ok: false, error: message };
     } finally {
@@ -212,23 +235,18 @@ function useAboutState() {
         method: "PUT",
         body: JSON.stringify(data),
       });
-
-      if (!result.ok) {
-        console.error("[about] update failed:", result.data || result.error);
-        return { ok: false, error: result.error || "Unable to update about content." };
-      }
-
+      if (!result.ok) return { ok: false, error: result.error || "Unable to update about content." };
       setAboutLocal({ ...emptyAbout, ...data });
       return { ok: true };
     } catch (err) {
-      console.error("[about] update error:", err);
-      return { ok: false, error: err.message || "Unable to update about content." };
+      return { ok: false, error: sanitiseError(err.message) || "Unable to update about content." };
     }
   }, []);
 
   return { about, setAbout, loading, error, load };
 }
 
+// ── DataProvider ──────────────────────────────────────────────────────────
 export function DataProvider({ children }) {
   const announcements = useCollectionState("announcements");
   const events        = useCollectionState("events");
@@ -242,25 +260,11 @@ export function DataProvider({ children }) {
   const contacts      = useCollectionState("contacts", { requiresAuthToLoad: true });
   const aboutState    = useAboutState();
 
-  const state = {
-    announcements: announcements.items,
-    events:        events.items,
-    journals:      journals.items,
-    media:         media.items,
-    heroes:        heroes.items,
-    banners:       banners.items,
-    groups:        groups.items,
-    resources:     resources.items,
-    prayers:       prayers.items,
-    contacts:      contacts.items,
-    about:         aboutState.about,
-  };
-
   const reset = () => window.location.reload();
 
   return (
     <DataContext.Provider value={{
-      state, reset,
+      reset,
       announcements, events, journals, media,
       heroes, banners, groups, resources, prayers, contacts,
       about: aboutState.about,
@@ -272,6 +276,7 @@ export function DataProvider({ children }) {
   );
 }
 
+// ── Hooks ─────────────────────────────────────────────────────────────────
 export const useAnnouncements = () => useContext(DataContext).announcements;
 export const useEvents        = () => useContext(DataContext).events;
 export const useJournals      = () => useContext(DataContext).journals;
@@ -282,6 +287,7 @@ export const useResources     = () => useContext(DataContext).resources;
 export const usePrayers       = () => useContext(DataContext).prayers;
 export const useContacts      = () => useContext(DataContext).contacts;
 export const useBanners       = () => useContext(DataContext).banners;
+
 export function useAbout() {
   const ctx = useContext(DataContext);
   return { about: ctx.about, setAbout: ctx.setAbout, aboutState: ctx.aboutState };

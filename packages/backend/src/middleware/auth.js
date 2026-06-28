@@ -1,21 +1,27 @@
+// packages/backend/src/middleware/auth.js
+'use strict';
 const admin = require('firebase-admin');
 
 /**
- * ROLES (hierarchy — each level inherits the one below):
- *   super_admin  → full access, manage users & roles
- *   admin        → manage all content, view users
- *   editor       → create / update content, no delete
+ * Role hierarchy for content management (linear scale):
+ *   editor < admin < super_admin
+ *
+ * 'secretary', 'prayer_band_leader', 'publicity_secretary' are PEER roles
+ * outside this linear scale — they get access via requireAnyRole(), not requireRole().
  */
-const ROLES = ['secretary', 'editor', 'admin', 'super_admin'];
+const ROLE_LEVELS = {
+  editor:       1,
+  admin:        2,
+  super_admin:  3,
+};
 
-const roleLevel = (role) => ROLES.indexOf(role);
+const roleLevel = (role) => ROLE_LEVELS[role] ?? 0;
 
 /**
- * verifyToken — verifies a Firebase ID token (Bearer).
- * Attaches req.user = { uid, email, role, displayName, active }
+ * verifyToken
+ * Verifies a Firebase ID token and attaches req.user from admin_users collection.
  */
 const verifyToken = async (req, res, next) => {
-  // ── Firebase ID token ──────────────────────────────────────────────────
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
@@ -29,19 +35,16 @@ const verifyToken = async (req, res, next) => {
     const snap = await db.collection('admin_users').doc(decoded.uid).get();
 
     if (!snap.exists) {
-      return res.status(403).json({ error: 'User is not registered as an admin' });
+      return res.status(403).json({ error: 'This account is not authorised for the admin portal.' });
     }
 
     const data = snap.data();
-    if (!data.active) {
+    if (data.active === false) {
       return res.status(403).json({ error: 'Account is deactivated' });
     }
 
     req.user = { uid: decoded.uid, email: decoded.email, ...data };
-
-    // Refresh lastLogin (fire-and-forget)
     snap.ref.update({ lastLogin: new Date().toISOString() }).catch(() => {});
-
     next();
   } catch (err) {
     console.error('[auth] token error:', err.message);
@@ -50,16 +53,12 @@ const verifyToken = async (req, res, next) => {
 };
 
 /**
- * requireRole(minRole) — express middleware that enforces a minimum role.
- * Must be used AFTER verifyToken.
- *
- * Usage:
- *   router.delete('/:id', verifyToken, requireRole('admin'), handler)
+ * requireRole(minRole)
+ * Enforces a minimum role level from the linear hierarchy (editor → admin → super_admin).
+ * Does NOT apply to peer roles (secretary, prayer_band_leader, etc.) — use requireAnyRole for those.
  */
 const requireRole = (minRole) => (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
+  if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
   if (roleLevel(req.user.role) < roleLevel(minRole)) {
     return res.status(403).json({
       error: `Requires role '${minRole}' or higher. Your role: '${req.user.role}'`,
@@ -68,35 +67,34 @@ const requireRole = (minRole) => (req, res, next) => {
   next();
 };
 
-// ── Convenience stacks ────────────────────────────────────────────────────
-/** Any registered admin (editor+) */
-const authenticate = [verifyToken, requireRole('editor')];
-
-/** Admin or super_admin */
-const requireAdmin = [verifyToken, requireRole('admin')];
-
-/** Super admin only */
-const requireSuperAdmin = [verifyToken, requireRole('super_admin')];
-
-// Secretary only
-const requireSecretary = [verifyToken, requireRole('secretary')];
-
+/**
+ * requireAnyRole(...roles)
+ * Allows access if the user has one of the listed roles,
+ * OR if their role level is admin+ (admins can do everything).
+ */
 const requireAnyRole = (...roles) => (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
-  if (roles.includes(req.user.role) || roleLevel(req.user.role) >= roleLevel('admin')) {
+  if (
+    roles.includes(req.user.role) ||
+    roleLevel(req.user.role) >= roleLevel('admin')
+  ) {
     return next();
   }
   return res.status(403).json({
-    error: `Requires one of roles: ${roles.join(', ')}. Your role: '${req.user.role}'`,
+    error: `Requires one of: ${roles.join(', ')}. Your role: '${req.user.role}'`,
   });
 };
+
+// ── Convenience stacks ────────────────────────────────────────────────────
+const authenticate      = [verifyToken, requireRole('editor')];
+const requireAdmin      = [verifyToken, requireRole('admin')];
+const requireSuperAdmin = [verifyToken, requireRole('super_admin')];
 
 module.exports = {
   verifyToken,
   requireRole,
   requireAnyRole,
-  authenticate,       // editor+
-  requireAdmin,       // admin+
-  requireSuperAdmin,  // super_admin only
-  requireSecretary,   // secretary only
+  authenticate,
+  requireAdmin,
+  requireSuperAdmin,
 };
