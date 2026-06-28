@@ -443,14 +443,14 @@ export default function Dashboard() {
           <img src="/img0.jpg" alt="MU Campus Worship" className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(15,42,74,0.4) 0%, rgba(15,42,74,0.75) 50%, rgba(15,42,74,0.95) 100%)' }} />
           <div className="relative z-10 text-center px-5 sm:px-8 w-full max-w-4xl mx-auto">
-            <p style={{ fontSize: 10, letterSpacing: '0.28em', color: 'rgba(255,255,255,0.65)', fontWeight: 700 }} className="uppercase mb-5">SDA Public Campus Ministries</p>
-            <h1 className="serif font-bold text-white leading-[1.08] mb-5" style={{ fontSize: 'clamp(2.4rem, 6vw, 4.5rem)' }}>Mulungushi University</h1>
+            {/* <p style={{ fontSize: 10, letterSpacing: '0.28em', color: 'rgba(255,255,255,0.65)', fontWeight: 700 }} className="uppercase mb-5">SDA Public Campus Ministries</p> */}
+            <h2 className="serif font-bold text-white leading-[1.08] mb-5" style={{ fontSize: 'clamp(2.2rem, 6vw, 4.5rem)' }}>Mulungushi University Public Campus Ministry</h2>
             <div className="flex items-center justify-center gap-3 mb-6">
               <div style={{ height: 1, width: 48, background: 'rgba(46,109,231,0.7)', borderRadius: 9999 }} />
               <div style={{ width: 6, height: 6, borderRadius: 9999, background: '#2E6DE7' }} />
               <div style={{ height: 1, width: 48, background: 'rgba(46,109,231,0.7)', borderRadius: 9999 }} />
             </div>
-            <p className="font-semibold text-white mb-3" style={{ fontSize: 'clamp(1.1rem, 2.5vw, 1.6rem)' }}>Follow Jesus. Embrace His Mission.</p>
+            <p className="font-semibold text-white mb-3" style={{ fontSize: 'clamp(1.3rem, 2.5vw, 1.6rem)' }}>Follow Jesus. Embrace His Mission.</p>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', maxWidth: 420, margin: '0 auto 2.5rem' }}>A community of faith, purpose, and excellence — right here on campus.</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button href="/events" variant="primary" size="lg" className="w-full sm:w-auto">View Events</Button>
