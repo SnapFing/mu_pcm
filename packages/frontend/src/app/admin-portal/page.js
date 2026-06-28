@@ -5,6 +5,7 @@ import { initializeApp, getApps } from "firebase/app";
 import StudentRegistrationsSection from './StudentRegistrationsSection';
 import MemberRegistersSection from './MemberRegistersSection';
 import MinutesSection from './MinutesSection';
+import FileUpload from '@/app/ui/FileUpload';
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
@@ -13,7 +14,7 @@ import {
   sendPasswordResetEmail,
   verifyPasswordResetCode,
   confirmPasswordReset,
- } from "firebase/auth";
+} from "firebase/auth";
 import {
   useAnnouncements,
   useEvents,
@@ -109,10 +110,8 @@ const C = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// AUTH CONTEXT
+// AUTH
 // ═══════════════════════════════════════════════════════════════════════════
-
-
 function useAdminAuth() {
   const [user, setUser]       = useState(null);
   const [token, setToken]     = useState(null);
@@ -143,20 +142,13 @@ function useAdminAuth() {
     setToken(null);
   }, []);
 
-  // Single listener — onIdTokenChanged fires on sign-in, sign-out,
-  // and when Firebase silently refreshes the token (every ~60 min).
   useEffect(() => {
     const auth = getFirebaseAuth();
-    if (!auth) {
-      setLoading(false);
-      return;
-    }
+    if (!auth) { setLoading(false); return; }
 
     const unsub = onIdTokenChanged(auth, async (fbUser) => {
       if (!fbUser) {
-        setUser(null);
-        setToken(null);
-        setLoading(false);
+        setUser(null); setToken(null); setLoading(false);
         return;
       }
       try {
@@ -173,29 +165,27 @@ function useAdminAuth() {
       } catch (err) {
         console.error("[auth] session error:", err.message);
         await signOut(auth);
-        setUser(null);
-        setToken(null);
+        setUser(null); setToken(null);
       } finally {
         setLoading(false);
       }
     });
 
-    return unsub; // single, clean unsubscribe on unmount
+    return unsub;
   }, []);
 
   return { user, token, loading, login, logout };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PASSOWRD RESET
+// PASSWORD RESET
 // ═══════════════════════════════════════════════════════════════════════════
-
 function ResetPasswordHandler() {
-  const [oobCode, setOobCode] = useState("");
+  const [oobCode, setOobCode]         = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [message, setMessage]         = useState("");
+  const [error, setError]             = useState("");
+  const [loading, setLoading]         = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -203,7 +193,6 @@ function ResetPasswordHandler() {
     const mode = params.get("mode");
     if (mode === "resetPassword" && code) {
       setOobCode(code);
-      // Optionally verify the code early
       verifyPasswordResetCode(getFirebaseAuth(), code)
         .then(() => setMessage("Enter your new password below."))
         .catch((err) => setError(err.message || "Invalid or expired reset link."));
@@ -211,16 +200,12 @@ function ResetPasswordHandler() {
   }, []);
 
   const handleReset = async () => {
-    if (!newPassword || newPassword.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-    setLoading(true);
-    setError("");
+    if (!newPassword || newPassword.length < 6) { setError("Password must be at least 6 characters."); return; }
+    setLoading(true); setError("");
     try {
       await confirmPasswordReset(getFirebaseAuth(), oobCode, newPassword);
       alert("Password changed successfully! You can now log in.");
-      window.location.href = "/admin-portal"; // clear query params
+      window.location.href = "/admin-portal";
     } catch (err) {
       setError(err.message || "Password reset failed.");
     } finally {
@@ -228,7 +213,7 @@ function ResetPasswordHandler() {
     }
   };
 
-  if (!oobCode) return null; // not a reset link, show normal login
+  if (!oobCode) return null;
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: C.navy }}>
@@ -241,27 +226,12 @@ function ResetPasswordHandler() {
           <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginTop: 6 }}>MU SDA PCM Admin</p>
         </div>
         <div className="px-8 py-8 flex flex-col gap-4">
-          {error && (
-            <div className="rounded-xl px-4 py-3 text-sm" style={{ background: "rgba(239,68,68,0.08)", color: "#dc2626", border: "1px solid rgba(239,68,68,0.2)" }}>
-              {error}
-            </div>
-          )}
-          {message && (
-            <p className="text-sm text-center" style={{ color: C.navy }}>{message}</p>
-          )}
+          {error && <div className="rounded-xl px-4 py-3 text-sm" style={{ background: "rgba(239,68,68,0.08)", color: "#dc2626", border: "1px solid rgba(239,68,68,0.2)" }}>{error}</div>}
+          {message && <p className="text-sm text-center" style={{ color: C.navy }}>{message}</p>}
           <div>
             <label className="block text-xs font-semibold mb-1.5" style={{ color: C.navy, letterSpacing: "0.05em" }}>NEW PASSWORD</label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Min. 6 characters"
-              style={{
-                width: "100%", padding: "11px 14px", borderRadius: 10, fontSize: 14,
-                border: `1px solid ${C.border}`, background: C.white, color: C.navy,
-                outline: "none", fontFamily: "'Noto Sans', sans-serif",
-              }}
-            />
+            <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Min. 6 characters"
+              style={{ width: "100%", padding: "11px 14px", borderRadius: 10, fontSize: 14, border: `1px solid ${C.border}`, background: C.white, color: C.navy, outline: "none", fontFamily: "'Noto Sans', sans-serif" }} />
           </div>
           <button onClick={handleReset} disabled={loading} className="w-full py-3 rounded-xl text-sm font-bold text-white mt-2" style={{ background: loading ? "#94A3B8" : C.primary, cursor: loading ? "not-allowed" : "pointer" }}>
             {loading ? "Resetting..." : "Reset Password"}
@@ -276,25 +246,17 @@ function ResetPasswordHandler() {
 // LOGIN GATE
 // ═══════════════════════════════════════════════════════════════════════════
 function LoginGate({ onLogin }) {
-  const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
-  const [error, setError] = useState("");
+  const [email, setEmail]   = useState("");
+  const [pass, setPass]     = useState("");
+  const [error, setError]   = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !pass) {
-      setError("Please enter email and password.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      await onLogin(email, pass);
-    } catch (err) {
-      setError(err.message || "Invalid admin credentials.");
-    } finally {
-      setLoading(false);
-    }
+    if (!email || !pass) { setError("Please enter email and password."); return; }
+    setLoading(true); setError("");
+    try { await onLogin(email, pass); }
+    catch (err) { setError(err.message || "Invalid admin credentials."); }
+    finally { setLoading(false); }
   };
 
   const handleForgotPassword = async () => {
@@ -302,21 +264,13 @@ function LoginGate({ onLogin }) {
     const auth = getFirebaseAuth();
     if (!auth) return;
     try {
-      const resetUrl = typeof window !== "undefined"
-        ? `${window.location.origin}/admin-portal`
-        : "/admin-portal";
+      const resetUrl = typeof window !== "undefined" ? `${window.location.origin}/admin-portal` : "/admin-portal";
       await sendPasswordResetEmail(auth, email, { url: resetUrl });
       alert("Password reset email sent to " + email);
-    } catch (err) {
-      setError(err.message || "Failed to send reset email");
-    }
+    } catch (err) { setError(err.message || "Failed to send reset email"); }
   };
 
-  const inputStyle = {
-    width: "100%", padding: "11px 14px", borderRadius: 10, fontSize: 14,
-    border: `1px solid ${C.border}`, background: C.white, color: C.navy,
-    outline: "none", fontFamily: "'Noto Sans', sans-serif",
-  };
+  const inputStyle = { width: "100%", padding: "11px 14px", borderRadius: 10, fontSize: 14, border: `1px solid ${C.border}`, background: C.white, color: C.navy, outline: "none", fontFamily: "'Noto Sans', sans-serif" };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: C.navy }}>
@@ -329,11 +283,7 @@ function LoginGate({ onLogin }) {
           <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginTop: 6 }}>MU SDA PCM restricted access</p>
         </div>
         <div className="px-8 py-8 flex flex-col gap-4">
-          {error && (
-            <div className="rounded-xl px-4 py-3 text-sm" style={{ background: "rgba(239,68,68,0.08)", color: "#dc2626", border: "1px solid rgba(239,68,68,0.2)" }}>
-              {error}
-            </div>
-          )}
+          {error && <div className="rounded-xl px-4 py-3 text-sm" style={{ background: "rgba(239,68,68,0.08)", color: "#dc2626", border: "1px solid rgba(239,68,68,0.2)" }}>{error}</div>}
           <div>
             <label className="block text-xs font-semibold mb-1.5" style={{ color: C.navy, letterSpacing: "0.05em" }}>EMAIL ADDRESS</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@mupcm.org" style={inputStyle} onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
@@ -345,16 +295,9 @@ function LoginGate({ onLogin }) {
           <button onClick={handleLogin} disabled={loading} className="w-full py-3 rounded-xl text-sm font-bold text-white mt-2" style={{ background: loading ? "#94A3B8" : C.primary, cursor: loading ? "not-allowed" : "pointer" }}>
             {loading ? "Signing in..." : "Sign In"}
           </button>
-
-          {/* ── Forgot Password ────────────────────────────────────────── */}
-          <button
-            onClick={handleForgotPassword}
-            className="text-xs font-medium underline mt-2"
-            style={{ color: C.primary, background: "none", border: "none", cursor: "pointer" }}
-          >
+          <button onClick={handleForgotPassword} className="text-xs font-medium underline mt-2" style={{ color: C.primary, background: "none", border: "none", cursor: "pointer" }}>
             Forgot password?
           </button>
-
           <p className="text-center text-xs mt-2" style={{ color: "#94A3B8" }}>Firebase admin authentication required.</p>
         </div>
       </div>
@@ -381,19 +324,12 @@ const Badge = ({ text }) => {
     admin:     "bg-purple-100 text-purple-700",
     super_admin: "bg-emerald-100 text-emerald-700",
   };
-  return (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${m[text] || "bg-gray-100 text-gray-600"}`}>
-      {text}
-    </span>
-  );
+  return <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${m[text] || "bg-gray-100 text-gray-600"}`}>{text}</span>;
 };
 
 // ── Modal ──────────────────────────────────────────────────────────────────
 const Modal = ({ title, children, onClose, wide = false }) => (
-  <div
-    className="fixed inset-0 z-50 flex items-center justify-center p-4"
-    style={{ background: "rgba(15,42,74,0.6)", backdropFilter: "blur(4px)" }}
-  >
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,42,74,0.6)", backdropFilter: "blur(4px)" }}>
     <div className={`bg-white rounded-2xl shadow-2xl w-full ${wide ? "max-w-2xl" : "max-w-lg"} max-h-[90vh] overflow-y-auto`}>
       <div className="flex items-center justify-between px-6 py-4 border-b sticky top-0 bg-white z-10" style={{ borderColor: C.border }}>
         <h3 style={{ fontFamily: "'Playfair Display',serif", color: C.navy, fontSize: 17, fontWeight: 700 }}>{title}</h3>
@@ -417,7 +353,7 @@ const Field = ({ label, children }) => (
 );
 const inputCls = "w-full px-3 py-2 rounded-lg border text-sm outline-none focus:ring-2 focus:ring-blue-300";
 const inputStyle = { borderColor: C.border, background: C.white, color: C.navy, fontFamily: "'Noto Sans',sans-serif" };
-const Input    = (p) => <input    {...p} className={inputCls}                              style={inputStyle} />;
+const Input    = (p) => <input    {...p} className={inputCls} style={inputStyle} />;
 const Textarea = (p) => <textarea {...p} rows={p.rows || 3} className={`${inputCls} resize-none`} style={inputStyle} />;
 const Sel = ({ options, ...p }) => (
   <select {...p} className={inputCls} style={inputStyle}>
@@ -518,43 +454,11 @@ function AnnouncementsSection({ role, token }) {
   const { items, add, update, remove } = useAnnouncements();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const blank = {
-    title: "",
-    body: "",
-    date: "",
-    type: "General",
-    status: "Active",
-    image: "",
-  };
+  const blank = { title: "", body: "", date: "", type: "General", status: "Active", image: "" };
   const [form, setForm] = useState(blank);
-  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
-  const [saving, setSaving] = useState(false);
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append('file', file, file.name);
-      const res = await fetch(`${API}/api/uploads`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: fd,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Upload failed');
-      setForm(p => ({ ...p, image: data.url }));
-    } catch (err) {
-      alert(err.message || 'Upload failed');
-    } finally {
-      setUploading(false);
-      e.target.value = '';
-    }
-  };
 
   const save = async () => {
     setSaving(true);
@@ -562,9 +466,7 @@ function AnnouncementsSection({ role, token }) {
       const result = modal === "add" ? await add(form) : await update({ ...form, id: modal.id });
       if (result?.ok) setModal(null);
       else alert(result?.error || "The change could not be saved.");
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
   return (
@@ -583,34 +485,15 @@ function AnnouncementsSection({ role, token }) {
             <div className="flex-1"><Field label="Type"><Sel value={form.type} onChange={f("type")} options={["General", "Worship", "Prayer", "Admin", "Event"]} /></Field></div>
           </div>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Active", "Archived"]} /></Field>
-          
-          <Field label="Announcement Image">
-            {form.image && (
-              <div className="relative mb-2">
-                <img src={form.image} alt="preview" className="w-full h-24 object-cover rounded-lg" />
-                <button
-                  type="button"
-                  onClick={() => setForm(p => ({ ...p, image: '' }))}
-                  className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center bg-red-500 text-white text-xs"
-                  title="Remove image"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              disabled={uploading}
-              className="text-sm"
-            />
-            {uploading && <p className="text-xs mt-1" style={{ color: '#64748B' }}>Uploading…</p>}
-            <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>
-              Select an image – it will upload automatically. Click ✕ to remove.
-            </p>
-          </Field>
-
+          <FileUpload
+            token={token}
+            accept="image/*"
+            label="Announcement Image"
+            hint="JPEG, PNG or WebP · max 5 MB"
+            currentUrl={form.image}
+            onUpload={({ url }) => setForm(p => ({ ...p, image: url }))}
+            onRemove={() => setForm(p => ({ ...p, image: '' }))}
+          />
           <MFooter onClose={() => setModal(null)} onSave={save} saving={saving} />
         </Modal>
       )}
@@ -623,39 +506,12 @@ function EventsSection({ role, token }) {
   const { items, add, update, remove } = useEvents();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const blank = { title: "", date: "", time: "", venue: "", description: "", image: "", status: "Upcoming", category: "Worship Services", featured: false };
+  const blank = { title: "", date: "", time: "", venue: "", description: "", image: "", status: "Upcoming", category: "Worship Services", featured: false, contactNumber: "", mapsQuery: "" };
   const [form, setForm] = useState(blank);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
-  const [imageFile, setImageFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
-
-  // Image Upload
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append('file', file, file.name);
-      const res = await fetch(`${API}/api/uploads`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: fd,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Upload failed');
-      setForm(p => ({ ...p, image: data.url }));
-    } catch (err) {
-      alert(err.message || 'Upload failed');
-    } finally {
-      setUploading(false);
-      e.target.value = '';
-    }
-  };
-
   const save = () => saveAndClose({ modal, form, add, update, setModal });
+
   return (
     <div>
       <SHead title="Events" sub={`${items.length} events`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
@@ -670,64 +526,25 @@ function EventsSection({ role, token }) {
             <div className="flex-1"><Field label="Date"><Input type="date" value={form.date} onChange={f("date")} /></Field></div>
             <div className="flex-1"><Field label="Time"><Input type="time" value={form.time} onChange={f("time")} /></Field></div>
           </div>
-           
           <Field label="Venue"><Input value={form.venue} onChange={f("venue")} placeholder="Location / Hall" /></Field>
-          
-          {/* NEW — Contact number for Call button */}
           <Field label="Contact Number (optional)">
-            <Input
-              type="tel"
-              value={form.contactNumber}
-              onChange={f("contactNumber")}
-              placeholder="e.g. +260 977 123 456"
-            />
-            <p className="text-xs mt-1" style={{ color: "#94A3B8" }}>
-              If set, a "Call" button appears on the event card and detail view.
-            </p>
+            <Input type="tel" value={form.contactNumber} onChange={f("contactNumber")} placeholder="e.g. +260 977 123 456" />
+            <p className="text-xs mt-1" style={{ color: "#94A3B8" }}>If set, a "Call" button appears on the event card.</p>
           </Field>
-          
-          {/* NEW — Map location for embedded map */}
           <Field label="Map Location (optional)">
-            <Input
-              value={form.mapsQuery}
-              onChange={f("mapsQuery")}
-              placeholder="e.g. Mulungushi University Multi Purpose Hall, Kabwe"
-            />
-            <p className="text-xs mt-1" style={{ color: "#94A3B8" }}>
-              Leave blank to use the Venue field above. This text is used to show an
-              embedded map — be specific (include "Kabwe, Zambia") for best results.
-            </p>
+            <Input value={form.mapsQuery} onChange={f("mapsQuery")} placeholder="e.g. Mulungushi University, Kabwe" />
+            <p className="text-xs mt-1" style={{ color: "#94A3B8" }}>Leave blank to use Venue. Be specific for best map results.</p>
           </Field>
-          
           <Field label="Description"><Textarea value={form.description} onChange={f("description")} rows={3} placeholder="Event details…" /></Field>
-          
-          <Field label="Event Image">
-            {form.image && (
-              <div className="relative mb-2">
-                <img src={form.image} alt="preview" className="w-full h-24 object-cover rounded-lg" />
-                <button
-                  type="button"
-                  onClick={() => setForm(p => ({ ...p, image: '' }))}
-                  className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center bg-red-500 text-white text-xs"
-                  title="Remove image"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              disabled={uploading}
-              className="text-sm"
-            />
-            {uploading && <p className="text-xs mt-1" style={{ color: '#64748B' }}>Uploading…</p>}
-            <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>
-              Select an image – it will upload automatically. Click ✕ to remove the current image.
-            </p>
-          </Field>
-
+          <FileUpload
+            token={token}
+            accept="image/*"
+            label="Event Image"
+            hint="JPEG, PNG or WebP · max 5 MB · landscape works best"
+            currentUrl={form.image}
+            onUpload={({ url }) => setForm(p => ({ ...p, image: url }))}
+            onRemove={() => setForm(p => ({ ...p, image: '' }))}
+          />
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Upcoming", "Past"]} /></Field>
           <Field label="Category">
             <Sel value={form.category} onChange={f("category")} options={["Worship Services", "Bible Studies", "Community Service", "Retreats & Camps", "Prayer"]} />
@@ -751,20 +568,16 @@ function JournalsSection({ role }) {
   const [form, setForm] = useState(blank);
   const [saving, setSaving] = useState(false);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
-  const filtered = items.filter((x) =>
-    x.title.toLowerCase().includes(search.toLowerCase()) ||
-    (x.author || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()) || (x.author || "").toLowerCase().includes(search.toLowerCase()));
 
   const save = async () => {
     setSaving(true);
     try {
       const result = await saveAndClose({ modal, form, add, update, setModal });
       if (result?.ok) setForm(blank);
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
+
   return (
     <div>
       <SHead title="Journals & Articles" sub={`${items.length} entries`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
@@ -799,6 +612,7 @@ function MediaSection({ role }) {
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
   const save = () => saveAndClose({ modal, form, add, update, setModal });
+
   return (
     <div>
       <SHead title="Media Library" sub={`${items.length} items`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
@@ -832,33 +646,7 @@ function HeroesSection({ role, token }) {
   const [search, setSearch] = useState("");
   const blank = { name: "", role: "", year: "2024-25", bio: "", image: "", status: "Featured" };
   const [form, setForm] = useState(blank);
-  const [uploading, setUploading] = useState(false);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append('file', file, file.name);
-      const res = await fetch(`${API}/api/uploads`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: fd,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Upload failed');
-      setForm(p => ({ ...p, image: data.url }));
-    } catch (err) {
-      alert(err.message || 'Upload failed');
-    } finally {
-      setUploading(false);
-      e.target.value = '';
-    }
-  };
-
   const filtered = items.filter((x) => x.name.toLowerCase().includes(search.toLowerCase()));
   const save = () => saveAndClose({ modal, form, add, update, setModal });
 
@@ -876,33 +664,15 @@ function HeroesSection({ role, token }) {
             <div className="flex-1"><Field label="Role"><Input value={form.role} onChange={f("role")} placeholder="e.g. Choir Director" /></Field></div>
             <div className="flex-1"><Field label="Year"><Input value={form.year} onChange={f("year")} placeholder="2024-25" /></Field></div>
           </div>
-
-          <Field label="Image">
-            <div className="flex items-center gap-3">
-              <div className="w-24 h-24 rounded overflow-hidden bg-gray-100" style={{ border: '1px solid #E2E8F7' }}>
-                {form.image ? (
-                  <img src={form.image} alt="preview" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-sm" style={{ color: '#94A3B8' }}>No image</div>
-                )}
-              </div>
-              <div className="flex-1">
-                <input type="file" accept="image/*" onChange={handleFileChange} disabled={uploading} className="text-sm" />
-                {uploading && <p className="text-xs" style={{ color: '#64748B' }}>Uploading…</p>}
-                {form.image && (
-                  <button
-                    type="button"
-                    onClick={() => setForm(p => ({ ...p, image: '' }))}
-                    className="mt-2 text-xs text-red-500 underline"
-                  >
-                    Remove image
-                  </button>
-                )}
-                <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>Choose an image – it will upload automatically (max 5MB).</p>
-              </div>
-            </div>
-          </Field>
-
+          <FileUpload
+            token={token}
+            accept="image/*"
+            label="Hero Photo"
+            hint="Portrait or square photo · max 5 MB"
+            currentUrl={form.image}
+            onUpload={({ url }) => setForm(p => ({ ...p, image: url }))}
+            onRemove={() => setForm(p => ({ ...p, image: '' }))}
+          />
           <Field label="Bio / Story"><Textarea value={form.bio} onChange={f("bio")} rows={4} placeholder="Their contribution…" /></Field>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Draft", "Featured"]} /></Field>
           <MFooter onClose={() => setModal(null)} onSave={save} />
@@ -917,42 +687,24 @@ function GroupsSection({ role }) {
   const { items, add, update, remove } = useGroups();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const blank = {
-    name: "",
-    leader: "",
-    schedule: [],
-    members: "",
-    description: "",
-    status: "Active",
-  };
+  const blank = { name: "", leader: "", schedule: [], members: "", description: "", status: "Active" };
   const [form, setForm] = useState(blank);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.name.toLowerCase().includes(search.toLowerCase()));
 
-  // Schedule helpers
-  const addScheduleRow = () => setForm(p => ({ ...p, schedule: [...(p.schedule || []), { day: 'Monday', time: '' }] }));
-  const removeScheduleRow = (index) => setForm(p => ({ ...p, schedule: (p.schedule || []).filter((_, i) => i !== index) }));
-  const updateScheduleRow = (index, field, value) => setForm(p => {
-    const s = [...(p.schedule || [])];
-    s[index] = { ...s[index], [field]: value };
-    return { ...p, schedule: s };
+  const addScheduleRow    = () => setForm(p => ({ ...p, schedule: [...(p.schedule || []), { day: 'Monday', time: '' }] }));
+  const removeScheduleRow = (i) => setForm(p => ({ ...p, schedule: (p.schedule || []).filter((_, idx) => idx !== i) }));
+  const updateScheduleRow = (i, field, value) => setForm(p => {
+    const s = [...(p.schedule || [])]; s[i] = { ...s[i], [field]: value }; return { ...p, schedule: s };
   });
 
-  const save = () => {
-    const data = { ...form, members: Number(form.members) || 0 };
-    saveAndClose({ modal, form: data, add, update, setModal });
-  };
+  const save = () => saveAndClose({ modal, form: { ...form, members: Number(form.members) || 0 }, add, update, setModal });
 
   return (
     <div>
       <SHead title="Ministry Groups" sub={`${items.length} groups`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
       <Table
-        cols={[
-          { key: "name", label: "Group" },
-          { key: "leader", label: "Leader" },
-          { key: "members", label: "Members" },
-          { key: "status", label: "Status" },
-        ]}
+        cols={[{ key: "name", label: "Group" }, { key: "leader", label: "Leader" }, { key: "members", label: "Members" }, { key: "status", label: "Status" }]}
         rows={filtered} onEdit={(r) => { setForm({ ...r, schedule: r.schedule || [] }); setModal(r); }} onDelete={role !== "editor" ? remove : null}
       />
       {modal && (
@@ -962,22 +714,18 @@ function GroupsSection({ role }) {
             <div className="flex-1"><Field label="Leader"><Input value={form.leader} onChange={f("leader")} placeholder="Leader name" /></Field></div>
             <div className="flex-1"><Field label="Members"><Input type="number" value={form.members} onChange={f("members")} placeholder="0" /></Field></div>
           </div>
-
-          {/* Schedule editor */}
           <Field label="Meeting Schedule">
             {(form.schedule || []).map((s, i) => (
               <div key={i} className="flex items-center gap-2 mb-2">
                 <select value={s.day} onChange={e => updateScheduleRow(i, 'day', e.target.value)} className="flex-1 px-2 py-1.5 rounded-lg text-sm border" style={{ borderColor: '#E2E8F7' }}>
-                  {['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map(d => <option key={d} value={d}>{d}</option>)}
+                  {['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map(d => <option key={d}>{d}</option>)}
                 </select>
                 <input type="time" value={s.time} onChange={e => updateScheduleRow(i, 'time', e.target.value)} className="w-28 px-2 py-1.5 rounded-lg text-sm border" style={{ borderColor: '#E2E8F7' }} />
                 <button type="button" onClick={() => removeScheduleRow(i)} className="p-1 text-red-500 hover:bg-red-50 rounded">✕</button>
               </div>
             ))}
             <button type="button" onClick={addScheduleRow} className="text-xs text-blue-600 underline mt-1">+ Add meeting time</button>
-            <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>Add one or more meeting days/times for this group.</p>
           </Field>
-
           <Field label="Description"><Textarea value={form.description} onChange={f("description")} rows={2} placeholder="Brief description…" /></Field>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Active", "Inactive"]} /></Field>
           <MFooter onClose={() => setModal(null)} onSave={save} />
@@ -990,19 +738,14 @@ function GroupsSection({ role }) {
 // ── Group Join Requests ────────────────────────────────────────────────────
 function GroupRequestsSection() {
   const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]   = useState(true);
 
   const load = useCallback(async () => {
     try {
       const result = await requestJson(`${API}/api/groups/requests/all`);
-      if (result?.ok) setRequests(result.data || result);
-      else setRequests([]);
-    } catch (err) {
-      console.error(err);
-      setRequests([]);
-    } finally {
-      setLoading(false);
-    }
+      setRequests(result?.ok ? (result.data || []) : []);
+    } catch { setRequests([]); }
+    finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -1014,12 +757,9 @@ function GroupRequestsSection() {
       <SHead title="Group Join Requests" sub={`${requests.length} requests`} />
       <Table
         cols={[
-          { key: "name", label: "Name" },
-          { key: "email", label: "Email", clip: true },
-          { key: "groupName", label: "Group" },
-          { key: "phone", label: "Phone", clip: true },
-          { key: "submittedAt", label: "Date" },
-          { key: "status", label: "Status" },
+          { key: "name", label: "Name" }, { key: "email", label: "Email", clip: true },
+          { key: "groupName", label: "Group" }, { key: "phone", label: "Phone", clip: true },
+          { key: "submittedAt", label: "Date" }, { key: "status", label: "Status" },
         ]}
         rows={requests.map(r => ({ ...r, submittedAt: r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : '—' }))}
       />
@@ -1034,44 +774,13 @@ function ResourcesSection({ role, token }) {
   const [search, setSearch] = useState("");
   const blank = { title: "", description: "", category: "Planning", fileType: "PDF", status: "Published", fileUrl: "" };
   const [form, setForm] = useState(blank);
-  const [uploading, setUploading] = useState(false);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
 
- const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append('file', file, file.name);
-      const res = await fetch(`${API}/api/uploads`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: fd,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Upload failed');
-      setForm(p => ({ ...p, fileUrl: data.url }));
-    } catch (err) {
-      alert(err.message || 'Upload failed');
-    } finally {
-      setUploading(false);
-      e.target.value = '';
-    }
-  };
-
   const save = async () => {
-    const result = modal === "add"
-      ? await add(form)
-      : await update({ ...form, id: modal.id });
-    if (result?.ok) {
-      setModal(null);
-      setForm(blank);
-    } else {
-      alert(result?.error || "The change could not be saved.");
-    }
+    const result = modal === "add" ? await add(form) : await update({ ...form, id: modal.id });
+    if (result?.ok) { setModal(null); setForm(blank); }
+    else alert(result?.error || "The change could not be saved.");
   };
 
   return (
@@ -1080,13 +789,11 @@ function ResourcesSection({ role, token }) {
       <Table
         cols={[{ key: "title", label: "Title", clip: true }, { key: "description", label: "Description", clip: true }, { key: "category", label: "Category" }, { key: "fileType", label: "Type" }, { key: "status", label: "Status" }]}
         rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={role !== "editor" ? remove : null}
-        extra={(r) => (
-          r.fileUrl ? (
-            <a href={r.fileUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-emerald-100 transition-colors" title="Download file">
-              <Icon d={Icons.download} size={14} className="text-emerald-600" />
-            </a>
-          ) : null
-        )}
+        extra={(r) => r.fileUrl ? (
+          <a href={r.fileUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-emerald-100 transition-colors" title="Download file">
+            <Icon d={Icons.download} size={14} className="text-emerald-600" />
+          </a>
+        ) : null}
       />
       {modal && (
         <Modal title={modal === "add" ? "Add Resource" : "Edit Resource"} onClose={() => setModal(null)}>
@@ -1096,33 +803,15 @@ function ResourcesSection({ role, token }) {
             <div className="flex-1"><Field label="Category"><Sel value={form.category} onChange={f("category")} options={["Planning", "Study", "Spiritual", "Health", "General"]} /></Field></div>
             <div className="flex-1"><Field label="File Type"><Sel value={form.fileType} onChange={f("fileType")} options={["PDF", "DOCX", "XLSX", "Link"]} /></Field></div>
           </div>
-
-        <Field label="Upload File">
-          {form.fileUrl && (
-          <div className="mb-2 text-sm flex items-center gap-2">
-            Current file: <a href={form.fileUrl} target="_blank" className="text-blue-600 underline">View</a>
-            <button
-              type="button"
-              onClick={() => setForm(p => ({ ...p, fileUrl: '' }))}
-              className="text-xs text-red-500 underline"
-            >
-              Remove
-            </button>
-          </div>
-          )}
-          <input
-            type="file"
+          <FileUpload
+            token={token}
             accept=".pdf,.docx,.xlsx,.doc,.xls"
-            onChange={handleFileChange}
-            disabled={uploading}
-            className="text-sm"
+            label="Upload File"
+            hint="PDF, Word or Excel · max 10 MB"
+            currentUrl={form.fileUrl}
+            onUpload={({ url }) => setForm(p => ({ ...p, fileUrl: url }))}
+            onRemove={() => setForm(p => ({ ...p, fileUrl: '' }))}
           />
-          {uploading && <p className="text-xs mt-1" style={{ color: '#64748B' }}>Uploading…</p>}
-          <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>
-            Select a file – it will upload automatically. Max 5MB.
-          </p>
-        </Field>
-
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Draft", "Published"]} /></Field>
           <MFooter onClose={() => setModal(null)} onSave={save} />
         </Modal>
@@ -1134,10 +823,10 @@ function ResourcesSection({ role, token }) {
 // ── Prayer Requests ────────────────────────────────────────────────────────
 function PrayerSection() {
   const { items, update, remove, load } = usePrayers();
-  const [viewing, setViewing] = useState(null);
-  const [replyText, setReplyText] = useState("");
+  const [viewing, setViewing]       = useState(null);
+  const [replyText, setReplyText]   = useState("");
   const [sendingReply, setSendingReply] = useState(false);
-  const [search, setSearch] = useState("");
+  const [search, setSearch]         = useState("");
   const filtered = items.filter((x) =>
     (x.name || "").toLowerCase().includes(search.toLowerCase()) ||
     (x.email || "").toLowerCase().includes(search.toLowerCase()) ||
@@ -1145,44 +834,28 @@ function PrayerSection() {
   );
   const unread = items.filter((x) => x.status === "Unread").length;
 
-  const openView = (row) => { setViewing(row); setReplyText(""); };
+  const openView  = (row) => { setViewing(row); setReplyText(""); };
   const closeView = () => { setViewing(null); setReplyText(""); };
 
   const sendReply = async () => {
     if (!viewing?.email || !replyText.trim()) return;
     setSendingReply(true);
     try {
-      const result = await requestJson(`${API}/api/prayers/${viewing.id}/reply`, {
-        method: "POST",
-        body: JSON.stringify({ message: replyText.trim() }),
-      });
-      if (!result.ok) {
-        alert(result.error || "Could not send the reply.");
-        return;
-      }
-      await load();
-      closeView();
-    } finally {
-      setSendingReply(false);
-    }
+      const result = await requestJson(`${API}/api/prayers/${viewing.id}/reply`, { method: "POST", body: JSON.stringify({ message: replyText.trim() }) });
+      if (!result.ok) { alert(result.error || "Could not send the reply."); return; }
+      await load(); closeView();
+    } finally { setSendingReply(false); }
   };
 
   return (
     <div>
       <SHead title="Prayer Requests" sub={`${items.length} requests · ${unread} unread`} search={search} onSearch={setSearch} />
       <Table
-        cols={[
-          { key: "name", label: "From" },
-          { key: "email", label: "Email", clip: true },
-          { key: "request", label: "Request", clip: true },
-          { key: "date", label: "Date" },
-          { key: "status", label: "Status" },
-        ]}
+        cols={[{ key: "name", label: "From" }, { key: "email", label: "Email", clip: true }, { key: "request", label: "Request", clip: true }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]}
         rows={filtered.map((r) => ({ ...r, email: r.email || "—" }))}
         onDelete={remove}
         extra={(row) => (<>
-          <button onClick={() => update({ ...row, status: row.status === "Unread" ? "Prayed" : "Unread" })}
-            className="p-1.5 rounded-lg hover:bg-emerald-100 transition-colors" title="Toggle Prayed">
+          <button onClick={() => update({ ...row, status: row.status === "Unread" ? "Prayed" : "Unread" })} className="p-1.5 rounded-lg hover:bg-emerald-100 transition-colors" title="Toggle Prayed">
             <Icon d={Icons.check} size={14} className={row.status === "Prayed" ? "text-emerald-600" : "text-slate-300"} />
           </button>
           <button onClick={() => openView(row)} className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors" title="View">
@@ -1198,40 +871,26 @@ function PrayerSection() {
                 <p className="text-sm font-semibold" style={{ color: C.navy }}>{viewing.name}</p>
                 {viewing.email && <p className="text-xs" style={{ color: "#64748B" }}>{viewing.email}</p>}
               </div>
-              <div className="text-right">
-                <Badge text={viewing.status} />
-                <p className="text-xs mt-1" style={{ color: "#94A3B8" }}>{viewing.date}</p>
-              </div>
+              <div className="text-right"><Badge text={viewing.status} /><p className="text-xs mt-1" style={{ color: "#94A3B8" }}>{viewing.date}</p></div>
             </div>
             <p className="text-sm leading-relaxed" style={{ color: "#334155" }}>{viewing.request}</p>
           </div>
-
           {viewing.lastReply && (
             <div className="rounded-xl p-4 mb-4" style={{ background: "#ECFDF5", border: "1px solid #A7F3D0" }}>
               <p className="text-xs font-semibold mb-1" style={{ color: "#059669" }}>LAST REPLY SENT</p>
               <p className="text-sm leading-relaxed" style={{ color: "#334155" }}>{viewing.lastReply}</p>
             </div>
           )}
-
           {viewing.email ? (
             <Field label="Reply by email">
-              <Textarea
-                rows={3}
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                placeholder={`Write an encouraging reply to ${viewing.name}…`}
-              />
+              <Textarea rows={3} value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder={`Write an encouraging reply to ${viewing.name}…`} />
             </Field>
           ) : (
-            <p className="text-xs mb-4" style={{ color: "#94A3B8" }}>
-              {viewing.name} didn't share an email address, so a reply can't be sent by email — please pray for this request and follow up in person if possible.
-            </p>
+            <p className="text-xs mb-4" style={{ color: "#94A3B8" }}>{viewing.name} didn't share an email address — please pray and follow up in person if possible.</p>
           )}
-
           <div className="flex justify-end gap-2">
             <button onClick={closeView} className="px-4 py-2 rounded-xl text-sm border" style={{ borderColor: C.border, color: "#64748B" }}>Close</button>
-            <button onClick={() => { update({ ...viewing, status: "Prayed" }); closeView(); }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: "#059669" }}>
+            <button onClick={() => { update({ ...viewing, status: "Prayed" }); closeView(); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: "#059669" }}>
               <Icon d={Icons.check} size={14} className="text-white" /> Mark as Prayed
             </button>
             {viewing.email && (
@@ -1251,10 +910,10 @@ function PrayerSection() {
 // ── Contact Inbox ──────────────────────────────────────────────────────────
 function ContactSection({ role }) {
   const { items, update, remove, load } = useContacts();
-  const [viewing, setViewing] = useState(null);
-  const [replyText, setReplyText] = useState("");
+  const [viewing, setViewing]       = useState(null);
+  const [replyText, setReplyText]   = useState("");
   const [sendingReply, setSendingReply] = useState(false);
-  const [search, setSearch] = useState("");
+  const [search, setSearch]         = useState("");
   const filtered = items.filter((x) =>
     (x.name || "").toLowerCase().includes(search.toLowerCase()) ||
     (x.email || "").toLowerCase().includes(search.toLowerCase()) ||
@@ -1262,43 +921,24 @@ function ContactSection({ role }) {
   );
   const unread = items.filter((x) => x.status === "Unread").length;
 
-  const openMsg = (row) => {
-    update({ ...row, status: row.status === "Unread" ? "Read" : row.status });
-    setViewing(row);
-    setReplyText("");
-  };
+  const openMsg   = (row) => { update({ ...row, status: row.status === "Unread" ? "Read" : row.status }); setViewing(row); setReplyText(""); };
   const closeView = () => { setViewing(null); setReplyText(""); };
 
   const sendReply = async () => {
     if (!viewing?.email || !replyText.trim()) return;
     setSendingReply(true);
     try {
-      const result = await requestJson(`${API}/api/contacts/${viewing.id}/reply`, {
-        method: "POST",
-        body: JSON.stringify({ reply: replyText.trim() }),
-      });
-      if (!result.ok) {
-        alert(result.error || "Could not send the reply.");
-        return;
-      }
-      await load();
-      closeView();
-    } finally {
-      setSendingReply(false);
-    }
+      const result = await requestJson(`${API}/api/contacts/${viewing.id}/reply`, { method: "POST", body: JSON.stringify({ reply: replyText.trim() }) });
+      if (!result.ok) { alert(result.error || "Could not send the reply."); return; }
+      await load(); closeView();
+    } finally { setSendingReply(false); }
   };
 
   return (
     <div>
       <SHead title="Contact Inbox" sub={`${items.length} messages · ${unread} unread`} search={search} onSearch={setSearch} />
       <Table
-        cols={[
-          { key: "name", label: "From" },
-          { key: "email", label: "Email", clip: true },
-          { key: "subject", label: "Subject", clip: true },
-          { key: "date", label: "Date" },
-          { key: "status", label: "Status" },
-        ]}
+        cols={[{ key: "name", label: "From" }, { key: "email", label: "Email", clip: true }, { key: "subject", label: "Subject", clip: true }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]}
         rows={filtered.map((r) => ({ ...r, email: r.email || "—" }))}
         onDelete={role !== "editor" ? remove : null}
         extra={(row) => (
@@ -1327,31 +967,19 @@ function ContactSection({ role }) {
             <p className="text-xs font-semibold mb-1" style={{ color: "#94A3B8" }}>MESSAGE</p>
             <p className="text-sm leading-relaxed" style={{ color: "#334155" }}>{viewing.message}</p>
           </div>
-
           {viewing.email ? (
             <Field label="Reply by email">
-              <Textarea
-                rows={3}
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                placeholder={`Write a reply to ${viewing.name}…`}
-              />
+              <Textarea rows={3} value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder={`Write a reply to ${viewing.name}…`} />
             </Field>
           ) : (
-            <p className="text-xs mb-4" style={{ color: "#94A3B8" }}>
-              No email address was provided, so a reply can't be sent by email.
-            </p>
+            <p className="text-xs mb-4" style={{ color: "#94A3B8" }}>No email address was provided.</p>
           )}
-
           <div className="flex justify-end gap-2 mt-2">
             <button onClick={closeView} className="px-4 py-2 rounded-xl text-sm border" style={{ borderColor: C.border, color: "#64748B" }}>Close</button>
             {viewing.email && (
-              <button
-                onClick={sendReply}
-                disabled={sendingReply || !replyText.trim()}
+              <button onClick={sendReply} disabled={sendingReply || !replyText.trim()}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-                style={{ background: sendingReply || !replyText.trim() ? "#94A3B8" : C.primary, cursor: sendingReply || !replyText.trim() ? "not-allowed" : "pointer" }}
-              >
+                style={{ background: sendingReply || !replyText.trim() ? "#94A3B8" : C.primary, cursor: sendingReply || !replyText.trim() ? "not-allowed" : "pointer" }}>
                 <Icon d={Icons.reply} size={14} className="text-white" />
                 {sendingReply ? "Sending…" : "Send Reply"}
               </button>
@@ -1366,29 +994,19 @@ function ContactSection({ role }) {
 // ── About Editor ───────────────────────────────────────────────────────────
 function AboutSection() {
   const { about, setAbout } = useAbout();
-  const aboutKey = JSON.stringify(about || {});
-
-  return <AboutEditor key={aboutKey} about={about} setAbout={setAbout} />;
+  return <AboutEditor key={JSON.stringify(about || {})} about={about} setAbout={setAbout} />;
 }
 
 function AboutEditor({ about, setAbout }) {
-  const [form, setForm] = useState({
-    mission: "", vision: "", history: "",
-    address: "", email: "", phone: "",
-    facebook: "", instagram: "",
-    ...about,
-  });
+  const [form, setForm] = useState({ mission: "", vision: "", history: "", address: "", email: "", phone: "", facebook: "", instagram: "", ...about });
   const [saved, setSaved] = useState(false);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const save = async () => {
     const result = await setAbout(form);
-    if (!result?.ok) {
-      alert(result?.error || "The about page could not be saved.");
-      return;
-    }
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    if (!result?.ok) { alert(result?.error || "The about page could not be saved."); return; }
+    setSaved(true); setTimeout(() => setSaved(false), 2500);
   };
+
   return (
     <div>
       <SHead title="About Page Editor" sub="Mission, vision, contact info & social links" />
@@ -1414,8 +1032,7 @@ function AboutEditor({ about, setAbout }) {
         </div>
       </div>
       <div className="flex justify-end mt-5">
-        <button onClick={save} className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all"
-          style={{ background: saved ? "#059669" : C.primary }}>
+        <button onClick={save} className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all" style={{ background: saved ? "#059669" : C.primary }}>
           {saved ? "✓ Saved!" : "Save Changes"}
         </button>
       </div>
@@ -1425,171 +1042,91 @@ function AboutEditor({ about, setAbout }) {
 
 // ── Users Management ───────────────────────────────────────────────────────
 function UsersSection({ token }) {
-  const [users, setUsers] = useState([]);
+  const [users, setUsers]   = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState(null);
-  const [form, setForm] = useState({ email: "", displayName: "", role: "editor" });
+  const [modal, setModal]   = useState(null);
+  const [form, setForm]     = useState({ email: "", displayName: "", role: "editor" });
 
   const fetchUsers = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/api/users`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(`${API}/api/users`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error("Failed to load users");
-      const data = await res.json();
-      setUsers(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+      setUsers(await res.json());
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   }, [token]);
 
-  useEffect(() => { 
-  if (token) fetchUsers(); 
-}, [fetchUsers, token]);
+  useEffect(() => { if (token) fetchUsers(); }, [fetchUsers, token]);
 
   const handleInvite = async () => {
     if (!form.email || !form.role) return;
-    const res = await fetch(`${API}/api/users/invite`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
-      setModal(null);
-      fetchUsers();
-      alert('Invitation sent successfully. The user will receive an email to set their password.');
-    } else {
-      const err = await res.json().catch(() => ({}));
-      alert(err.error || "Invitation failed");
-    }
+    const res = await fetch(`${API}/api/users/invite`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(form) });
+    if (res.ok) { setModal(null); fetchUsers(); alert('Invitation sent successfully.'); }
+    else { const err = await res.json().catch(() => ({})); alert(err.error || "Invitation failed"); }
   };
 
   const handleRoleChange = async (uid, newRole) => {
     if (!confirm(`Change role to ${newRole}?`)) return;
-    const res = await fetch(`${API}/api/users/${uid}/role`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ role: newRole }),
-    });
-    if (res.ok) {
-      fetchUsers();
-      setModal(null);
-    } else {
-      const err = await res.json().catch(() => ({}));
-      alert(err.error || "Failed to change role");
-    }
+    const res = await fetch(`${API}/api/users/${uid}/role`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ role: newRole }) });
+    if (res.ok) { fetchUsers(); setModal(null); }
+    else { const err = await res.json().catch(() => ({})); alert(err.error || "Failed to change role"); }
   };
 
   const handleStatus = async (uid, active) => {
-    const action = active ? "activate" : "deactivate";
-    if (!confirm(`Are you sure you want to ${action} this user?`)) return;
-    const res = await fetch(`${API}/api/users/${uid}/status`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ active }),
-    });
+    if (!confirm(`Are you sure you want to ${active ? "activate" : "deactivate"} this user?`)) return;
+    const res = await fetch(`${API}/api/users/${uid}/status`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ active }) });
     if (res.ok) fetchUsers();
-    else {
-      const err = await res.json().catch(() => ({}));
-      alert(err.error || "Status update failed");
-    }
+    else { const err = await res.json().catch(() => ({})); alert(err.error || "Status update failed"); }
   };
 
   const handleDelete = async (uid) => {
-    if (!confirm("Permanently delete this user? This cannot be undone.")) return;
-    const res = await fetch(`${API}/api/users/${uid}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!confirm("Permanently delete this user?")) return;
+    const res = await fetch(`${API}/api/users/${uid}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) fetchUsers();
-    else {
-      const err = await res.json().catch(() => ({}));
-      alert(err.error || "Delete failed");
-    }
+    else { const err = await res.json().catch(() => ({})); alert(err.error || "Delete failed"); }
   };
-
-  const cols = [
-    { key: "email", label: "Email" },
-    { key: "displayName", label: "Name" },
-    { key: "role", label: "Role" },
-    { key: "active", label: "Active" },
-    { key: "createdAt", label: "Added" },
-  ];
 
   if (loading) return <div className="p-8 text-center text-slate-400">Loading users...</div>;
 
   return (
     <div>
-      <SHead
-        title="Manage Administrators"
-        sub={`${users.length} admin users`}
-        onAdd={() => { setForm({ email: "", displayName: "", role: "editor" }); setModal("invite"); }}
-      />
+      <SHead title="Manage Administrators" sub={`${users.length} admin users`} onAdd={() => { setForm({ email: "", displayName: "", role: "editor" }); setModal("invite"); }} />
       <Table
-        cols={cols}
+        cols={[{ key: "email", label: "Email" }, { key: "displayName", label: "Name" }, { key: "role", label: "Role" }, { key: "active", label: "Active" }, { key: "createdAt", label: "Added" }]}
         rows={users.map(u => ({ ...u, active: u.active ? "Active" : "Inactive", createdAt: u.createdAt?.slice(0,10) || "" }))}
         onDelete={(id) => handleDelete(id)}
-        extra={(row) => (
-          <>
-            <button onClick={() => setModal({ uid: row.uid, currentRole: row.role })} className="p-1.5 rounded-lg hover:bg-blue-100" title="Change role">
-              <Icon d={Icons.edit} size={14} className="text-blue-600" />
-            </button>
-            <button onClick={() => handleStatus(row.uid, row.active === "Active" ? false : true)} className={`p-1.5 rounded-lg hover:bg-amber-100 ${row.active === "Active" ? "text-red-500" : "text-emerald-600"}`} title={row.active === "Active" ? "Deactivate" : "Activate"}>
-              <Icon d={row.active === "Active" ? Icons.close : Icons.check} size={14} />
-            </button>
-
-            
-            <button
-              onClick={async () => {
-                if (!confirm(`Send password reset email to ${row.email}?`)) return;
-                const res = await fetch(`${API}/api/users/${row.uid}/reset-password`, {
-                  method: 'POST',
-                  headers: { Authorization: `Bearer ${token}` },
-                });
-                const data = await res.json().catch(() => ({}));
-                if (res.ok) alert(`Reset email sent to ${row.email}`);
-                else alert(data.error || 'Failed to send reset email');
-              }}
-              className="p-1.5 rounded-lg hover:bg-blue-100"
-              title="Send password reset email"
-            >
-              <Icon d={Icons.reset} size={14} className="text-blue-500" />
-            </button>
-          </>
-        )}
+        extra={(row) => (<>
+          <button onClick={() => setModal({ uid: row.uid, currentRole: row.role })} className="p-1.5 rounded-lg hover:bg-blue-100" title="Change role">
+            <Icon d={Icons.edit} size={14} className="text-blue-600" />
+          </button>
+          <button onClick={() => handleStatus(row.uid, row.active === "Active" ? false : true)} className={`p-1.5 rounded-lg hover:bg-amber-100 ${row.active === "Active" ? "text-red-500" : "text-emerald-600"}`} title={row.active === "Active" ? "Deactivate" : "Activate"}>
+            <Icon d={row.active === "Active" ? Icons.close : Icons.check} size={14} />
+          </button>
+          <button onClick={async () => {
+            if (!confirm(`Send password reset email to ${row.email}?`)) return;
+            const res = await fetch(`${API}/api/users/${row.uid}/reset-password`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) alert(`Reset email sent to ${row.email}`);
+            else alert(data.error || 'Failed to send reset email');
+          }} className="p-1.5 rounded-lg hover:bg-blue-100" title="Send password reset email">
+            <Icon d={Icons.reset} size={14} className="text-blue-500" />
+          </button>
+        </>)}
       />
-
       {modal === "invite" && (
         <Modal title="Invite New Admin" onClose={() => setModal(null)}>
           <Field label="Email"><Input type="email" value={form.email} onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} placeholder="user@example.com" /></Field>
           <Field label="Display Name"><Input value={form.displayName} onChange={(e) => setForm(f => ({ ...f, displayName: e.target.value }))} placeholder="John Doe" /></Field>
-          <Field label="Role">
-            <Sel value={form.role} onChange={(e) => setForm(f => ({ ...f, role: e.target.value }))} options={["editor", "admin", "super_admin", "secretary", "prayer_band_leader", "publicity_secretary"]} />
-          </Field>
+          <Field label="Role"><Sel value={form.role} onChange={(e) => setForm(f => ({ ...f, role: e.target.value }))} options={["editor", "admin", "super_admin", "secretary", "prayer_band_leader", "publicity_secretary"]} /></Field>
           <MFooter onClose={() => setModal(null)} onSave={handleInvite} />
         </Modal>
       )}
-
       {modal && modal.uid && (
         <Modal title="Change Role" onClose={() => setModal(null)}>
           <p className="text-sm mb-4">Select a new role for <strong>{users.find(u => u.uid === modal.uid)?.email}</strong></p>
-          <Field label="New Role">
-            <Sel value={modal.currentRole} onChange={(e) => setModal({ ...modal, currentRole: e.target.value })} options={["editor", "admin", "super_admin", "secretary", "prayer_band_leader", "publicity_secretary"]} />
-          </Field>
+          <Field label="New Role"><Sel value={modal.currentRole} onChange={(e) => setModal({ ...modal, currentRole: e.target.value })} options={["editor", "admin", "super_admin", "secretary", "prayer_band_leader", "publicity_secretary"]} /></Field>
           <MFooter onClose={() => setModal(null)} onSave={() => handleRoleChange(modal.uid, modal.currentRole)} />
         </Modal>
-      
       )}
     </div>
   );
@@ -1597,30 +1134,25 @@ function UsersSection({ token }) {
 
 // ── Overview ───────────────────────────────────────────────────────────────
 function OverviewSection({ setSection, role }) {
-  const { reset } = useData();
-  const { items: journals }       = useJournals();
-  const { items: announcements }  = useAnnouncements();
-  const { items: media }          = useMedia();
-  const { items: heroes }         = useHeroes();
-  const { items: events }         = useEvents();
-  const { items: groups }         = useGroups();
-  const { items: resources }      = useResources();
-  const { items: prayers }        = usePrayers();
-  const { items: contacts }       = useContacts();
+  const { items: journals }      = useJournals();
+  const { items: announcements } = useAnnouncements();
+  const { items: media }         = useMedia();
+  const { items: heroes }        = useHeroes();
+  const { items: events }        = useEvents();
+  const { items: groups }        = useGroups();
+  const { items: resources }     = useResources();
+  const { items: prayers }       = usePrayers();
+  const { items: contacts }      = useContacts();
 
   const stats = [
-    { label: "Journals",        value: journals.length,      icon: Icons.journals,  color: C.primary,  key: "journals"       },
-    { label: "Announcements",   value: announcements.length, icon: Icons.announce,  color: C.purple,   key: "announcements"  },
-    { label: "Media Items",     value: media.length,         icon: Icons.media,     color: C.navy,     key: "media"          },
-    { label: "Heroes",          value: heroes.length,        icon: Icons.heroes,    color: "#059669",  key: "heroes"         },
-    { label: "Events",          value: events.length,        icon: Icons.events,    color: "#F59E0B",  key: "events"         },
-    { label: "Groups",          value: groups.length,        icon: Icons.groups,    color: "#DC2626",  key: "groups"         },
-    { label: "Resources",       value: resources.length,     icon: Icons.resources, color: "#0891B2",  key: "resources"      },
-    {
-      label: "Unread Messages",
-      value: contacts.filter((x) => x.status === "Unread").length + prayers.filter((x) => x.status === "Unread").length,
-      icon: Icons.contact, color: C.purple, key: "contact",
-    },
+    { label: "Journals",      value: journals.length,      icon: Icons.journals,  color: C.primary, key: "journals"      },
+    { label: "Announcements", value: announcements.length, icon: Icons.announce,  color: C.purple,  key: "announcements" },
+    { label: "Media Items",   value: media.length,         icon: Icons.media,     color: C.navy,    key: "media"         },
+    { label: "Heroes",        value: heroes.length,        icon: Icons.heroes,    color: "#059669", key: "heroes"        },
+    { label: "Events",        value: events.length,        icon: Icons.events,    color: "#F59E0B", key: "events"        },
+    { label: "Groups",        value: groups.length,        icon: Icons.groups,    color: "#DC2626", key: "groups"        },
+    { label: "Resources",     value: resources.length,     icon: Icons.resources, color: "#0891B2", key: "resources"     },
+    { label: "Unread Messages", value: contacts.filter(x => x.status === "Unread").length + prayers.filter(x => x.status === "Unread").length, icon: Icons.contact, color: C.purple, key: "contact" },
   ];
 
   return (
@@ -1631,18 +1163,14 @@ function OverviewSection({ setSection, role }) {
           <p className="text-sm mt-0.5" style={{ color: "#64748B" }}>Changes you make here are reflected instantly on all public pages.</p>
         </div>
         {role === "super_admin" && (
-          <button onClick={() => window.location.reload()}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border hover:bg-red-50 transition-colors"
-            style={{ borderColor: "#FCA5A5", color: "#EF4444" }}>
+          <button onClick={() => window.location.reload()} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border hover:bg-red-50 transition-colors" style={{ borderColor: "#FCA5A5", color: "#EF4444" }}>
             <Icon d={Icons.reset} size={13} /> Refresh Page
           </button>
         )}
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {stats.map((s) => (
-          <div key={s.key} onClick={() => setSection(s.key)}
-            className="rounded-2xl p-4 cursor-pointer hover:shadow-md transition-all group bg-white"
-            style={{ border: `1px solid ${C.border}` }}>
+          <div key={s.key} onClick={() => setSection(s.key)} className="rounded-2xl p-4 cursor-pointer hover:shadow-md transition-all group bg-white" style={{ border: `1px solid ${C.border}` }}>
             <div className="flex items-center justify-between mb-3">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: s.color + "18" }}>
                 <Icon d={s.icon} size={18} style={{ color: s.color }} />
@@ -1656,130 +1184,52 @@ function OverviewSection({ setSection, role }) {
       </div>
       <div className="rounded-2xl border p-4 bg-blue-50" style={{ borderColor: "#BFDBFE" }}>
         <p className="text-sm font-semibold mb-1" style={{ color: C.primary }}>💡 Live backend sync</p>
-        <p className="text-xs leading-relaxed" style={{ color: "#1E40AF" }}>
-          All data is read from and written to your Express + Firestore backend in real time.
-          Add, edit, or delete any record here and it will be immediately reflected on every public page.
-        </p>
+        <p className="text-xs leading-relaxed" style={{ color: "#1E40AF" }}>All data is read from and written to your Express + Firestore backend in real time.</p>
       </div>
     </div>
   );
 }
 
+// ── Banners ────────────────────────────────────────────────────────────────
 function BannersSection({ token }) {
   const { items, add, update, remove } = useBanners();
   const [modal, setModal] = useState(null);
-  const [uploading, setUploading] = useState(false);
   const blank = { caption: '', status: 'Active', order: items.length + 1, image: '' };
-  const [form, setForm] = useState(blank);
+  const [form, setForm]   = useState(blank);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append('file', file, file.name);
-      const res = await fetch(`${API}/api/uploads`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: fd,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Upload failed');
-      setForm((p) => ({ ...p, image: data.url }));
-    } catch (err) {
-      alert(err.message || 'Upload failed');
-    } finally {
-      setUploading(false);
-      e.target.value = '';
-    }
-  };
-
   const save = () => saveAndClose({ modal, form, add, update, setModal });
 
   return (
     <div>
-      <SHead
-        title="Banner Slides"
-        sub="Landing page hero carousel — group photos, church sessions, campus life"
-        onAdd={() => { setForm({ ...blank, order: items.length + 1 }); setModal('add'); }}
-      />
+      <SHead title="Banner Slides" sub="Landing page hero carousel — group photos, church sessions, campus life"
+        onAdd={() => { setForm({ ...blank, order: items.length + 1 }); setModal('add'); }} />
       <Table
-        cols={[
-          { key: 'image',   label: 'Image' },
-          { key: 'caption', label: 'Caption', clip: true },
-          { key: 'order',   label: 'Order' },
-          { key: 'status',  label: 'Status' },
-        ]}
+        cols={[{ key: 'image', label: 'Image' }, { key: 'caption', label: 'Caption', clip: true }, { key: 'order', label: 'Order' }, { key: 'status', label: 'Status' }]}
         rows={items.map((r) => ({
           ...r,
-          image: r.image
-            ? <img src={r.image} alt="slide" className="w-16 h-10 object-cover rounded" />
-            : <span className="text-xs text-slate-400">No image</span>,
+          image: r.image ? <img src={r.image} alt="slide" className="w-16 h-10 object-cover rounded" /> : <span className="text-xs text-slate-400">No image</span>,
         }))}
         onEdit={(r) => { setForm({ ...r }); setModal(r); }}
         onDelete={remove}
       />
       {modal && (
-        <Modal
-          title={modal === 'add' ? 'Add Banner Slide' : 'Edit Banner Slide'}
-          onClose={() => setModal(null)}
-        >
-          <Field label="Slide Image">
-            {form.image && (
-              <div className="relative mb-2">
-                <img src={form.image} alt="preview" className="w-full h-32 object-cover rounded-lg" />
-                <button
-                  type="button"
-                  onClick={() => setForm((p) => ({ ...p, image: '' }))}
-                  className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center bg-red-500 text-white text-xs"
-                >✕</button>
-              </div>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              disabled={uploading}
-              className="text-sm"
-            />
-            {uploading && <p className="text-xs mt-1" style={{ color: '#64748B' }}>Uploading…</p>}
-            <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>
-              Group photos, church sessions, campus life images. Landscape orientation works best.
-            </p>
-          </Field>
-
+        <Modal title={modal === 'add' ? 'Add Banner Slide' : 'Edit Banner Slide'} onClose={() => setModal(null)}>
+          <FileUpload
+            token={token}
+            accept="image/*"
+            label="Slide Image"
+            hint="Landscape orientation works best · max 5 MB"
+            currentUrl={form.image}
+            onUpload={({ url }) => setForm(p => ({ ...p, image: url }))}
+            onRemove={() => setForm(p => ({ ...p, image: '' }))}
+          />
           <Field label="Caption (optional)">
-            <Input
-              value={form.caption}
-              onChange={f('caption')}
-              placeholder="e.g. Sabbath worship service — July 2025"
-            />
+            <Input value={form.caption} onChange={f('caption')} placeholder="e.g. Sabbath worship service — July 2025" />
           </Field>
-
           <div className="flex gap-3">
-            <div className="flex-1">
-              <Field label="Display Order">
-                <Input
-                  type="number"
-                  value={form.order}
-                  onChange={f('order')}
-                  placeholder="1"
-                />
-              </Field>
-            </div>
-            <div className="flex-1">
-              <Field label="Status">
-                <Sel
-                  value={form.status}
-                  onChange={f('status')}
-                  options={['Active', 'Inactive']}
-                />
-              </Field>
-            </div>
+            <div className="flex-1"><Field label="Display Order"><Input type="number" value={form.order} onChange={f('order')} placeholder="1" /></Field></div>
+            <div className="flex-1"><Field label="Status"><Sel value={form.status} onChange={f('status')} options={['Active', 'Inactive']} /></Field></div>
           </div>
-
           <MFooter onClose={() => setModal(null)} onSave={save} />
         </Modal>
       )}
@@ -1787,124 +1237,93 @@ function BannersSection({ token }) {
   );
 }
 
-
 // ═══════════════════════════════════════════════════════════════════════════
 // ROOT ADMIN PAGE
 // ═══════════════════════════════════════════════════════════════════════════
 export default function AdminPage() {
   const { user, token, loading, login, logout } = useAdminAuth();
-  const [section, setSection] = useState("overview");
-  const [open, setOpen] = useState(true);
+  const [section, setSection]   = useState("overview");
+  const [open, setOpen]         = useState(true);
   const [isResetLink, setIsResetLink] = useState(false);
 
-  const { items: prayers, load: loadPrayers } = usePrayers();
+  const { items: prayers,  load: loadPrayers  } = usePrayers();
   const { items: contacts, load: loadContacts } = useContacts();
 
-  useEffect(() => {
-    if (user) {
-      loadPrayers();
-      loadContacts();
-    }
-  }, [user, loadPrayers, loadContacts]);
+  useEffect(() => { if (user) { loadPrayers(); loadContacts(); } }, [user, loadPrayers, loadContacts]);
+  useEffect(() => { const p = new URLSearchParams(window.location.search); setIsResetLink(p.get("mode") === "resetPassword"); }, []);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    setIsResetLink(params.get("mode") === "resetPassword");
-  }, []);
-
-  const unreadPrayers  = prayers.filter((x) => x.status === "Unread").length;
-  const unreadContacts = contacts.filter((x) => x.status === "Unread").length;
+  const unreadPrayers  = prayers.filter(x => x.status === "Unread").length;
+  const unreadContacts = contacts.filter(x => x.status === "Unread").length;
   const totalUnread    = unreadPrayers + unreadContacts;
 
-  // Admin Navigation Bar
   const nav = useMemo(() => {
-
-    const isSuper = user?.role === 'super_admin';
-    const isAdmin = user?.role === 'admin' || isSuper;
     const isSecretary = user?.role === 'secretary';
-
-    // Secretary-only sidebar
     if (isSecretary) {
       return [
         { key: "student-registrations", label: "Student Registrations", icon: Icons.users },
-        { key: "members-register", label: "Members Register", icon: Icons.journals },
-        { key: "minutes", label: "Meeting Minutes", icon: Icons.about },
+        { key: "members-register",      label: "Members Register",      icon: Icons.journals },
+        { key: "minutes",               label: "Meeting Minutes",       icon: Icons.about },
       ];
     }
-
-
     const base = [
-      { key: "overview", label: "Overview", icon: Icons.dashboard },
-      { key: "announcements", label: "Announcements", icon: Icons.announce },
-      { key: "events", label: "Events", icon: Icons.events },
-      { key: "journals", label: "Journals", icon: Icons.journals },
-      { key: "media", label: "Media", icon: Icons.media },
-      { key: "heroes", label: "Heroes", icon: Icons.heroes },
-      { key: "banners", label: "Banner Slides", icon: Icons.media },
-      { key: "groups", label: "Groups", icon: Icons.groups, divider: true },
-      // Group join requests (admin+)
+      { key: "overview",      label: "Overview",       icon: Icons.dashboard },
+      { key: "announcements", label: "Announcements",  icon: Icons.announce  },
+      { key: "events",        label: "Events",         icon: Icons.events    },
+      { key: "journals",      label: "Journals",       icon: Icons.journals  },
+      { key: "media",         label: "Media",          icon: Icons.media     },
+      { key: "heroes",        label: "Heroes",         icon: Icons.heroes    },
+      { key: "banners",       label: "Banner Slides",  icon: Icons.media     },
+      { key: "groups",        label: "Groups",         icon: Icons.groups, divider: true },
       ...(user?.role !== 'editor' ? [{ key: "group-requests", label: "Group Requests", icon: Icons.users, badge: 0 }] : []),
-      { key: "resources", label: "Resources", icon: Icons.resources },
+      { key: "resources",     label: "Resources",      icon: Icons.resources },
     ];
-
-    // Only admin+ can see prayers and contacts
-     if (user?.role !== 'editor') {
+    if (user?.role !== 'editor') {
       base.push(
-        { key: "prayer", label: "Prayer Requests", icon: Icons.prayer, badge: unreadPrayers },
-        { key: "contact", label: "Contact Inbox", icon: Icons.contact, badge: unreadContacts, divider: true },
-        { key: "student-registrations", label: "Student Registrations", icon: Icons.users },
-        { key: "members-register",      label: "Members Register",     icon: Icons.journals },
-        { key: "minutes",               label: "Meeting Minutes",      icon: Icons.about },
-  
+        { key: "prayer",  label: "Prayer Requests",      icon: Icons.prayer,  badge: unreadPrayers  },
+        { key: "contact", label: "Contact Inbox",         icon: Icons.contact, badge: unreadContacts, divider: true },
+        { key: "student-registrations", label: "Student Registrations", icon: Icons.users    },
+        { key: "members-register",      label: "Members Register",      icon: Icons.journals },
+        { key: "minutes",               label: "Meeting Minutes",       icon: Icons.about    },
       );
     }
     base.push({ key: "about", label: "About Editor", icon: Icons.about });
-    
-    if (user?.role === "super_admin") {
-      base.push({ key: "users", label: "Manage Users", icon: Icons.users, divider: true });
-    }
+    if (user?.role === "super_admin") base.push({ key: "users", label: "Manage Users", icon: Icons.users, divider: true });
     return base;
   }, [user, unreadPrayers, unreadContacts]);
 
   const sectionMap = {
-    overview:      <OverviewSection setSection={setSection} role={user?.role} />,
-    announcements: <AnnouncementsSection role={user?.role} token={token} />,
-    events:        <EventsSection role={user?.role} token={token} />,
-    journals:      <JournalsSection role={user?.role} />,
-    media:         <MediaSection role={user?.role} />,
-    heroes:        <HeroesSection role={user?.role} token={token} />,
-    banners:       <BannersSection token={token} />,
-    groups:        <GroupsSection role={user?.role} />,
-    'group-requests': <GroupRequestsSection />, 
-    resources:     <ResourcesSection role={user?.role} token={token} />,
-    prayer:        <PrayerSection role={user?.role} />,
-    contact:       <ContactSection role={user?.role} />,
-    about:         <AboutSection />,
-    users:         <UsersSection token={token} />,
+    overview:               <OverviewSection setSection={setSection} role={user?.role} />,
+    announcements:          <AnnouncementsSection role={user?.role} token={token} />,
+    events:                 <EventsSection role={user?.role} token={token} />,
+    journals:               <JournalsSection role={user?.role} />,
+    media:                  <MediaSection role={user?.role} />,
+    heroes:                 <HeroesSection role={user?.role} token={token} />,
+    banners:                <BannersSection token={token} />,
+    groups:                 <GroupsSection role={user?.role} />,
+    'group-requests':       <GroupRequestsSection />,
+    resources:              <ResourcesSection role={user?.role} token={token} />,
+    prayer:                 <PrayerSection />,
+    contact:                <ContactSection role={user?.role} />,
+    about:                  <AboutSection />,
+    users:                  <UsersSection token={token} />,
     'student-registrations': <StudentRegistrationsSection token={token} />,
     'members-register':      <MemberRegistersSection token={token} />,
     'minutes':               <MinutesSection token={token} />,
   };
 
-  const current = nav.find((n) => n.key === section);
+  const current = nav.find(n => n.key === section);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: C.navy }}>
-        <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: C.navy }}>
+      <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
-  if (!user) {
-    if (isResetLink) {
-      return <ResetPasswordHandler />;
-    }
-    return <LoginGate onLogin={login} />;
-  }
+  if (!user) return isResetLink ? <ResetPasswordHandler /> : <LoginGate onLogin={login} />;
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: C.white, fontFamily: "'Noto Sans',sans-serif" }}>
+
       {/* Sidebar */}
       <aside className="flex-shrink-0 flex flex-col" style={{ width: open ? 224 : 60, background: C.navy, transition: "width 0.22s ease" }}>
         <div className="flex items-center gap-2.5 px-3.5 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
@@ -1917,7 +1336,7 @@ export default function AdminPage() {
               <div style={{ color: "rgba(255,255,255,0.38)", fontSize: 9, letterSpacing: "0.08em" }}>ADMIN PORTAL</div>
             </div>
           )}
-          <button onClick={() => setOpen((p) => !p)} className="p-1 rounded hover:bg-white/10 transition-colors flex-shrink-0">
+          <button onClick={() => setOpen(p => !p)} className="p-1 rounded hover:bg-white/10 transition-colors flex-shrink-0">
             <Icon d={open ? Icons.chevronL : Icons.chevronR} size={15} className="text-white/40" />
           </button>
         </div>
@@ -1928,35 +1347,28 @@ export default function AdminPage() {
             return (
               <div key={item.key}>
                 {item.divider && <div className="my-1.5 mx-3 border-t" style={{ borderColor: "rgba(255,255,255,0.07)" }} />}
-                <button
-                  onClick={() => setSection(item.key)}
+                <button onClick={() => setSection(item.key)}
                   className="w-full flex items-center gap-2.5 px-3 py-2 transition-all relative text-left"
                   style={{ color: active ? "white" : "rgba(255,255,255,0.46)" }}>
                   {active && <div className="absolute left-0 top-1 bottom-1 w-0.5 rounded-r" style={{ background: C.primary }} />}
-                  <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg"
-                    style={{ background: active ? C.primary + "30" : "transparent" }}>
+                  <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg" style={{ background: active ? C.primary + "30" : "transparent" }}>
                     <Icon d={item.icon} size={15} />
                   </div>
                   {open && (
                     <div className="flex-1 flex items-center justify-between min-w-0">
                       <span className="text-sm font-medium truncate">{item.label}</span>
                       {item.badge > 0 && (
-                        <span className="w-4 h-4 rounded-full text-xs flex items-center justify-center flex-shrink-0 ml-1"
-                          style={{ background: "#EF4444", color: "white", fontSize: 9, fontWeight: 700 }}>
+                        <span className="w-4 h-4 rounded-full text-xs flex items-center justify-center flex-shrink-0 ml-1" style={{ background: "#EF4444", color: "white", fontSize: 9, fontWeight: 700 }}>
                           {item.badge}
                         </span>
                       )}
                     </div>
                   )}
-                  {!open && item.badge > 0 && (
-                    <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: "#EF4444" }} />
-                  )}
+                  {!open && item.badge > 0 && <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: "#EF4444" }} />}
                 </button>
               </div>
-              
             );
           })}
-          
         </nav>
 
         <div className="px-3 py-3.5 border-t" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
@@ -1964,17 +1376,15 @@ export default function AdminPage() {
             <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: C.primary }}>
               <span style={{ color: "white", fontSize: 12, fontWeight: 700 }}>A</span>
             </div>
-            {open && (
-              <>
-                <div className="flex-1 min-w-0">
-                  <div style={{ color: "white", fontSize: 11, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user?.email || "Administrator"}</div>
-                  <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10 }}>{user?.role || "PCM Admin"}</div>
-                </div>
-                <button onClick={logout} className="p-1 rounded hover:bg-white/10 transition-colors" title="Sign out">
-                  <Icon d={Icons.logout} size={13} className="text-white/35" />
-                </button>
-              </>
-            )}
+            {open && (<>
+              <div className="flex-1 min-w-0">
+                <div style={{ color: "white", fontSize: 11, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user?.email || "Administrator"}</div>
+                <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10 }}>{user?.role || "PCM Admin"}</div>
+              </div>
+              <button onClick={logout} className="p-1 rounded hover:bg-white/10 transition-colors" title="Sign out">
+                <Icon d={Icons.logout} size={13} className="text-white/35" />
+              </button>
+            </>)}
           </div>
         </div>
       </aside>
@@ -1984,9 +1394,7 @@ export default function AdminPage() {
         <header className="flex-shrink-0 flex items-center justify-between px-6 py-3 border-b bg-white" style={{ borderColor: C.border }}>
           <div className="flex items-center gap-2">
             {current && <Icon d={current.icon} size={15} className="text-blue-600" />}
-            <span style={{ fontFamily: "'Playfair Display',serif", color: C.navy, fontSize: 15, fontWeight: 700 }}>
-              {current?.label}
-            </span>
+            <span style={{ fontFamily: "'Playfair Display',serif", color: C.navy, fontSize: 15, fontWeight: 700 }}>{current?.label}</span>
           </div>
           <div className="flex items-center gap-3">
             {totalUnread > 0 && (
