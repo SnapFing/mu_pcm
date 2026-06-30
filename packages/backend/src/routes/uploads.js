@@ -85,7 +85,8 @@ router.post(
 
           // make sure the file is PUBLICLY ACCESSIBLE
           type:            'upload',         
-          access_mode:     'public',         
+          access_mode:     'public',     
+          ...(ext ? { format: ext } : {}), // Only set format if we have a known extension
         };
 
 
