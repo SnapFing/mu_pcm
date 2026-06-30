@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import FileUpload from '@/app/ui/FileUpload';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -21,7 +22,8 @@ export default function MinutesSection({ token }) {
   const [modal, setModal] = useState(null);
   const blank = { title: '', meetingDate: '', body: '', agenda: '', fileUrl: '' };
   const [form, setForm] = useState(blank);
-  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
 
   const load = useCallback(async () => {
@@ -40,43 +42,48 @@ export default function MinutesSection({ token }) {
   useEffect(() => { load(); }, [load]);
 
   const save = async () => {
-    const method = modal === 'add' ? 'POST' : 'PUT';
-    const url = modal === 'add' ? `${API}/api/minutes` : `${API}/api/minutes/${modal.id}`;
-    const res = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
-      setModal(null);
-      load();
-    } else {
-      alert('Failed to save');
+    setSaving(true);
+    try {
+      const method = modal === 'add' ? 'POST' : 'PUT';
+      const url = modal === 'add' ? `${API}/api/minutes` : `${API}/api/minutes/${modal.id}`;
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        setModal(null);
+        await load();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data?.error || 'Failed to save');
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    const fd = new FormData();
-    fd.append('file', file, file.name);
+  const handleDelete = async () => {
+    if (modal === 'add' || !modal?.id) return;
+    if (!confirm(`Permanently delete "${modal.title || 'these minutes'}"? This cannot be undone.`)) return;
+    setDeleting(true);
     try {
-      const res = await fetch(`${API}/api/uploads`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: fd,
+      const res = await fetch(`${API}/api/minutes/${modal.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error);
-      setForm(p => ({ ...p, fileUrl: data.url }));
-    } catch (err) {
-      alert('Upload failed');
+      if (res.ok) {
+        setModal(null);
+        await load();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data?.error || 'Failed to delete');
+      }
     } finally {
-      setUploading(false);
+      setDeleting(false);
     }
   };
 
@@ -99,7 +106,7 @@ export default function MinutesSection({ token }) {
         {items.map(item => (
           <div key={item.id} className="rounded-xl border p-4 bg-white hover:bg-blue-50 transition-colors cursor-pointer"
             style={{ borderColor: '#E2E8F7' }}
-            onClick={() => { setForm(item); setModal(item); }}>
+            onClick={() => { setForm({ ...blank, ...item }); setModal(item); }}>
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-bold text-sm" style={{ color: '#0F2A4A' }}>{item.title}</h3>
@@ -121,7 +128,7 @@ export default function MinutesSection({ token }) {
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(15,42,74,0.6)', backdropFilter: 'blur(4px)' }} onClick={e => e.target === e.currentTarget && setModal(null)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b sticky top-0 bg-white" style={{ borderColor: '#E2E8F7' }}>
+            <div className="flex items-center justify-between px-6 py-4 border-b sticky top-0 bg-white z-10" style={{ borderColor: '#E2E8F7' }}>
               <h3 style={{ fontFamily: "'Playfair Display',serif", color: '#0F2A4A', fontSize: 17, fontWeight: 700 }}>
                 {modal === 'add' ? 'Add Minutes' : 'Edit Minutes'}
               </h3>
@@ -174,15 +181,46 @@ export default function MinutesSection({ token }) {
                   placeholder="Full minutes…"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-semibold mb-1.5" style={{ color: '#0F2A4A' }}>ATTACHMENT</label>
-                {form.fileUrl && <p className="text-xs mb-2 text-emerald-600">Current file: <a href={form.fileUrl} target="_blank" className="underline">View</a></p>}
-                <input type="file" accept=".pdf,image/*" onChange={handleFileUpload} disabled={uploading} className="text-sm" />
-                {uploading && <p className="text-xs mt-1 text-slate-500">Uploading…</p>}
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button onClick={() => setModal(null)} className="px-4 py-2 rounded-xl text-sm border" style={{ borderColor: '#E2E8F7', color: '#64748B' }}>Cancel</button>
-                <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#2E6DE7' }}>Save</button>
+
+              <FileUpload
+                token={token}
+                accept=".pdf,image/*"
+                label="Attachment"
+                hint="PDF or image · max 10 MB"
+                currentUrl={form.fileUrl}
+                onUpload={({ url }) => setForm(p => ({ ...p, fileUrl: url }))}
+                onRemove={() => setForm(p => ({ ...p, fileUrl: '' }))}
+              />
+
+              <div className="flex justify-between items-center gap-2 pt-2">
+                {/* Delete only available when editing an existing record */}
+                {modal !== 'add' ? (
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="px-4 py-2 rounded-xl text-sm font-semibold"
+                    style={{
+                      color: deleting ? '#FCA5A5' : '#DC2626',
+                      border: '1px solid rgba(220,38,38,0.25)',
+                      background: 'rgba(220,38,38,0.05)',
+                      cursor: deleting ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {deleting ? 'Deleting…' : 'Delete'}
+                  </button>
+                ) : <span />}
+
+                <div className="flex gap-2">
+                  <button onClick={() => setModal(null)} className="px-4 py-2 rounded-xl text-sm border" style={{ borderColor: '#E2E8F7', color: '#64748B' }}>Cancel</button>
+                  <button
+                    onClick={save}
+                    disabled={saving}
+                    className="px-5 py-2 rounded-xl text-sm font-semibold text-white"
+                    style={{ background: saving ? '#94A3B8' : '#2E6DE7', cursor: saving ? 'not-allowed' : 'pointer' }}
+                  >
+                    {saving ? 'Saving…' : 'Save'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

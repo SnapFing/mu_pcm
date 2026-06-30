@@ -54,8 +54,8 @@ router.put('/:id', verifyToken, requireAnyRole('admin', 'secretary'), async (req
   }
 });
 
-// DELETE (admin only)
-router.delete('/:id', verifyToken, requireAnyRole('admin'), async (req, res) => {
+// DELETE (admin + secretary)
+router.delete('/:id', verifyToken, requireAnyRole('admin', 'secretary'), async (req, res) => {
   try {
     await db.collection(COL).doc(req.params.id).delete();
     res.json({ success: true });
