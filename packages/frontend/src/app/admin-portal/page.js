@@ -6,6 +6,7 @@ import StudentRegistrationsSection from './StudentRegistrationsSection';
 import MemberRegistersSection from './MemberRegistersSection';
 import MinutesSection from './MinutesSection';
 import FileUpload from '@/app/ui/FileUpload';
+import MediaSection from './MediaSection';
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
@@ -602,42 +603,6 @@ function JournalsSection({ role }) {
   );
 }
 
-// ── Media ──────────────────────────────────────────────────────────────────
-function MediaSection({ role }) {
-  const { items, add, update, remove } = useMedia();
-  const [modal, setModal] = useState(null);
-  const [search, setSearch] = useState("");
-  const blank = { title: "", type: "Sermon", presenter: "", date: "", status: "Published", url: "" };
-  const [form, setForm] = useState(blank);
-  const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
-  const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
-  const save = () => saveAndClose({ modal, form, add, update, setModal });
-
-  return (
-    <div>
-      <SHead title="Media Library" sub={`${items.length} items`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
-      <Table
-        cols={[{ key: "title", label: "Title", clip: true }, { key: "type", label: "Type" }, { key: "presenter", label: "Presenter" }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={role !== "editor" ? remove : null}
-      />
-      {modal && (
-        <Modal title={modal === "add" ? "Add Media" : "Edit Media"} onClose={() => setModal(null)}>
-          <Field label="Title"><Input value={form.title} onChange={f("title")} placeholder="Media title" /></Field>
-          <div className="flex gap-3">
-            <div className="flex-1"><Field label="Type"><Sel value={form.type} onChange={f("type")} options={["Sermon", "Event Video", "Photo Gallery", "Music"]} /></Field></div>
-            <div className="flex-1"><Field label="Presenter"><Input value={form.presenter} onChange={f("presenter")} placeholder="Name" /></Field></div>
-          </div>
-          <Field label="YouTube / URL"><Input value={form.url} onChange={f("url")} placeholder="https://…" /></Field>
-          <div className="flex gap-3">
-            <div className="flex-1"><Field label="Date"><Input type="date" value={form.date} onChange={f("date")} /></Field></div>
-            <div className="flex-1"><Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Draft", "Published"]} /></Field></div>
-          </div>
-          <MFooter onClose={() => setModal(null)} onSave={save} />
-        </Modal>
-      )}
-    </div>
-  );
-}
 
 // ── Heroes ─────────────────────────────────────────────────────────────────
 function HeroesSection({ role, token }) {
@@ -1305,7 +1270,7 @@ export default function AdminPage() {
     announcements:          <AnnouncementsSection role={user?.role} token={token} />,
     events:                 <EventsSection role={user?.role} token={token} />,
     journals:               <JournalsSection role={user?.role} />,
-    media:                  <MediaSection role={user?.role} />,
+    media:                  <MediaSection role={user?.role} token={token} />,
     heroes:                 <HeroesSection role={user?.role} token={token} />,
     banners:                <BannersSection token={token} />,
     groups:                 <GroupsSection role={user?.role} />,
