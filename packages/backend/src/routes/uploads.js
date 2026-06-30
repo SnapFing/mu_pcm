@@ -71,25 +71,23 @@ router.post(
 
       const { mimetype, buffer, originalname } = req.file;
       const resource_type = getResourceType(mimetype);
+      const ext = MIME_TO_EXT[mimetype]; // Get extension for raw files (PDF, Office docs, etc.)
 
       // Build upload options
-      // Build upload options
-        const uploadOptions = {
-          folder:          'mu-pcm-uploads',
-          resource_type,
-          
-          // Let Cloudinary handle the name cleanly, preserving extensions for raw assets
-          use_filename:    true, 
-          unique_filename: true,   // Appends a random suffix to avoid collisions
-          overwrite:       false,
+      const uploadOptions = {
+        folder:          'mu-pcm-uploads',
+        resource_type,
 
-          // make sure the file is PUBLICLY ACCESSIBLE
-          type:            'upload',         
-          access_mode:     'public',     
-          ...(ext ? { format: ext } : {}), // Only set format if we have a known extension
-        };
+        // Let Cloudinary handle the name cleanly, preserving extensions for raw assets
+        use_filename:    true,
+        unique_filename: true,   // Appends a random suffix to avoid collisions
+        overwrite:       false,
 
-
+        // make sure the file is PUBLICLY ACCESSIBLE
+        type:            'upload',
+        access_mode:     'public',
+        ...(ext ? { format: ext } : {}), // Only set format if we have a known extension
+      };
 
       // Upload from buffer — use upload_stream instead of base64 string
       // to avoid the 8/3 size amplification and SDK v2 data-URI edge cases.
