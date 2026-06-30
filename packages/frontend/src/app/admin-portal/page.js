@@ -800,18 +800,18 @@ function ResourcesSection({ role, token }) {
           <Field label="Title"><Input value={form.title} onChange={f("title")} placeholder="Resource title" /></Field>
           <Field label="Description"><Textarea value={form.description} onChange={f("description")} rows={2} placeholder="Brief description…" /></Field>
           <div className="flex gap-3">
-  <div className="flex-1">
-    <Field label="Category">
-      <Sel value={form.category} onChange={f("category")} options={["Planning", "Study", "Spiritual", "Health", "General"]} />
-    </Field>
-  </div>
-  <div className="flex-1">
-    <Field label="File Type">
-      {/* Explicitly mapping uppercase options handled by CAT_COLORS / ResourceCard */}
-      <Sel value={form.fileType} onChange={f("fileType")} options={["PDF", "DOCX", "XLSX", "DOC", "XLS", "Link"]} />
-    </Field>
-  </div>
-</div>
+            <div className="flex-1">
+              <Field label="Category">
+                <Sel value={form.category} onChange={f("category")} options={["Planning", "Study", "Spiritual", "Health", "General"]} />
+              </Field>
+            </div>
+            <div className="flex-1">
+              <Field label="File Type">
+                {/* Explicitly mapping uppercase options handled by CAT_COLORS / ResourceCard */}
+                <Sel value={form.fileType} onChange={f("fileType")} options={["PDF", "DOCX", "XLSX", "DOC", "XLS", "Link"]} />
+              </Field>
+            </div>
+          </div>
           <FileUpload
             token={token}
             accept=".pdf,.docx,.xlsx,.doc,.xls"

@@ -1,6 +1,7 @@
 import { Playfair_Display, Noto_Sans } from "next/font/google";
 import "./globals.css";
 import Providers from "./context/Providers";
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -33,6 +34,18 @@ export default function RootLayout({ children }) {
         <Providers>
           {children}
         </Providers>
+      </body>
+    </html>
+  );
+}
+
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>
+        {children}
+        <SpeedInsights />
       </body>
     </html>
   );
