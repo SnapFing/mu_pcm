@@ -73,27 +73,22 @@ router.post(
       const resource_type = getResourceType(mimetype);
 
       // Build upload options
-      const uploadOptions = {
-        folder:        'mu-pcm-uploads',
-        resource_type,
-        // Use the original filename stem (without extension) as the public_id
-        // so the URL is human-readable and predictable.
-        public_id: path
-          .basename(originalname, path.extname(originalname))
-          .replace(/[^a-zA-Z0-9_-]/g, '_')
-          .slice(0, 60),
-        unique_filename: true,   // avoids collision if same stem is uploaded twice
-        overwrite:       false,
-      };
+      // Build upload options
+        const uploadOptions = {
+          folder:          'mu-pcm-uploads',
+          resource_type,
+          
+          // Let Cloudinary handle the name cleanly, preserving extensions for raw assets
+          use_filename:    true, 
+          unique_filename: true,   // Appends a random suffix to avoid collisions
+          overwrite:       false,
 
-      // For raw files (PDFs, Office docs), we MUST supply the format so
-      // Cloudinary appends the right extension to the secure_url.
-      // Without this, raw uploads get a URL like /v123/file (no extension)
-      // and browsers cannot determine the content-type.
-      if (resource_type === 'raw') {
-        const ext = MIME_TO_EXT[mimetype];
-        if (ext) uploadOptions.format = ext;
-      }
+          // make sure the file is PUBLICLY ACCESSIBLE
+          type:            'upload',         
+          access_mode:     'public',         
+        };
+
+
 
       // Upload from buffer — use upload_stream instead of base64 string
       // to avoid the 8/3 size amplification and SDK v2 data-URI edge cases.
