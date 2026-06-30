@@ -26,26 +26,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`${playfair.variable} ${notoSans.variable} antialiased`}>
-        {/*
-          Providers is a "use client" wrapper — required in Next.js App Router
-          because layout.js is a Server Component and cannot directly hold
-          React Context state. All pages now have access to DataContext.
-        */}
         <Providers>
           {children}
         </Providers>
-      </body>
-    </html>
-  );
-}
-
-
-export default function RootLayout({ children }) {
-  return (
-    <html lang="en">
-      <body>
-        {children}
-        <SpeedInsights />
+        <SpeedInsights />  
       </body>
     </html>
   );
