@@ -14,7 +14,7 @@ const StarIcon = () => (
 
 function HeroCard({ hero, idx }) {
   const { name, role, year, bio, image } = hero;
-  const accent = idx % 2 === 0 ? '#2E6DE7' : '#7C3AED';
+  const accent   = idx % 2 === 0 ? '#2E6DE7' : '#7C3AED';
   const accentBg = idx % 2 === 0 ? 'rgba(46,109,231,0.08)' : 'rgba(124,58,237,0.08)';
 
   return (
@@ -74,10 +74,11 @@ export default function HeroesPage() {
     (h.role || '').toLowerCase().includes(search.toLowerCase())
   );
 
-  // Sort newest year first, but render everyone in ONE flowing grid so
-  // cards lay out left-to-right / wrap naturally instead of being split
-  // into separate per-year sections (which collapsed to a single column
-  // whenever a year only had one or two heroes).
+  // One continuous grid, newest year first. Multiple cards per row means
+  // the eye scans left-to-right across each row then drops to the next
+  // row (a natural Z-pattern) — no more splitting heroes into separate
+  // per-year sections, which was collapsing to a single column whenever
+  // a year only had one or two entries.
   const sorted = [...filtered].sort((a, b) => (b.year || '').localeCompare(a.year || ''));
 
   return (
