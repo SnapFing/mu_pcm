@@ -57,7 +57,7 @@ function HeroCard({ hero, idx }) {
           <p className="text-xs font-semibold mt-1" style={{ color: accent }}>{role}</p>
         </div>
         {bio && (
-          <p className="text-sm leading-relaxed flex-1" style={{ color: '#64748B' }}>{bio}</p>
+          <p className="text-sm leading-relaxed flex-1" style={{ color: '#64748B', textAlign: 'justify' }}>{bio}</p>
         )}
       </div>
     </div>
@@ -74,8 +74,11 @@ export default function HeroesPage() {
     (h.role || '').toLowerCase().includes(search.toLowerCase())
   );
 
-  // Group by year
-  const years = [...new Set(filtered.map(h => h.year))].sort().reverse();
+  // Sort newest year first, but render everyone in ONE flowing grid so
+  // cards lay out left-to-right / wrap naturally instead of being split
+  // into separate per-year sections (which collapsed to a single column
+  // whenever a year only had one or two heroes).
+  const sorted = [...filtered].sort((a, b) => (b.year || '').localeCompare(a.year || ''));
 
   return (
     <>
@@ -104,26 +107,13 @@ export default function HeroesPage() {
               style={{ border: '1px solid #E2E8F7', background: '#F5F7FF', color: '#0F2A4A' }} />
           </div>
 
-          {years.length === 0 && (
+          {sorted.length === 0 ? (
             <p className="text-center py-20" style={{ color: '#94A3B8' }}>No heroes found.</p>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sorted.map((hero, i) => <HeroCard key={hero.id} hero={hero} idx={i} />)}
+            </div>
           )}
-
-          {years.map(year => {
-            const cohort = filtered.filter(h => h.year === year);
-            return (
-              <section key={year} className="mb-16">
-                <div className="mb-8">
-                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: '#7C3AED' }} className="uppercase mb-2">Class of</p>
-                  <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.6rem,3vw,2.2rem)', fontWeight: 700, color: '#0F2A4A' }}>
-                    {year}
-                  </h2>
-                </div>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {cohort.map((hero, i) => <HeroCard key={hero.id} hero={hero} idx={i} />)}
-                </div>
-              </section>
-            );
-          })}
 
         </div>
         <Footer />

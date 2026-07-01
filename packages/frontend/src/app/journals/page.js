@@ -15,8 +15,22 @@ const CAT_COLORS = {
   'Community':           { bg: 'rgba(5,150,105,0.08)',  text: '#059669'  },
 };
 
-function JournalCard({ journal, idx }) {
-  const { title, author, category, date } = journal;
+// Strip a plain-text excerpt from the body for the card preview
+function excerpt(text = '', max = 160) {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (clean.length <= max) return clean;
+  return clean.slice(0, max).replace(/\s+\S*$/, '') + '…';
+}
+
+function fmtDate(dateStr) {
+  if (!dateStr) return '';
+  try {
+    return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch { return dateStr; }
+}
+
+function JournalCard({ journal, idx, onRead }) {
+  const { title, author, category, date, body } = journal;
   const colors = CAT_COLORS[category] || { bg: 'rgba(46,109,231,0.08)', text: '#2E6DE7' };
   const accent = idx % 2 === 0 ? '#2E6DE7' : '#7C3AED';
 
@@ -32,15 +46,29 @@ function JournalCard({ journal, idx }) {
           {category}
         </span>
         <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500, whiteSpace: 'nowrap' }}>
-          {date ? new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+          {fmtDate(date)}
         </span>
       </div>
 
-      <h3 className="font-bold leading-snug flex-1" style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, color: '#0F2A4A' }}>
+      <h3 className="font-bold leading-snug" style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, color: '#0F2A4A' }}>
         {title}
       </h3>
 
-      <div className="flex items-center gap-2 pt-3" style={{ borderTop: '1px solid #F1F5F9' }}>
+      {body && (
+        <p className="text-sm leading-relaxed" style={{ color: '#64748B', textAlign: 'justify' }}>
+          {excerpt(body)}
+        </p>
+      )}
+
+      <button
+        onClick={() => onRead(journal)}
+        className="self-start text-sm font-semibold transition-colors"
+        style={{ color: accent, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+      >
+        Read Full Article →
+      </button>
+
+      <div className="flex items-center gap-2 pt-3 mt-auto" style={{ borderTop: '1px solid #F1F5F9' }}>
         <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
           style={{ background: colors.bg, color: colors.text, fontSize: 11, fontWeight: 700 }}>
           {author ? author.charAt(0) : '?'}
@@ -51,10 +79,56 @@ function JournalCard({ journal, idx }) {
   );
 }
 
+// ── Full article modal ─────────────────────────────────────────────────
+function JournalModal({ journal, onClose }) {
+  const { title, author, category, date, body } = journal;
+  const colors = CAT_COLORS[category] || { bg: 'rgba(46,109,231,0.08)', text: '#2E6DE7' };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(15,42,74,0.65)', backdropFilter: 'blur(6px)' }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-2xl"
+        style={{ background: 'white', boxShadow: '0 24px 60px rgba(15,42,74,0.3)' }}>
+
+        <div className="px-7 pt-7 pb-5 sticky top-0 z-10" style={{ background: 'white', borderBottom: '1px solid #F1F5F9' }}>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full"
+                style={{ background: colors.bg, color: colors.text, border: `1px solid ${colors.text}30` }}>
+                {category}
+              </span>
+              <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 24, fontWeight: 700, color: '#0F2A4A', lineHeight: 1.25, marginTop: 12 }}>
+                {title}
+              </h2>
+              <p style={{ fontSize: 13, color: '#94A3B8', marginTop: 8 }}>
+                {author}{author && date ? ' · ' : ''}{fmtDate(date)}
+              </p>
+            </div>
+            <button onClick={onClose}
+              className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ background: '#F5F7FF', color: '#64748B', border: '1px solid #E2E8F7' }}
+              aria-label="Close">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="px-7 py-6">
+          <p style={{ fontSize: 15, color: '#334155', lineHeight: 1.9, textAlign: 'justify', whiteSpace: 'pre-wrap' }}>
+            {body || 'No content available for this article yet.'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function JournalsPage() {
   const { items: journals } = useJournals();
   const [active, setActive] = useState('All');
   const [search, setSearch] = useState('');
+  const [reading, setReading] = useState(null);
 
   const published = journals.filter(j => j.status === 'Published');
 
@@ -111,11 +185,14 @@ export default function JournalsPage() {
             <p className="text-center py-20" style={{ color: '#94A3B8' }}>No articles found.</p>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filtered.map((j, i) => <JournalCard key={j.id} journal={j} idx={i} />)}
+              {filtered.map((j, i) => <JournalCard key={j.id} journal={j} idx={i} onRead={setReading} />)}
             </div>
           )}
 
         </div>
+
+        {reading && <JournalModal journal={reading} onClose={() => setReading(null)} />}
+
         <Footer />
       </div>
     </>
