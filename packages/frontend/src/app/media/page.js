@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Navbar  from '@/app/ui/Navbar';
 import Footer  from '@/app/ui/Footer';
 import { PageHeader } from '@/app/ui/PageHeader';
@@ -21,34 +21,21 @@ function getYtId(url) {
   return url.replace('https://www.youtube.com/watch?v=', '').replace('https://youtu.be/', '').split('&')[0] || null;
 }
 
-function getFbId(url) {
-  if (!url) return null;
-  return url.replace('https://www.facebook.com/', '').replace('https://fb.watch/', '').split('/').pop().split('?')[0] || null;
-}
-
 function fmtDate(dateStr) {
   if (!dateStr) return '';
   try {
     return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-  } catch { return dateStr}
+  } catch { return dateStr; }
 }
 
 // ── Cloudinary helpers ────────────────────────────────────────────────────
-// Cloudinary can auto-generate a JPG poster frame from any uploaded video by
-// transforming the URL — far more reliable than relying on a <video> element
-// to render a frame in-browser (many browsers show a blank/black box for
-// cross-origin video until it's actually played).
 function videoPosterUrl(url) {
   if (!url || !url.includes('/video/upload/')) return null;
   return url
-    .replace('/video/upload/', '/video/upload/so_2/') // grab a frame 2s in, avoids black opening frames
+    .replace('/video/upload/', '/video/upload/so_2/')
     .replace(/\.[a-z0-9]+(\?.*)?$/i, '.jpg$1');
 }
 
-// The plain `download` attribute on an <a> is ignored by browsers for
-// cross-origin URLs (which Cloudinary always is). fl_attachment makes
-// Cloudinary's server send a real Content-Disposition: attachment header,
-// which forces a download regardless of origin.
 function downloadUrl(url) {
   if (!url) return url;
   if (url.includes('fl_attachment')) return url;
@@ -72,6 +59,14 @@ function DownloadIcon({ className = 'w-4 h-4' }) {
       <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
+
+function ChevronIcon({ direction = 'left', className = 'w-6 h-6' }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      {direction === 'left' ? <path d="M15 18l-6-6 6-6" /> : <path d="M9 18l6-6-6-6" />}
     </svg>
   );
 }
@@ -100,7 +95,6 @@ function MediaCard({ item, idx, onPlay }) {
       onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 28px rgba(46,109,231,0.12)'}
       onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 4px rgba(46,109,231,0.06)'}>
 
-      {/* Thumbnail */}
       <div className="relative overflow-hidden flex items-center justify-center cursor-pointer"
         style={{ height: 180, background: accentBg }}
         onClick={() => info.kind !== 'none' && onPlay(item)}>
@@ -145,7 +139,6 @@ function MediaCard({ item, idx, onPlay }) {
         </span>
       </div>
 
-      {/* Body */}
       <div className="p-5 flex flex-col gap-3 flex-1">
         <h3 className="font-bold leading-snug" style={{ color: '#0F2A4A', fontSize: 14 }}>{title}</h3>
         <div className="flex items-center justify-between mt-auto pt-3"
@@ -155,7 +148,6 @@ function MediaCard({ item, idx, onPlay }) {
         </div>
       </div>
 
-      {/* Footer */}
       {info.kind !== 'none' && (
         <div className="px-5 pb-5 flex gap-2">
           <button onClick={() => onPlay(item)}
@@ -187,12 +179,15 @@ function MediaCard({ item, idx, onPlay }) {
 }
 
 // ── Single tile inside a highlights gallery grid ─────────────────────────
-// Shows title / presenter / date as a caption, a play badge for video-like
-// items, and a hover download button when a direct file exists.
+// Images: clean thumbnail only — no play badge, no caption clutter, since
+// the picture speaks for itself and the info is one click away in the modal.
+// Video / YouTube: keep the play badge + caption so users know what they're
+// about to watch before clicking.
 function HighlightsTile({ item, onPlay }) {
   const info = mediaKind(item);
   const [thumbFailed, setThumbFailed] = useState(false);
   const playable = info.kind !== 'none';
+  const isImage = info.kind === 'image';
 
   return (
     <div
@@ -200,7 +195,6 @@ function HighlightsTile({ item, onPlay }) {
       style={{ aspectRatio: '1 / 1', background: '#0F2A4A', border: '1px solid #E2E8F7' }}
       onClick={() => playable && onPlay(item)}
     >
-      {/* Thumbnail */}
       {info.kind === 'image' && (
         <img src={info.src} alt={item.title} className="w-full h-full object-cover" />
       )}
@@ -217,9 +211,6 @@ function HighlightsTile({ item, onPlay }) {
         !thumbFailed ? (
           <img src={info.thumb} alt={item.title} className="w-full h-full object-cover" onError={() => setThumbFailed(true)} />
         ) : (
-          // Fallback when YouTube's thumbnail can't be fetched (private/deleted
-          // video, bad link, etc.) — a solid navy tile with a play icon instead
-          // of a blank/broken image.
           <div className="w-full h-full flex items-center justify-center" style={{ background: '#0F2A4A' }}>
             <PlayIcon />
           </div>
@@ -232,8 +223,8 @@ function HighlightsTile({ item, onPlay }) {
         </div>
       )}
 
-      {/* Play badge for anything playable */}
-      {playable && (
+      {/* Play badge + caption — video/YouTube only */}
+      {!isImage && playable && (
         <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(15,42,74,0.28)' }}>
           <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: '#2E6DE7' }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -241,8 +232,7 @@ function HighlightsTile({ item, onPlay }) {
         </div>
       )}
 
-      {/* Caption strip — title / presenter · date */}
-      {(item.title || item.presenter || item.date) && (
+      {!isImage && (item.title || item.presenter || item.date) && (
         <div
           className="absolute bottom-0 left-0 right-0 px-2 pt-4 pb-1.5 pointer-events-none"
           style={{ background: 'linear-gradient(to top, rgba(15,42,74,0.94), transparent)' }}
@@ -260,7 +250,7 @@ function HighlightsTile({ item, onPlay }) {
         </div>
       )}
 
-      {/* Hover download button — only for direct uploads (not YouTube links) */}
+      {/* Hover download — every tile with a direct file, images included */}
       {item.fileUrl && (
         <a
           href={downloadUrl(item.fileUrl)}
@@ -286,23 +276,58 @@ function HighlightsGallery({ eventTitle, items, onPlay }) {
         <span style={{ fontSize: 12, color: '#94A3B8' }}>{items.length} item{items.length !== 1 ? 's' : ''}</span>
       </div>
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-        {items.map((item) => (
-          <HighlightsTile key={item.id} item={item} onPlay={onPlay} />
+        {items.map((item, i) => (
+          <HighlightsTile key={item.id} item={item} onPlay={() => onPlay(items, i)} />
         ))}
       </div>
     </section>
   );
 }
 
-// ── Lightbox / player modal — handles YouTube, video files, image files ──
-function MediaModal({ item, onClose }) {
+// ── Lightbox / player modal ────────────────────────────────────────────
+// Supports navigation (prev/next) across the sibling set the clicked item
+// came from — e.g. all photos in a highlights gallery, or all singles.
+// Arrow buttons on desktop, left/right keyboard, and touch-swipe on mobile.
+function MediaModal({ items, index, onClose, onNavigate }) {
+  const item = items[index];
   const info = mediaKind(item);
+  const canPrev = index > 0;
+  const canNext = index < items.length - 1;
+
+  const touchStartX = useRef(null);
+
+  const goPrev = useCallback(() => { if (canPrev) onNavigate(index - 1); }, [canPrev, index, onNavigate]);
+  const goNext = useCallback(() => { if (canNext) onNavigate(index + 1); }, [canNext, index, onNavigate]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'ArrowLeft') goPrev();
+      if (e.key === 'ArrowRight') goNext();
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [goPrev, goNext, onClose]);
+
+  const handleTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    const SWIPE_THRESHOLD = 50;
+    if (delta > SWIPE_THRESHOLD) goPrev();
+    else if (delta < -SWIPE_THRESHOLD) goNext();
+    touchStartX.current = null;
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(15,42,74,0.85)', backdropFilter: 'blur(6px)' }}
       onClick={onClose}>
-      <div className="w-full max-w-3xl rounded-2xl overflow-hidden shadow-2xl"
-        onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-3xl rounded-2xl overflow-hidden shadow-2xl relative"
+        onClick={e => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}>
+
         <div className="flex items-center justify-between px-5 py-3" style={{ background: '#0F2A4A' }}>
           <div className="min-w-0 pr-4">
             <p style={{ color: 'white', fontSize: 14, fontWeight: 600 }} className="truncate">{item.title}</p>
@@ -313,6 +338,9 @@ function MediaModal({ item, onClose }) {
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            {items.length > 1 && (
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>{index + 1} / {items.length}</span>
+            )}
             {item.fileUrl && (
               <a href={downloadUrl(item.fileUrl)}
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5"
@@ -325,25 +353,51 @@ function MediaModal({ item, onClose }) {
           </div>
         </div>
 
-        {info.kind === 'youtube' && (
-          <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
-            <iframe
-              src={`https://www.youtube.com/embed/${info.ytId}?autoplay=1`}
-              title={item.title}
-              allow="autoplay; encrypted-media"
-              allowFullScreen
-              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-            />
-          </div>
-        )}
+        <div className="relative">
+          {info.kind === 'youtube' && (
+            <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+              <iframe
+                src={`https://www.youtube.com/embed/${info.ytId}?autoplay=1`}
+                title={item.title}
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+              />
+            </div>
+          )}
 
-        {info.kind === 'video' && (
-          <video src={info.src} controls autoPlay poster={info.poster || undefined} style={{ width: '100%', maxHeight: '80vh', background: 'black' }} />
-        )}
+          {info.kind === 'video' && (
+            <video src={info.src} controls autoPlay poster={info.poster || undefined} style={{ width: '100%', maxHeight: '80vh', background: 'black' }} />
+          )}
 
-        {info.kind === 'image' && (
-          <img src={info.src} alt={item.title} style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain', background: '#0F2A4A' }} />
-        )}
+          {info.kind === 'image' && (
+            <img src={info.src} alt={item.title} style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain', background: '#0F2A4A' }} />
+          )}
+
+          {/* Prev / next arrows — desktop; hidden if only one item */}
+          {items.length > 1 && (
+            <>
+              <button
+                onClick={goPrev}
+                disabled={!canPrev}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-opacity"
+                style={{ background: 'rgba(15,42,74,0.55)', color: 'white', opacity: canPrev ? 1 : 0.25, cursor: canPrev ? 'pointer' : 'default' }}
+                aria-label="Previous"
+              >
+                <ChevronIcon direction="left" className="w-5 h-5" />
+              </button>
+              <button
+                onClick={goNext}
+                disabled={!canNext}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-opacity"
+                style={{ background: 'rgba(15,42,74,0.55)', color: 'white', opacity: canNext ? 1 : 0.25, cursor: canNext ? 'pointer' : 'default' }}
+                aria-label="Next"
+              >
+                <ChevronIcon direction="right" className="w-5 h-5" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -352,12 +406,11 @@ function MediaModal({ item, onClose }) {
 export default function MediaPage() {
   const { items: media } = useMedia();
   const [activeTab, setActiveTab] = useState('All Media');
-  const [playing, setPlaying]     = useState(null); // media item object
+  const [lightbox, setLightbox] = useState(null); // { items: [...], index: N }
 
   const published = media.filter(m => m.status === 'Published');
   const filtered  = published.filter(m => activeTab === 'All Media' || m.type === activeTab);
 
-  // Group by eventTitle for highlights galleries; everything else is a "single"
   const eventGroups = {};
   const singles = [];
   filtered.forEach((item) => {
@@ -369,6 +422,9 @@ export default function MediaPage() {
     }
   });
   const eventNames = Object.keys(eventGroups);
+
+  const openLightbox = (items, index) => setLightbox({ items, index });
+  const navigateLightbox = (index) => setLightbox((prev) => prev ? { ...prev, index } : prev);
 
   return (
     <>
@@ -388,7 +444,6 @@ export default function MediaPage() {
 
         <div className="max-w-7xl mx-auto px-5 sm:px-8 py-16">
 
-          {/* Tabs */}
           <div className="flex flex-wrap gap-2 mb-12">
             {TABS.map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)}
@@ -407,12 +462,10 @@ export default function MediaPage() {
             <p className="text-center py-20" style={{ color: '#94A3B8' }}>No media found.</p>
           ) : (
             <>
-              {/* Event highlight galleries */}
               {eventNames.map((name) => (
-                <HighlightsGallery key={name} eventTitle={name} items={eventGroups[name]} onPlay={setPlaying} />
+                <HighlightsGallery key={name} eventTitle={name} items={eventGroups[name]} onPlay={openLightbox} />
               ))}
 
-              {/* Singles (no event tag) */}
               {singles.length > 0 && (
                 <>
                   {eventNames.length > 0 && (
@@ -425,7 +478,7 @@ export default function MediaPage() {
                   )}
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {singles.map((item, i) => (
-                      <MediaCard key={item.id} item={item} idx={i} onPlay={setPlaying} />
+                      <MediaCard key={item.id} item={item} idx={i} onPlay={() => openLightbox(singles, i)} />
                     ))}
                   </div>
                 </>
@@ -435,7 +488,14 @@ export default function MediaPage() {
 
         </div>
 
-        {playing && <MediaModal item={playing} onClose={() => setPlaying(null)} />}
+        {lightbox && (
+          <MediaModal
+            items={lightbox.items}
+            index={lightbox.index}
+            onClose={() => setLightbox(null)}
+            onNavigate={navigateLightbox}
+          />
+        )}
         <Footer />
       </div>
     </>
