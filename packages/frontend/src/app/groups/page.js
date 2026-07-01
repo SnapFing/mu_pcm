@@ -6,6 +6,8 @@ import Footer    from '@/app/ui/Footer';
 import { PageHeader } from '@/app/ui/PageHeader';
 import { useGroups }  from '@/app/context/DataContext';
 
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
 // ── Icons ──────────────────────────────────────────────────────────────────
 const Ico = ({ children, c = 'w-5 h-5' }) => (
   <svg className={c} viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -15,15 +17,17 @@ const UsersIcon  = ({ c }) => <Ico c={c}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0
 const ClockIcon  = ({ c }) => <Ico c={c}><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></Ico>;
 const CalIcon    = ({ c }) => <Ico c={c}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></Ico>;
 const ChevronR   = ({ c }) => <Ico c={c}><path d="M9 18l6-6-6-6"/></Ico>;
+const LockIcon   = ({ c }) => <Ico c={c}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></Ico>;
 
 const ACCENT = (i) => i % 2 === 0 ? '#2E6DE7' : '#7C3AED';
 const ACCENT_BG = (i) => i % 2 === 0 ? 'rgba(46,109,231,0.08)' : 'rgba(124,58,237,0.08)';
 
 // ── Group Card ─────────────────────────────────────────────────────────────
 function GroupCard({ group, idx, onJoin }) {
-  const { name, leader, meetingDay, time, members, description, status } = group;
+  const { name, leader, meetingDay, time, members, description, status, acceptingJoins } = group;
   const accent = ACCENT(idx);
   const accentBg = ACCENT_BG(idx);
+  const isOpen = isGroupOpen(acceptingJoins);
 
   return (
     <div className="rounded-2xl overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-0.5"
@@ -38,12 +42,20 @@ function GroupCard({ group, idx, onJoin }) {
             style={{ background: accentBg, color: accent }}>
             <UsersIcon c="w-5 h-5" />
           </div>
-          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full"
-            style={{ background: status === 'Active' ? 'rgba(46,109,231,0.08)' : 'rgba(239,68,68,0.08)',
-                     color: status === 'Active' ? '#2E6DE7' : '#EF4444',
-                     border: `1px solid ${status === 'Active' ? 'rgba(46,109,231,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
-            {status}
-          </span>
+          <div className="flex flex-col items-end gap-1.5">
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full"
+              style={{ background: status === 'Active' ? 'rgba(46,109,231,0.08)' : 'rgba(239,68,68,0.08)',
+                       color: status === 'Active' ? '#2E6DE7' : '#EF4444',
+                       border: `1px solid ${status === 'Active' ? 'rgba(46,109,231,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
+              {status}
+            </span>
+            {!isOpen && (
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"
+                style={{ background: 'rgba(148,163,184,0.12)', color: '#64748B', border: '1px solid rgba(148,163,184,0.25)' }}>
+                <LockIcon c="w-2.5 h-2.5" /> Not Accepting Members
+              </span>
+            )}
+          </div>
         </div>
 
         <div>
@@ -72,12 +84,19 @@ function GroupCard({ group, idx, onJoin }) {
 
       {/* Footer */}
       <div className="px-6 pb-5">
-        <button onClick={() => onJoin(group)}
+        <button
+          onClick={() => isOpen && onJoin(group)}
+          disabled={!isOpen}
           className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all"
-          style={{ background: accent, color: 'white' }}
-          onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
-          onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-          Join This Group
+          style={{
+            background: isOpen ? accent : '#E2E8F7',
+            color: isOpen ? 'white' : '#94A3B8',
+            cursor: isOpen ? 'pointer' : 'not-allowed',
+          }}
+          onMouseEnter={e => { if (isOpen) e.currentTarget.style.opacity = '0.88'; }}
+          onMouseLeave={e => { if (isOpen) e.currentTarget.style.opacity = '1'; }}
+        >
+          {isOpen ? 'Join This Group' : 'Not Currently Accepting Members'}
         </button>
       </div>
     </div>
@@ -88,12 +107,40 @@ function GroupCard({ group, idx, onJoin }) {
 function JoinModal({ group, onClose }) {
   const [form, setForm] = useState({ name: '', studentId: '', email: '', year: '', motivation: '' });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const f = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
 
   const inputStyle = {
     width: '100%', padding: '10px 12px', borderRadius: 10, fontSize: 13,
     border: '1px solid #E2E8F7', background: '#F5F7FF', color: '#0F2A4A',
     outline: 'none', fontFamily: "'Noto Sans', sans-serif",
+  };
+
+  const handleSubmit = async () => {
+    if (!form.name.trim() || !form.email.trim()) {
+      setError('Please fill in at least your name and email.');
+      return;
+    }
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch(`${API}/api/groups/${group.id}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || 'Could not submit your request. Please try again.');
+        return;
+      }
+      setSubmitted(true);
+    } catch (err) {
+      setError('Network error — please check your connection and try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (submitted) return (
@@ -136,6 +183,11 @@ function JoinModal({ group, onClose }) {
           </button>
         </div>
         <div className="px-6 py-5 flex flex-col gap-4">
+          {error && (
+            <div className="rounded-xl px-4 py-3 text-sm" style={{ background: 'rgba(239,68,68,0.08)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.2)' }}>
+              {error}
+            </div>
+          )}
           {[
             { label: 'Full Name',   key: 'name',      placeholder: 'Your full name',     type: 'text'  },
             { label: 'Student ID',  key: 'studentId', placeholder: 'e.g. MU2024/001',    type: 'text'  },
@@ -146,7 +198,7 @@ function JoinModal({ group, onClose }) {
               <label style={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: '#0F2A4A', marginBottom: 6 }}>
                 {label.toUpperCase()}
               </label>
-              <input type={type} value={form[key]} onChange={f(key)} placeholder={placeholder} style={inputStyle} />
+              <input type={type} value={form[key]} onChange={f(key)} placeholder={placeholder} style={inputStyle} disabled={submitting} />
             </div>
           ))}
           <div>
@@ -155,19 +207,19 @@ function JoinModal({ group, onClose }) {
             </label>
             <textarea value={form.motivation} onChange={f('motivation')} rows={3}
               placeholder="Share your motivation…"
-              style={{ ...inputStyle, resize: 'none' }} />
+              style={{ ...inputStyle, resize: 'none' }} disabled={submitting} />
           </div>
           <div className="flex gap-3 mt-2">
-            <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium"
+            <button onClick={onClose} disabled={submitting} className="flex-1 py-2.5 rounded-xl text-sm font-medium"
               style={{ border: '1px solid #E2E8F7', color: '#64748B' }}>
               Cancel
             </button>
-            <button onClick={() => setSubmitted(true)}
+            <button onClick={handleSubmit} disabled={submitting}
               className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all"
-              style={{ background: '#2E6DE7', color: 'white' }}
-              onMouseEnter={e => e.currentTarget.style.background = '#1d5cd4'}
-              onMouseLeave={e => e.currentTarget.style.background = '#2E6DE7'}>
-              Submit Request
+              style={{ background: submitting ? '#94A3B8' : '#2E6DE7', color: 'white', cursor: submitting ? 'not-allowed' : 'pointer' }}
+              onMouseEnter={e => { if (!submitting) e.currentTarget.style.background = '#1d5cd4'; }}
+              onMouseLeave={e => { if (!submitting) e.currentTarget.style.background = '#2E6DE7'; }}>
+              {submitting ? 'Submitting…' : 'Submit Request'}
             </button>
           </div>
         </div>
