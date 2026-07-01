@@ -116,7 +116,7 @@ router.get('/requests/all', verifyToken, requireRole('admin'), async (req, res) 
   }
 });
 
-/ Admin: reply to a join request by email
+// Admin: reply to a join request by email
 router.post('/requests/:id/reply', verifyToken, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
