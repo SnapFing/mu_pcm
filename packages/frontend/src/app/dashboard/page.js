@@ -15,7 +15,7 @@ import { onIdTokenChanged } from 'firebase/auth';
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 // ── Icon wrappers (use shared Icon exports)
-import { ChevronRight as IconChevronRight, ChevronLeft as IconChevronLeft, CalendarIcon as IconCalendar, ClockIcon as IconClock, PinIcon as IconPin, BookIcon as IconBook, MediaIcon as IconMedia, StarIcon as IconStar, UsersIcon as IconUsers, CrossIcon as IconCross, CreditIcon as IconCredit, AlertIcon as IconAlert, BellIcon as IconBell } from '@/app/ui/Icon';
+import { ChevronRight as IconChevronRight, ChevronLeft as IconChevronLeft, CalendarIcon as IconCalendar, ClockIcon as IconClock, PinIcon as IconPin, BookIcon as IconBook, MediaIcon as IconMedia, StarIcon as IconStar, UsersIcon as IconUsers, CrossIcon as IconCross, CreditIcon as IconCredit, AlertIcon as IconAlert, BellIcon as IconBell, PaperclipIcon as IconPaperclip } from '@/app/ui/Icon';
 
 const ChevronRight = ({ c = 'w-4 h-4' }) => <IconChevronRight className={c} />;
 const ChevronLeft  = ({ c = 'w-4 h-4' }) => <IconChevronLeft className={c} />;
@@ -32,8 +32,6 @@ const CreditIcon   = ({ c = 'w-5 h-5' }) => <IconCredit className={c} />;
 const AlertIcon    = ({ c = 'w-4 h-4' }) => <IconAlert className={c} />;
 const BellIcon     = ({ c = 'w-4 h-4' }) => <IconBell className={c} />;
 
-// ── FIX #2: quickLinks now has all 6 items properly defined in one array
-// (previously the array definition was split / truncated in the file)
 const quickLinks = [
   { href: '/events',   Icon: CalIcon,     label: 'Events'   },
   { href: '/prayer',   Icon: PrayIcon,    label: 'Prayer'   },
@@ -41,13 +39,6 @@ const quickLinks = [
   { href: '/media',    Icon: MediaIcon,   label: 'Media'    },
   { href: '/heroes',   Icon: StarIcon,    label: 'Heroes'   },
   { href: '/groups',   Icon: UsersIcon,   label: 'Groups'   },
-];
-
-const stats = [
-  { value: '500+', label: 'Members',  Icon: UsersIcon  },
-  { value: '12',   label: 'Groups',   Icon: UsersIcon  },
-  { value: '50+',  label: 'Events',   Icon: CalIcon    },
-  { value: '5yrs', label: 'Ministry', Icon: CrossIcon  },
 ];
 
 // ── Accent colors cycle ────────────────────────────────────────────────────
@@ -67,6 +58,27 @@ function formatTime(timeStr) {
   const suffix = h >= 12 ? 'PM' : 'AM';
   const hour   = h % 12 || 12;
   return `${hour}:${String(m).padStart(2, '0')} ${suffix}`;
+}
+
+// ── Media helpers ────────────────────────────────────────────────────────
+// Checks several common field names since the exact one used by the upload
+// form isn't confirmed yet. Tighten this once you confirm the real field.
+function getMediaUrl(item) {
+  // 'image' is the confirmed field used by the admin FileUpload component
+  return (
+    item.image ||
+    item.imageUrl ||
+    item.mediaUrl ||
+    item.fileUrl ||
+    item.attachmentUrl ||
+    item.photoURL ||
+    null
+  );
+}
+
+function isImageUrl(url) {
+  if (!url) return false;
+  return /\.(jpe?g|png|gif|webp|avif)(\?.*)?$/i.test(url);
 }
 
 // ── Cards ──────────────────────────────────────────────────────────────────
@@ -126,6 +138,8 @@ function EventCard({ nextEvent }) {
     );
   }
 
+  const mediaUrl = getMediaUrl(nextEvent);
+
   return (
     <div className="rounded-2xl overflow-hidden flex flex-col h-full"
       style={{ background: 'white', border: '1px solid #E2E8F7', boxShadow: '0 1px 4px rgba(46,109,231,0.06)', borderTop: '3px solid #0F2A4A' }}>
@@ -138,7 +152,20 @@ function EventCard({ nextEvent }) {
           <p style={{ fontSize: 11, color: '#94A3B8' }}>Coming up soon</p>
         </div>
       </div>
-      <div className="flex-1 px-6 py-4 flex flex-col gap-4" style={{ borderTop: '1px solid #E2E8F7' }}>
+
+      {mediaUrl && isImageUrl(mediaUrl) && (
+        <div style={{ borderTop: '1px solid #E2E8F7' }}>
+          <img
+            src={mediaUrl}
+            alt={nextEvent.title || 'Event image'}
+            className="w-full object-cover"
+            style={{ height: 140 }}
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          />
+        </div>
+      )}
+
+      <div className="flex-1 px-6 py-4 flex flex-col gap-4" style={{ borderTop: mediaUrl ? 'none' : '1px solid #E2E8F7' }}>
         <div>
           <h3 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 20, color: '#0F2A4A', lineHeight: 1.2 }}>{nextEvent.title}</h3>
           {nextEvent.description && <p style={{ fontSize: 13, color: '#64748B', marginTop: 4 }}>{nextEvent.description}</p>}
@@ -153,6 +180,12 @@ function EventCard({ nextEvent }) {
               style={{ background: '#F5F7FF', border: '1px solid #E2E8F7', fontSize: 11, color: '#475569', fontWeight: 500 }}>
               <PrayIcon c="w-3 h-3" /> {nextEvent.venue}
             </span>
+          )}
+          {mediaUrl && !isImageUrl(mediaUrl) && (
+            <a href={mediaUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 rounded-full px-3 py-1"
+              style={{ background: '#F5F7FF', border: '1px solid #E2E8F7', fontSize: 11, color: '#2E6DE7', fontWeight: 600 }}>
+              📎 Attachment
+            </a>
           )}
         </div>
         <CountdownTimer targetDate={`${nextEvent.date}T${nextEvent.time || '00:00'}:00+02:00`} />
@@ -312,6 +345,11 @@ function WhatsHappeningSection() {
 
         const taggedAnn = (Array.isArray(announcements) ? announcements : [])
           .filter(a => a.status === 'Active')
+          .filter(a => {
+            if (!a.expiresAt) return true;
+            const cutoff = new Date(`${a.expiresAt}T${a.expiresTime || '23:59'}:00`);
+            return cutoff.getTime() >= Date.now();
+          })
           .slice(0, 3)
           .map((a, i) => ({
             ...a,
@@ -358,33 +396,145 @@ function WhatsHappeningSection() {
 
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {items.map((item, idx) => (
-        <div key={item.id || idx}
-          className="rounded-2xl p-6 flex flex-col gap-4 transition-all duration-200 hover:-translate-y-0.5"
-          style={{ background: 'white', border: '1px solid #E2E8F7', boxShadow: '0 1px 4px rgba(46,109,231,0.06)', borderTop: `3px solid ${item.accentColor}` }}
-          onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 24px rgba(46,109,231,0.12)'}
-          onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 4px rgba(46,109,231,0.06)'}>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide flex items-center gap-1"
-              style={{ background: item.accentColor + '15', color: item.accentColor, border: `1px solid ${item.accentColor}30` }}>
-              {item._kind === 'event' ? <CalIcon c="w-3 h-3" /> : <BellIcon c="w-3 h-3" />}
-              {item.tag}
-            </span>
-            <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 500 }}>{item.displayDate}</span>
-          </div>
-          <h3 className="font-bold leading-snug" style={{ color: '#0F2A4A' }}>{item.title}</h3>
-          <p className="text-sm leading-relaxed flex-1" style={{ color: '#64748B' }}>
-            {item._kind === 'event' ? item.description : item.body}
-          </p>
-          {item._kind === 'event' && (item.venue || item.time) && (
-            <div className="flex flex-wrap gap-3 pt-3" style={{ borderTop: '1px solid #F1F5F9', fontSize: 10, color: '#94A3B8' }}>
-              {item.venue && <span className="flex items-center gap-1"><PrayIcon c="w-3 h-3" />{item.venue}</span>}
-              {item.time  && <span className="flex items-center gap-1"><ClockIcon c="w-3 h-3" />{item.time}</span>}
+      {items.map((item, idx) => {
+        const mediaUrl = getMediaUrl(item);
+        const showImage = mediaUrl && isImageUrl(mediaUrl);
+
+        return (
+          <div key={item.id || idx}
+            className="rounded-2xl overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-0.5"
+            style={{ background: 'white', border: '1px solid #E2E8F7', boxShadow: '0 1px 4px rgba(46,109,231,0.06)', borderTop: `3px solid ${item.accentColor}` }}
+            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 24px rgba(46,109,231,0.12)'}
+            onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 4px rgba(46,109,231,0.06)'}>
+
+            {showImage && (
+              <img
+                src={mediaUrl}
+                alt={item.title || 'Attached image'}
+                className="w-full object-cover"
+                style={{ height: 150 }}
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            )}
+
+            <div className="p-6 flex flex-col gap-4 flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide flex items-center gap-1"
+                  style={{ background: item.accentColor + '15', color: item.accentColor, border: `1px solid ${item.accentColor}30` }}>
+                  {item._kind === 'event' ? <CalIcon c="w-3 h-3" /> : <BellIcon c="w-3 h-3" />}
+                  {item.tag}
+                </span>
+                <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 500 }}>{item.displayDate}</span>
+              </div>
+              <h3 className="font-bold leading-snug" style={{ color: '#0F2A4A' }}>{item.title}</h3>
+              <p className="text-sm leading-relaxed flex-1" style={{ color: '#64748B' }}>
+                {item._kind === 'event' ? item.description : item.body}
+              </p>
+
+              {mediaUrl && !showImage && (
+                <a href={mediaUrl} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-1.5 text-xs font-semibold w-fit px-2.5 py-1 rounded-full"
+                  style={{ background: '#F5F7FF', color: '#2E6DE7', border: '1px solid #E2E8F7' }}>
+                  📎 View attachment
+                </a>
+              )}
+
+              {item._kind === 'event' && (item.venue || item.time) && (
+                <div className="flex flex-wrap gap-3 pt-3" style={{ borderTop: '1px solid #F1F5F9', fontSize: 10, color: '#94A3B8' }}>
+                  {item.venue && <span className="flex items-center gap-1"><PrayIcon c="w-3 h-3" />{item.venue}</span>}
+                  {item.time  && <span className="flex items-center gap-1"><ClockIcon c="w-3 h-3" />{item.time}</span>}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      ))}
+          </div>
+        );
+      })}
     </div>
+  );
+}
+
+// ── Animated stat counter ───────────────────────────────────────────────
+function useCountUp(target, duration, start) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!start) return;
+    let startTime = null;
+    let raf;
+    const step = (ts) => {
+      if (startTime === null) startTime = ts;
+      const progress = Math.min((ts - startTime) / duration, 1);
+      setCount(Math.floor(progress * target));
+      if (progress < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [start, target, duration]);
+  return count;
+}
+
+function StatCounter({ value, suffix, start, duration = 1600 }) {
+  const count = useCountUp(value, duration, start);
+  return <>{count}{suffix}</>;
+}
+
+// ── Stats section (real data + scroll-triggered count-up) ─────────────────
+function StatsSection() {
+  const [stats, setStats] = useState(null);
+  const [inView, setInView] = useState(false);
+  const sectionRef = useRef(null);
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const res = await fetch(`${API}/api/stats`);
+        if (res.ok) setStats(await res.json());
+      } catch (err) {
+        console.error('Stats fetch error:', err);
+      }
+    }
+    loadStats();
+  }, []);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const items = [
+    { value: stats?.members ?? 0,       suffix: '+',   label: 'Members',  Icon: UsersIcon },
+    { value: stats?.groups ?? 0,        suffix: '',    label: 'Groups',   Icon: UsersIcon },
+    { value: stats?.events ?? 0,        suffix: '+',   label: 'Events',   Icon: CalIcon   },
+    { value: stats?.ministryYears ?? 0, suffix: 'yrs', label: 'Ministry', Icon: CrossIcon },
+  ];
+
+  return (
+    <section ref={sectionRef} className="py-16" style={{ borderBottom: '1px solid #E2E8F7' }}>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
+        {items.map(({ value, suffix, label, Icon }, i) => (
+          <div key={label} className="text-center">
+            <div className="rounded-2xl flex items-center justify-center mx-auto mb-4"
+              style={{ width: 52, height: 52, background: i % 2 === 0 ? 'rgba(46,109,231,0.08)' : 'rgba(124,58,237,0.08)', color: i % 2 === 0 ? '#2E6DE7' : '#7C3AED' }}>
+              <Icon c="w-5 h-5" />
+            </div>
+            <p className="font-extrabold leading-none mb-1" style={{ fontSize: 'clamp(1.8rem, 3vw, 2.5rem)', color: '#0F2A4A' }}>
+              {stats ? <StatCounter value={value} suffix={suffix} start={inView} /> : '—'}
+            </p>
+            <p style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, letterSpacing: '0.1em' }} className="uppercase">{label}</p>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -443,7 +593,6 @@ export default function Dashboard() {
           <img src="/img0.jpg" alt="MU Campus Worship" className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(15,42,74,0.4) 0%, rgba(15,42,74,0.75) 50%, rgba(15,42,74,0.95) 100%)' }} />
           <div className="relative z-10 text-center px-5 sm:px-8 w-full max-w-4xl mx-auto">
-            {/* <p style={{ fontSize: 10, letterSpacing: '0.28em', color: 'rgba(255,255,255,0.65)', fontWeight: 700 }} className="uppercase mb-5">SDA Public Campus Ministries</p> */}
             <h2 className="serif font-bold text-white leading-[1.08] mb-5" style={{ fontSize: 'clamp(2.2rem, 6vw, 4.5rem)' }}>Mulungushi University Public Campus Ministry</h2>
             <div className="flex items-center justify-center gap-3 mb-6">
               <div style={{ height: 1, width: 48, background: 'rgba(46,109,231,0.7)', borderRadius: 9999 }} />
@@ -464,21 +613,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Stats */}
-          <section className="py-16" style={{ borderBottom: '1px solid #E2E8F7' }}>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
-              {stats.map(({ value, label, Icon }, i) => (
-                <div key={label} className="text-center">
-                  <div className="rounded-2xl flex items-center justify-center mx-auto mb-4"
-                    style={{ width: 52, height: 52, background: i % 2 === 0 ? 'rgba(46,109,231,0.08)' : 'rgba(124,58,237,0.08)', color: i % 2 === 0 ? '#2E6DE7' : '#7C3AED' }}>
-                    <Icon c="w-5 h-5" />
-                  </div>
-                  <p className="font-extrabold leading-none mb-1" style={{ fontSize: 'clamp(1.8rem, 3vw, 2.5rem)', color: '#0F2A4A' }}>{value}</p>
-                  <p style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, letterSpacing: '0.1em' }} className="uppercase">{label}</p>
-                </div>
-              ))}
-            </div>
-          </section>
+          {/* Stats — now real, animated on scroll */}
+          <StatsSection />
 
           {/* Carousel */}
           <section className="py-16" style={{ borderBottom: '1px solid #E2E8F7' }}>
@@ -505,7 +641,7 @@ export default function Dashboard() {
             <WhatsHappeningSection />
           </section>
 
-          {/* FIX #2 confirmed: Explore PCM quick-nav now includes all 6 links including Groups */}
+          {/* Explore PCM quick-nav */}
           <section className="py-16" style={{ borderBottom: '1px solid #E2E8F7' }}>
             <div className="mb-10">
               <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.25em', color: '#7C3AED' }} className="uppercase mb-2">Navigate</p>

@@ -450,16 +450,35 @@ const SHead = ({ title, sub, onAdd, search, onSearch }) => (
 // SECTION COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════
 
-// ── Announcements ──────────────────────────────────────────────────────────
+// ── Announcements (UPDATED: adds admin-defined expiry with date + time) ────
 function AnnouncementsSection({ role, token }) {
   const { items, add, update, remove } = useAnnouncements();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const blank = { title: "", body: "", date: "", type: "General", status: "Active", image: "" };
+  const blank = { title: "", body: "", date: "", type: "General", status: "Active", image: "", expiresAt: "", expiresTime: "" };
   const [form, setForm] = useState(blank);
   const [saving, setSaving] = useState(false);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
-  const filtered = items.filter((x) => x.title.toLowerCase().includes(search.toLowerCase()));
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  // Builds a comparable cutoff Date from expiresAt + optional expiresTime (defaults to end of day)
+  const getCutoff = (item) => {
+    if (!item.expiresAt) return null;
+    return new Date(`${item.expiresAt}T${item.expiresTime || "23:59"}:00`);
+  };
+
+  const filtered = items
+    .filter((x) => x.title.toLowerCase().includes(search.toLowerCase()))
+    .map((x) => {
+      const cutoff = getCutoff(x);
+      let expiresLabel = "Never";
+      if (cutoff) {
+        const dateTimeStr = x.expiresTime ? `${x.expiresAt} · ${x.expiresTime}` : x.expiresAt;
+        expiresLabel = cutoff.getTime() < Date.now() ? `Expired · ${dateTimeStr}` : dateTimeStr;
+      }
+      return { ...x, expiresLabel };
+    });
 
   const save = async () => {
     setSaving(true);
@@ -470,12 +489,28 @@ function AnnouncementsSection({ role, token }) {
     } finally { setSaving(false); }
   };
 
+  const openEdit = (row) => {
+    // strip the display-only 'expiresLabel' field before loading into the form
+    const { expiresLabel, ...rest } = row;
+    setForm(rest);
+    setModal(row);
+  };
+
   return (
     <div>
       <SHead title="Announcements" sub={`${items.length} total`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
       <Table
-        cols={[{ key: "title", label: "Title" }, { key: "body", label: "Body", clip: true }, { key: "date", label: "Date" }, { key: "type", label: "Type" }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r }); setModal(r); }} onDelete={role !== "editor" ? remove : null}
+        cols={[
+          { key: "title", label: "Title" },
+          { key: "body", label: "Body", clip: true },
+          { key: "date", label: "Date" },
+          { key: "type", label: "Type" },
+          { key: "expiresLabel", label: "Expires" },
+          { key: "status", label: "Status" },
+        ]}
+        rows={filtered}
+        onEdit={openEdit}
+        onDelete={role !== "editor" ? remove : null}
       />
       {modal && (
         <Modal title={modal === "add" ? "New Announcement" : "Edit Announcement"} onClose={() => setModal(null)}>
@@ -486,6 +521,21 @@ function AnnouncementsSection({ role, token }) {
             <div className="flex-1"><Field label="Type"><Sel value={form.type} onChange={f("type")} options={["General", "Worship", "Prayer", "Admin", "Event"]} /></Field></div>
           </div>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Active", "Archived"]} /></Field>
+          <Field label="Expires On (optional)">
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <Input type="date" value={form.expiresAt || ""} onChange={f("expiresAt")} min={todayStr} />
+              </div>
+              <div className="flex-1">
+                <Input type="time" value={form.expiresTime || ""} onChange={f("expiresTime")} disabled={!form.expiresAt} />
+              </div>
+            </div>
+            <p className="text-xs mt-1" style={{ color: "#94A3B8" }}>
+              After this exact date & time, the announcement automatically stops showing on the public
+              dashboard. Time defaults to end of day (23:59) if left blank. Leave the date blank for it
+              to never expire on its own.
+            </p>
+          </Field>
           <FileUpload
             token={token}
             accept="image/*"

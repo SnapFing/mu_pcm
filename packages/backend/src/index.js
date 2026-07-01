@@ -52,6 +52,7 @@ app.use('/api/users',         require('./routes/users'));
 app.use('/api/minutes',       require('./routes/minutes'));
 app.use('/api/students',      require('./routes/students'));
 app.use('/api/uploads',       require('./routes/uploads')); 
+app.use('/api/stats',         require('./routes/stats'));
 
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);
