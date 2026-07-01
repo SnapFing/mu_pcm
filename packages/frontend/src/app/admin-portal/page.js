@@ -99,6 +99,7 @@ const Icons = {
   lock:       "M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2z M7 11V7a5 5 0 0110 0v4",
   users:      "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75",
   shield:     "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
+  menu:       "M3 12h18 M3 6h18 M3 18h18",
 };
 
 // ── Palette ────────────────────────────────────────────────────────────────
@@ -1268,6 +1269,7 @@ export default function AdminPage() {
   const { user, token, loading, login, logout } = useAdminAuth();
   const [section, setSection]   = useState("overview");
   const [open, setOpen]         = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const [isResetLink, setIsResetLink] = useState(false);
 
   const { items: prayers,  load: loadPrayers  } = usePrayers();
@@ -1275,6 +1277,18 @@ export default function AdminPage() {
 
   useEffect(() => { if (user) { loadPrayers(); loadContacts(); } }, [user, loadPrayers, loadContacts]);
   useEffect(() => { const p = new URLSearchParams(window.location.search); setIsResetLink(p.get("mode") === "resetPassword"); }, []);
+
+  // Responsive: detect viewport and set sensible sidebar defaults
+  useEffect(() => {
+    const checkSize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      setOpen(!mobile); // collapsed/hidden by default on mobile, expanded on desktop
+    };
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
 
   const unreadPrayers  = prayers.filter(x => x.status === "Unread").length;
   const unreadContacts = contacts.filter(x => x.status === "Unread").length;
@@ -1345,23 +1359,45 @@ export default function AdminPage() {
 
   if (!user) return isResetLink ? <ResetPasswordHandler /> : <LoginGate onLogin={login} />;
 
+  const sidebarWidth = isMobile ? 240 : (open ? 224 : 60);
+
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: C.white, fontFamily: "'Noto Sans',sans-serif" }}>
+    <div className="flex h-screen overflow-hidden relative" style={{ background: C.white, fontFamily: "'Noto Sans',sans-serif" }}>
+
+      {/* Backdrop — mobile only, tap to close */}
+      {isMobile && open && (
+        <div onClick={() => setOpen(false)} className="fixed inset-0 z-40" style={{ background: 'rgba(15,42,74,0.5)' }} />
+      )}
 
       {/* Sidebar */}
-      <aside className="flex-shrink-0 flex flex-col" style={{ width: open ? 224 : 60, background: C.navy, transition: "width 0.22s ease" }}>
-        <div className="flex items-center gap-2.5 px-3.5 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: C.primary }}>
-            <span style={{ fontFamily: "'Playfair Display',serif", color: "white", fontSize: 13, fontWeight: 700 }}>M</span>
-          </div>
+      <aside
+        className={`flex-shrink-0 flex flex-col overflow-hidden ${isMobile ? 'fixed inset-y-0 left-0 z-50' : 'relative'}`}
+        style={{
+          width: sidebarWidth,
+          background: C.navy,
+          transition: isMobile ? 'transform 0.25s ease' : 'width 0.22s ease',
+          transform: isMobile ? (open ? 'translateX(0)' : 'translateX(-100%)') : 'none',
+        }}
+      >
+        <div className={`flex items-center ${open ? 'justify-between px-3.5' : 'justify-center px-0'} py-4 border-b flex-shrink-0`} style={{ borderColor: "rgba(255,255,255,0.07)" }}>
           {open && (
-            <div className="flex-1 min-w-0">
-              <div style={{ fontFamily: "'Playfair Display',serif", color: "white", fontSize: 13, fontWeight: 700 }}>MU PCM</div>
-              <div style={{ color: "rgba(255,255,255,0.38)", fontSize: 9, letterSpacing: "0.08em" }}>ADMIN PORTAL</div>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: C.primary }}>
+                <span style={{ fontFamily: "'Playfair Display',serif", color: "white", fontSize: 13, fontWeight: 700 }}>M</span>
+              </div>
+              <div className="min-w-0">
+                <div style={{ fontFamily: "'Playfair Display',serif", color: "white", fontSize: 13, fontWeight: 700 }}>MU PCM</div>
+                <div style={{ color: "rgba(255,255,255,0.38)", fontSize: 9, letterSpacing: "0.08em" }}>ADMIN PORTAL</div>
+              </div>
             </div>
           )}
-          <button onClick={() => setOpen(p => !p)} className="p-1 rounded hover:bg-white/10 transition-colors flex-shrink-0">
-            <Icon d={open ? Icons.chevronL : Icons.chevronR} size={15} className="text-white/40" />
+          {/* Toggle button — always fits, never overflows, always clickable */}
+          <button
+            onClick={() => setOpen(p => !p)}
+            className="p-1.5 rounded hover:bg-white/10 transition-colors flex-shrink-0"
+            title={open ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            <Icon d={open ? Icons.chevronL : Icons.chevronR} size={16} className="text-white/60" />
           </button>
         </div>
 
@@ -1371,9 +1407,11 @@ export default function AdminPage() {
             return (
               <div key={item.key}>
                 {item.divider && <div className="my-1.5 mx-3 border-t" style={{ borderColor: "rgba(255,255,255,0.07)" }} />}
-                <button onClick={() => setSection(item.key)}
+                <button
+                  onClick={() => { setSection(item.key); if (isMobile) setOpen(false); }}
                   className="w-full flex items-center gap-2.5 px-3 py-2 transition-all relative text-left"
-                  style={{ color: active ? "white" : "rgba(255,255,255,0.46)" }}>
+                  style={{ color: active ? "white" : "rgba(255,255,255,0.46)" }}
+                >
                   {active && <div className="absolute left-0 top-1 bottom-1 w-0.5 rounded-r" style={{ background: C.primary }} />}
                   <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg" style={{ background: active ? C.primary + "30" : "transparent" }}>
                     <Icon d={item.icon} size={15} />
@@ -1395,7 +1433,7 @@ export default function AdminPage() {
           })}
         </nav>
 
-        <div className="px-3 py-3.5 border-t" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
+        <div className="px-3 py-3.5 border-t flex-shrink-0" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: C.primary }}>
               <span style={{ color: "white", fontSize: 12, fontWeight: 700 }}>A</span>
@@ -1414,23 +1452,28 @@ export default function AdminPage() {
       </aside>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="flex-shrink-0 flex items-center justify-between px-6 py-3 border-b bg-white" style={{ borderColor: C.border }}>
-          <div className="flex items-center gap-2">
-            {current && <Icon d={current.icon} size={15} className="text-blue-600" />}
-            <span style={{ fontFamily: "'Playfair Display',serif", color: C.navy, fontSize: 15, fontWeight: 700 }}>{current?.label}</span>
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <header className="flex-shrink-0 flex items-center justify-between px-4 sm:px-6 py-3 border-b bg-white gap-2" style={{ borderColor: C.border }}>
+          <div className="flex items-center gap-2 min-w-0">
+            {isMobile && (
+              <button onClick={() => setOpen(p => !p)} className="p-1.5 rounded hover:bg-slate-100 flex-shrink-0" title="Menu">
+                <Icon d={Icons.menu} size={18} className="text-slate-600" />
+              </button>
+            )}
+            {current && <Icon d={current.icon} size={15} className="text-blue-600 flex-shrink-0" />}
+            <span className="truncate" style={{ fontFamily: "'Playfair Display',serif", color: C.navy, fontSize: 15, fontWeight: 700 }}>{current?.label}</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-shrink-0">
             {totalUnread > 0 && (
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#EF4444" }} />
                 <span className="text-xs" style={{ color: "#EF4444" }}>{totalUnread} unread</span>
               </div>
             )}
-            <span className="text-xs" style={{ color: "#94A3B8" }}>Leaders' Control Panel</span>
+            <span className="text-xs hidden sm:inline" style={{ color: "#94A3B8" }}>Leaders' Control Panel</span>
           </div>
         </header>
-        <div className="flex-1 overflow-y-auto px-6 py-6">{sectionMap[section]}</div>
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">{sectionMap[section]}</div>
       </div>
     </div>
   );
