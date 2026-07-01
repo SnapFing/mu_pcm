@@ -452,10 +452,6 @@ export default function Dashboard() {
             </div>
             <p className="font-semibold text-white mb-3" style={{ fontSize: 'clamp(1.3rem, 2.5vw, 1.6rem)' }}>Follow Jesus. Embrace His Mission.</p>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', maxWidth: 420, margin: '0 auto 2.5rem' }}>A community of faith, purpose, and excellence — right here on campus.</p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button href="/events" variant="primary" size="lg" className="w-full sm:w-auto">View Events</Button>
-              <Button href="/prayer" variant="ghost" size="lg" className="w-full sm:w-auto">Submit Prayer Request</Button>
-            </div>
           </div>
         </section>
 
