@@ -118,7 +118,7 @@ function GroupCard({ group, idx, onJoin }) {
 
 // ── Join Modal ─────────────────────────────────────────────────────────────
 function JoinModal({ group, onClose }) {
-  const [form, setForm] = useState({ name: '', studentId: '', email: '', year: '', motivation: '' });
+  const [form, setForm] = useState({ name: '', studentId: '', email: '', phone: '', year: '', motivation: '' });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -202,14 +202,18 @@ function JoinModal({ group, onClose }) {
             </div>
           )}
           {[
-            { label: 'Full Name',   key: 'name',      placeholder: 'Your full name',     type: 'text'  },
-            { label: 'Student ID',  key: 'studentId', placeholder: 'e.g. MU2024/001',    type: 'text'  },
-            { label: 'Email',       key: 'email',     placeholder: 'your@email.com',      type: 'email' },
-            { label: 'Year of Study', key: 'year',    placeholder: 'e.g. Year 2',         type: 'text'  },
+            { label: 'Full Name',     key: 'name',      placeholder: 'Your full name',      type: 'text'  },
+            { label: 'Student ID',    key: 'studentId', placeholder: 'e.g. MU2024/001',     type: 'text'  },
+            { label: 'Email',         key: 'email',     placeholder: 'your@email.com',       type: 'email' },
+            { label: 'Phone Number',  key: 'phone',     placeholder: 'e.g. 0977 123 456',    type: 'tel'   },
+            { label: 'Year of Study', key: 'year',      placeholder: 'e.g. Year 2',          type: 'text'  },
           ].map(({ label, key, placeholder, type }) => (
             <div key={key}>
               <label style={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: '#0F2A4A', marginBottom: 6 }}>
                 {label.toUpperCase()}
+                {key === 'phone' && (
+                  <span style={{ fontWeight: 400, letterSpacing: 0, textTransform: 'none', color: '#94A3B8' }}> (optional — helps the group leader reach you faster)</span>
+                )}
               </label>
               <input type={type} value={form[key]} onChange={f(key)} placeholder={placeholder} style={inputStyle} disabled={submitting} />
             </div>

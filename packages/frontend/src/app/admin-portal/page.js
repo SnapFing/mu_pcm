@@ -791,10 +791,14 @@ function GroupsSection({ role }) {
   );
 }
 
-// ── Group Join Requests ────────────────────────────────────────────────────
+// ── Group Join Requests 
 function GroupRequestsSection() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading]   = useState(true);
+  const [viewing, setViewing]   = useState(null);
+  const [replyText, setReplyText] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
+  const [search, setSearch]     = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -806,19 +810,158 @@ function GroupRequestsSection() {
 
   useEffect(() => { load(); }, [load]);
 
+  const filtered = requests.filter((x) =>
+    (x.name || "").toLowerCase().includes(search.toLowerCase()) ||
+    (x.email || "").toLowerCase().includes(search.toLowerCase()) ||
+    (x.groupName || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  const openView  = (row) => { setViewing(row); setReplyText(""); };
+  const closeView = () => { setViewing(null); setReplyText(""); };
+
+  const remove = async (id) => {
+    if (!confirm("Delete this join request?")) return;
+    const result = await requestJson(`${API}/api/groups/requests/${id}`, { method: "DELETE" });
+    if (result.ok) load();
+    else alert(result.error || "Could not delete this request.");
+  };
+
+  const sendReply = async () => {
+    if (!viewing?.email || !replyText.trim()) return;
+    setSendingReply(true);
+    try {
+      const result = await requestJson(`${API}/api/groups/requests/${viewing.id}/reply`, {
+        method: "POST",
+        body: JSON.stringify({ message: replyText.trim() }),
+      });
+      if (!result.ok) { alert(result.error || "Could not send the reply."); return; }
+      await load();
+      closeView();
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
   if (loading) return <div className="p-8 text-center text-slate-400">Loading...</div>;
 
   return (
     <div>
-      <SHead title="Group Join Requests" sub={`${requests.length} requests`} />
+      <SHead title="Group Join Requests" sub={`${requests.length} requests`} search={search} onSearch={setSearch} />
       <Table
         cols={[
-          { key: "name", label: "Name" }, { key: "email", label: "Email", clip: true },
-          { key: "groupName", label: "Group" }, { key: "phone", label: "Phone", clip: true },
-          { key: "submittedAt", label: "Date" }, { key: "status", label: "Status" },
+          { key: "name", label: "Name" },
+          { key: "email", label: "Email", clip: true },
+          { key: "phone", label: "Phone" },
+          { key: "groupName", label: "Group" },
+          { key: "submittedAtLabel", label: "Date" },
+          { key: "status", label: "Status" },
         ]}
-        rows={requests.map(r => ({ ...r, submittedAt: r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : '—' }))}
+        rows={filtered.map(r => ({
+          ...r,
+          email: r.email || "—",
+          phone: r.phone || "—",
+          status: r.status || "New",
+          submittedAtLabel: r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : '—',
+        }))}
+        onDelete={remove}
+        extra={(row) => (
+          <button onClick={() => openView(row)} className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors" title="View">
+            <Icon d={Icons.eye} size={14} className="text-blue-500" />
+          </button>
+        )}
       />
+
+      {viewing && (
+        <Modal title="Group Join Request" onClose={closeView}>
+          <div className="rounded-xl p-4 mb-4" style={{ background: C.white, border: `1px solid ${C.border}` }}>
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <p className="text-sm font-semibold" style={{ color: C.navy }}>{viewing.name}</p>
+                <p className="text-xs mt-0.5" style={{ color: "#64748B" }}>Requesting to join: <strong>{viewing.groupName}</strong></p>
+              </div>
+              <div className="text-right">
+                <Badge text={viewing.status || "New"} />
+                <p className="text-xs mt-1" style={{ color: "#94A3B8" }}>
+                  {viewing.submittedAt ? new Date(viewing.submittedAt).toLocaleDateString() : ''}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-xs mb-3">
+              {viewing.email && (
+                <div>
+                  <p style={{ color: "#94A3B8" }}>EMAIL</p>
+                  <p style={{ color: C.navy, fontWeight: 600 }}>{viewing.email}</p>
+                </div>
+              )}
+              {viewing.phone && (
+                <div>
+                  <p style={{ color: "#94A3B8" }}>PHONE</p>
+                  <p style={{ color: C.navy, fontWeight: 600 }}>
+                    {viewing.phone}
+                    {" "}
+                    <a
+                      href={`https://wa.me/${viewing.phone.replace(/[^0-9]/g, '')}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="text-xs font-semibold underline"
+                      style={{ color: "#059669" }}
+                    >
+                      WhatsApp
+                    </a>
+                  </p>
+                </div>
+              )}
+              {viewing.studentId && (
+                <div>
+                  <p style={{ color: "#94A3B8" }}>STUDENT ID</p>
+                  <p style={{ color: C.navy, fontWeight: 600 }}>{viewing.studentId}</p>
+                </div>
+              )}
+              {viewing.year && (
+                <div>
+                  <p style={{ color: "#94A3B8" }}>YEAR</p>
+                  <p style={{ color: C.navy, fontWeight: 600 }}>{viewing.year}</p>
+                </div>
+              )}
+            </div>
+            {viewing.motivation && (
+              <>
+                <p className="text-xs font-semibold mb-1" style={{ color: "#94A3B8" }}>MOTIVATION</p>
+                <p className="text-sm leading-relaxed" style={{ color: "#334155" }}>{viewing.motivation}</p>
+              </>
+            )}
+          </div>
+
+          {viewing.lastReply && (
+            <div className="rounded-xl p-4 mb-4" style={{ background: "#ECFDF5", border: "1px solid #A7F3D0" }}>
+              <p className="text-xs font-semibold mb-1" style={{ color: "#059669" }}>LAST REPLY SENT</p>
+              <p className="text-sm leading-relaxed" style={{ color: "#334155" }}>{viewing.lastReply}</p>
+            </div>
+          )}
+
+          {viewing.email ? (
+            <Field label="Reply by email">
+              <Textarea rows={4} value={replyText} onChange={(e) => setReplyText(e.target.value)}
+                placeholder={`Write a reply to ${viewing.name} about joining ${viewing.groupName}…`} />
+            </Field>
+          ) : (
+            <p className="text-xs mb-4" style={{ color: "#94A3B8" }}>
+              {viewing.name} didn't share an email address
+              {viewing.phone ? ' — reach out via WhatsApp or phone instead.' : '.'}
+            </p>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <button onClick={closeView} className="px-4 py-2 rounded-xl text-sm border" style={{ borderColor: C.border, color: "#64748B" }}>Close</button>
+            {viewing.email && (
+              <button onClick={sendReply} disabled={sendingReply || !replyText.trim()}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+                style={{ background: sendingReply || !replyText.trim() ? "#94A3B8" : C.primary, cursor: sendingReply || !replyText.trim() ? "not-allowed" : "pointer" }}>
+                <Icon d={Icons.reply} size={14} className="text-white" /> {sendingReply ? "Sending…" : "Send Reply"}
+              </button>
+            )}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
