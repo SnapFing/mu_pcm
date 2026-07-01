@@ -130,7 +130,7 @@ export default function Footer() {
           style={{ borderTop: '1px solid rgba(255,255,255,0.08)', fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
           <p>© 2026 Mulungushi University SDA PCM. All rights reserved.</p>
           <p>Built with faith &amp; purpose · Kabwe, Zambia</p>
-          <p>Contact the Developer - SnapFing</p>
+          <a href="mailto:snapfing.ed@gmail.com" className="transition-colors hover:text-white">Contact the Developer - SnapFing</a>
         </div>
       </div>
     </footer>
