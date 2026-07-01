@@ -703,7 +703,7 @@ function GroupsSection({ role }) {
   const { items, add, update, remove } = useGroups();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const blank = { name: "", leader: "", schedule: [], members: "", description: "", status: "Active" };
+  const blank = { name: "", leader: "", schedule: [], members: "", description: "", status: "Active", acceptingJoins: true };
   const [form, setForm] = useState(blank);
   const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
   const filtered = items.filter((x) => x.name.toLowerCase().includes(search.toLowerCase()));
@@ -714,14 +714,26 @@ function GroupsSection({ role }) {
     const s = [...(p.schedule || [])]; s[i] = { ...s[i], [field]: value }; return { ...p, schedule: s };
   });
 
-  const save = () => saveAndClose({ modal, form: { ...form, members: Number(form.members) || 0 }, add, update, setModal });
+  const save = () => saveAndClose({
+    modal,
+    form: { ...form, members: Number(form.members) || 0, acceptingJoins: form.acceptingJoins !== false },
+    add, update, setModal,
+  });
 
   return (
     <div>
       <SHead title="Ministry Groups" sub={`${items.length} groups`} onAdd={() => { setForm(blank); setModal("add"); }} search={search} onSearch={setSearch} />
       <Table
-        cols={[{ key: "name", label: "Group" }, { key: "leader", label: "Leader" }, { key: "members", label: "Members" }, { key: "status", label: "Status" }]}
-        rows={filtered} onEdit={(r) => { setForm({ ...r, schedule: r.schedule || [] }); setModal(r); }} onDelete={role !== "editor" ? remove : null}
+        cols={[
+          { key: "name", label: "Group" },
+          { key: "leader", label: "Leader" },
+          { key: "members", label: "Members" },
+          { key: "status", label: "Status" },
+          { key: "acceptingJoinsLabel", label: "Accepting Joins" },
+        ]}
+        rows={filtered.map(g => ({ ...g, acceptingJoinsLabel: g.acceptingJoins === false ? 'Closed' : 'Open' }))}
+        onEdit={(r) => { setForm({ ...r, schedule: r.schedule || [], acceptingJoins: r.acceptingJoins !== false }); setModal(r); }}
+        onDelete={role !== "editor" ? remove : null}
       />
       {modal && (
         <Modal title={modal === "add" ? "Create Group" : "Edit Group"} onClose={() => setModal(null)}>
@@ -744,6 +756,34 @@ function GroupsSection({ role }) {
           </Field>
           <Field label="Description"><Textarea value={form.description} onChange={f("description")} rows={2} placeholder="Brief description…" /></Field>
           <Field label="Status"><Sel value={form.status} onChange={f("status")} options={["Active", "Inactive"]} /></Field>
+
+          <Field label="Accepting New Members">
+            <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: C.white, border: `1px solid ${C.border}` }}>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: C.navy }}>
+                  {form.acceptingJoins !== false ? 'Open for joining' : 'Closed to new members'}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: "#94A3B8" }}>
+                  {form.acceptingJoins !== false
+                    ? 'The public "Join This Group" button is active.'
+                    : 'The public button is disabled — freeze joins until you re-open it.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setForm(p => ({ ...p, acceptingJoins: p.acceptingJoins === false ? true : false }))}
+                className="w-11 h-6 rounded-full relative transition-colors flex-shrink-0"
+                style={{ background: form.acceptingJoins !== false ? C.primary : '#CBD5E1' }}
+                aria-label="Toggle accepting new members"
+              >
+                <span
+                  className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all"
+                  style={{ left: form.acceptingJoins !== false ? 22 : 2 }}
+                />
+              </button>
+            </div>
+          </Field>
+
           <MFooter onClose={() => setModal(null)} onSave={save} />
         </Modal>
       )}
