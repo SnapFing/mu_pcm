@@ -21,6 +21,18 @@ function getYtId(url) {
   return url.replace('https://www.youtube.com/watch?v=', '').replace('https://youtu.be/', '').split('&')[0] || null;
 }
 
+function getFbId(url) {
+  if (!url) return null;
+  return url.replace('https://www.facebook.com/', '').replace('https://fb.watch/', '').split('/').pop().split('?')[0] || null;
+}
+
+function fmtDate(dateStr) {
+  if (!dateStr) return '';
+  try {
+    return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch { return dateStr}
+}
+
 // ── Cloudinary helpers ────────────────────────────────────────────────────
 // Cloudinary can auto-generate a JPG poster frame from any uploaded video by
 // transforming the URL — far more reliable than relying on a <video> element
@@ -80,6 +92,7 @@ function MediaCard({ item, idx, onPlay }) {
   const accent   = idx % 2 === 0 ? '#2E6DE7' : '#7C3AED';
   const accentBg = idx % 2 === 0 ? 'rgba(46,109,231,0.08)' : 'rgba(124,58,237,0.08)';
   const info = mediaKind(item);
+  const [thumbFailed, setThumbFailed] = useState(false);
 
   return (
     <div className="rounded-2xl overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-0.5"
@@ -93,8 +106,12 @@ function MediaCard({ item, idx, onPlay }) {
         onClick={() => info.kind !== 'none' && onPlay(item)}>
         {info.kind === 'youtube' && (
           <>
-            <img src={info.thumb} alt={title} className="w-full h-full object-cover"
-              onError={e => e.currentTarget.style.display = 'none'} />
+            {!thumbFailed ? (
+              <img src={info.thumb} alt={title} className="w-full h-full object-cover"
+                onError={() => setThumbFailed(true)} />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center" style={{ background: '#0F2A4A' }} />
+            )}
             <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(15,42,74,0.35)' }}>
               <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: accent }}><PlayIcon /></div>
             </div>
@@ -105,9 +122,9 @@ function MediaCard({ item, idx, onPlay }) {
         )}
         {info.kind === 'video' && (
           <>
-            {info.poster ? (
+            {info.poster && !thumbFailed ? (
               <img src={info.poster} alt={title} className="w-full h-full object-cover"
-                onError={e => e.currentTarget.style.display = 'none'} />
+                onError={() => setThumbFailed(true)} />
             ) : (
               <video src={info.src} className="w-full h-full object-cover" muted playsInline preload="metadata" />
             )}
@@ -134,7 +151,7 @@ function MediaCard({ item, idx, onPlay }) {
         <div className="flex items-center justify-between mt-auto pt-3"
           style={{ borderTop: '1px solid #F1F5F9', fontSize: 11, color: '#94A3B8' }}>
           <span>{presenter}</span>
-          <span>{date ? new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</span>
+          <span>{fmtDate(date)}</span>
         </div>
       </div>
 
@@ -169,6 +186,96 @@ function MediaCard({ item, idx, onPlay }) {
   );
 }
 
+// ── Single tile inside a highlights gallery grid ─────────────────────────
+// Shows title / presenter / date as a caption, a play badge for video-like
+// items, and a hover download button when a direct file exists.
+function HighlightsTile({ item, onPlay }) {
+  const info = mediaKind(item);
+  const [thumbFailed, setThumbFailed] = useState(false);
+  const playable = info.kind !== 'none';
+
+  return (
+    <div
+      className="group relative rounded-xl overflow-hidden cursor-pointer transition-transform duration-150 hover:scale-[1.03]"
+      style={{ aspectRatio: '1 / 1', background: '#0F2A4A', border: '1px solid #E2E8F7' }}
+      onClick={() => playable && onPlay(item)}
+    >
+      {/* Thumbnail */}
+      {info.kind === 'image' && (
+        <img src={info.src} alt={item.title} className="w-full h-full object-cover" />
+      )}
+
+      {info.kind === 'video' && (
+        info.poster && !thumbFailed ? (
+          <img src={info.poster} alt={item.title} className="w-full h-full object-cover" onError={() => setThumbFailed(true)} />
+        ) : (
+          <video src={info.src} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+        )
+      )}
+
+      {info.kind === 'youtube' && (
+        !thumbFailed ? (
+          <img src={info.thumb} alt={item.title} className="w-full h-full object-cover" onError={() => setThumbFailed(true)} />
+        ) : (
+          // Fallback when YouTube's thumbnail can't be fetched (private/deleted
+          // video, bad link, etc.) — a solid navy tile with a play icon instead
+          // of a blank/broken image.
+          <div className="w-full h-full flex items-center justify-center" style={{ background: '#0F2A4A' }}>
+            <PlayIcon />
+          </div>
+        )
+      )}
+
+      {info.kind === 'none' && (
+        <div className="w-full h-full flex items-center justify-center" style={{ background: '#F5F7FF', color: '#94A3B8' }}>
+          <PlayIcon />
+        </div>
+      )}
+
+      {/* Play badge for anything playable */}
+      {playable && (
+        <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(15,42,74,0.28)' }}>
+          <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: '#2E6DE7' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+        </div>
+      )}
+
+      {/* Caption strip — title / presenter · date */}
+      {(item.title || item.presenter || item.date) && (
+        <div
+          className="absolute bottom-0 left-0 right-0 px-2 pt-4 pb-1.5 pointer-events-none"
+          style={{ background: 'linear-gradient(to top, rgba(15,42,74,0.94), transparent)' }}
+        >
+          {item.title && (
+            <p className="text-[10px] font-semibold text-white truncate leading-tight">{item.title}</p>
+          )}
+          {(item.presenter || item.date) && (
+            <p className="text-[9px] text-white/75 truncate leading-tight mt-0.5">
+              {item.presenter}
+              {item.presenter && item.date ? ' · ' : ''}
+              {fmtDate(item.date)}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Hover download button — only for direct uploads (not YouTube links) */}
+      {item.fileUrl && (
+        <a
+          href={downloadUrl(item.fileUrl)}
+          onClick={(e) => e.stopPropagation()}
+          className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          style={{ background: 'rgba(255,255,255,0.92)', color: '#0F2A4A' }}
+          title="Download"
+        >
+          <DownloadIcon className="w-3 h-3" />
+        </a>
+      )}
+    </div>
+  );
+}
+
 // ── Highlights gallery strip (grouped by eventTitle) ─────────────────────
 function HighlightsGallery({ eventTitle, items, onPlay }) {
   return (
@@ -179,30 +286,9 @@ function HighlightsGallery({ eventTitle, items, onPlay }) {
         <span style={{ fontSize: 12, color: '#94A3B8' }}>{items.length} item{items.length !== 1 ? 's' : ''}</span>
       </div>
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-        {items.map((item) => {
-          const info = mediaKind(item);
-          return (
-            <div key={item.id}
-              className="relative rounded-xl overflow-hidden cursor-pointer transition-transform duration-150 hover:scale-[1.03]"
-              style={{ aspectRatio: '1 / 1', background: '#F5F7FF', border: '1px solid #E2E8F7' }}
-              onClick={() => info.kind !== 'none' && onPlay(item)}>
-              {info.kind === 'image' && <img src={info.src} alt={item.title} className="w-full h-full object-cover" />}
-              {info.kind === 'video' && (
-                info.poster
-                  ? <img src={info.poster} alt={item.title} className="w-full h-full object-cover" />
-                  : <video src={info.src} className="w-full h-full object-cover" muted playsInline preload="metadata" />
-              )}
-              {info.kind === 'youtube' && <img src={info.thumb} alt={item.title} className="w-full h-full object-cover" />}
-              {(info.kind === 'video' || info.kind === 'youtube') && (
-                <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(15,42,74,0.3)' }}>
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: '#2E6DE7' }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {items.map((item) => (
+          <HighlightsTile key={item.id} item={item} onPlay={onPlay} />
+        ))}
       </div>
     </section>
   );
@@ -218,7 +304,14 @@ function MediaModal({ item, onClose }) {
       <div className="w-full max-w-3xl rounded-2xl overflow-hidden shadow-2xl"
         onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-3" style={{ background: '#0F2A4A' }}>
-          <span style={{ color: 'white', fontSize: 14, fontWeight: 600 }} className="truncate pr-4">{item.title}</span>
+          <div className="min-w-0 pr-4">
+            <p style={{ color: 'white', fontSize: 14, fontWeight: 600 }} className="truncate">{item.title}</p>
+            {(item.presenter || item.date) && (
+              <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11 }} className="truncate mt-0.5">
+                {item.presenter}{item.presenter && item.date ? ' · ' : ''}{fmtDate(item.date)}
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-2 shrink-0">
             {item.fileUrl && (
               <a href={downloadUrl(item.fileUrl)}
