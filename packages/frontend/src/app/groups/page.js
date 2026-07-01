@@ -22,6 +22,19 @@ const LockIcon   = ({ c }) => <Ico c={c}><rect x="3" y="11" width="18" height="1
 const ACCENT = (i) => i % 2 === 0 ? '#2E6DE7' : '#7C3AED';
 const ACCENT_BG = (i) => i % 2 === 0 ? 'rgba(46,109,231,0.08)' : 'rgba(124,58,237,0.08)';
 
+// ── Normalize the "acceptingJoins" flag no matter what type it comes in as ──
+// Handles a real boolean false, the string "false"/"no"/"closed", or 0 — all
+// treated as CLOSED. Anything else (true, undefined, missing) is OPEN.
+function isGroupOpen(acceptingJoins) {
+  if (acceptingJoins === false) return false;
+  if (acceptingJoins === 0) return false;
+  if (typeof acceptingJoins === 'string') {
+    const v = acceptingJoins.trim().toLowerCase();
+    if (v === 'false' || v === 'no' || v === '0' || v === 'closed') return false;
+  }
+  return true;
+}
+
 // ── Group Card ─────────────────────────────────────────────────────────────
 function GroupCard({ group, idx, onJoin }) {
   const { name, leader, meetingDay, time, members, description, status, acceptingJoins } = group;
