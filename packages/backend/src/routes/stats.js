@@ -4,7 +4,7 @@ const router = express.Router();
 const { db } = require('../firebase');
 
 // Set this to whenever the ministry actually started
-const FOUNDING_YEAR = 2021;
+const FOUNDING_YEAR = 2018;
 
 // live collection of numbers 
 router.get('/', async (req, res) => {
