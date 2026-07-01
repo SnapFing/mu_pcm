@@ -16,9 +16,29 @@ const IMAGE_EXT = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 function isVideoFile(url = '') { return VIDEO_EXT.includes(fileExt(url)); }
 function isImageFile(url = '') { return IMAGE_EXT.includes(fileExt(url)); }
 
+// Robust YouTube ID extraction — the old version only handled two exact URL
+// prefixes and broke silently (falling back to the gray placeholder) on
+// anything else: no "www.", /shorts/, /embed/, /live/, or extra query params
+// before "v=". A regex against all known formats is far more reliable.
 function getYtId(url) {
   if (!url) return null;
-  return url.replace('https://www.youtube.com/watch?v=', '').replace('https://youtu.be/', '').split('&')[0] || null;
+  const match = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/
+  );
+  return match ? match[1] : null;
+}
+
+// YouTube doesn't guarantee every resolution exists for every video —
+// maxresdefault in particular 404s for a lot of uploads. mqdefault is the
+// most universally available, so that's the primary; a small ordered list
+// lets the <img onError> chain fall through until one actually loads instead
+// of giving up after a single failed request.
+function ytThumbCandidates(ytId) {
+  return [
+    `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`,
+    `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`,
+    `https://img.youtube.com/vi/${ytId}/default.jpg`,
+  ];
 }
 
 function fmtDate(dateStr) {
@@ -74,7 +94,7 @@ function ChevronIcon({ direction = 'left', className = 'w-6 h-6' }) {
 // ── Resolve what kind of media an item is, and its thumbnail ────────────
 function mediaKind(item) {
   const ytId = getYtId(item.url);
-  if (ytId) return { kind: 'youtube', ytId, thumb: `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` };
+  if (ytId) return { kind: 'youtube', ytId, thumbCandidates: ytThumbCandidates(ytId) };
   if (item.fileUrl && isVideoFile(item.fileUrl)) {
     return { kind: 'video', src: item.fileUrl, poster: videoPosterUrl(item.fileUrl) };
   }
@@ -87,7 +107,9 @@ function MediaCard({ item, idx, onPlay }) {
   const accent   = idx % 2 === 0 ? '#2E6DE7' : '#7C3AED';
   const accentBg = idx % 2 === 0 ? 'rgba(46,109,231,0.08)' : 'rgba(124,58,237,0.08)';
   const info = mediaKind(item);
-  const [thumbFailed, setThumbFailed] = useState(false);
+  const [thumbIdx, setThumbIdx] = useState(0);
+  const candidates = info.thumbCandidates || [];
+  const thumbFailed = info.kind === 'youtube' && thumbIdx >= candidates.length;
 
   return (
     <div className="rounded-2xl overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-0.5"
@@ -101,8 +123,8 @@ function MediaCard({ item, idx, onPlay }) {
         {info.kind === 'youtube' && (
           <>
             {!thumbFailed ? (
-              <img src={info.thumb} alt={title} className="w-full h-full object-cover"
-                onError={() => setThumbFailed(true)} />
+              <img src={candidates[thumbIdx]} alt={title} className="w-full h-full object-cover"
+                onError={() => setThumbIdx((i) => i + 1)} />
             ) : (
               <div className="w-full h-full flex items-center justify-center" style={{ background: '#0F2A4A' }} />
             )}
@@ -185,7 +207,9 @@ function MediaCard({ item, idx, onPlay }) {
 // about to watch before clicking.
 function HighlightsTile({ item, onPlay }) {
   const info = mediaKind(item);
-  const [thumbFailed, setThumbFailed] = useState(false);
+  const [thumbIdx, setThumbIdx] = useState(0);
+  const candidates = info.thumbCandidates || [];
+  const thumbFailed = info.kind === 'youtube' && thumbIdx >= candidates.length;
   const playable = info.kind !== 'none';
   const isImage = info.kind === 'image';
 
@@ -209,7 +233,7 @@ function HighlightsTile({ item, onPlay }) {
 
       {info.kind === 'youtube' && (
         !thumbFailed ? (
-          <img src={info.thumb} alt={item.title} className="w-full h-full object-cover" onError={() => setThumbFailed(true)} />
+          <img src={candidates[thumbIdx]} alt={item.title} className="w-full h-full object-cover" onError={() => setThumbIdx((i) => i + 1)} />
         ) : (
           <div className="w-full h-full flex items-center justify-center" style={{ background: '#0F2A4A' }}>
             <PlayIcon />
