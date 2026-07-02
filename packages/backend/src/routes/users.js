@@ -45,7 +45,7 @@ router.post('/invite', ...requireSuperAdmin, async (req, res) => {
     return res.status(400).json({ error: 'email and role are required' });
   }
 
-  const VALID_ROLES = ['editor', 'admin', 'super_admin', 'secretary', 'prayer_band_leader', 'publicity_secretary'];
+  const VALID_ROLES = ['editor', 'admin', 'super_admin', 'secretary', 'prayer_band_leader', 'publicity_secretary', 'programming_committee'];
   if (!VALID_ROLES.includes(role)) {
     return res.status(400).json({ error: `role must be one of: ${VALID_ROLES.join(', ')}` });
   }

@@ -259,14 +259,16 @@ export function DataProvider({ children }) {
   const prayers       = useCollectionState("prayers", { requiresAuthToLoad: true });
   const contacts      = useCollectionState("contacts", { requiresAuthToLoad: true });
   const aboutState    = useAboutState();
+  const programming   = useCollectionState("programming", { requiresAuthToLoad: true });
 
   const reset = () => window.location.reload();
 
-  return (
+    return (
     <DataContext.Provider value={{
       reset,
       announcements, events, journals, media,
       heroes, banners, groups, resources, prayers, contacts,
+      programming,
       about: aboutState.about,
       aboutState,
       setAbout: aboutState.setAbout,
@@ -287,6 +289,7 @@ export const useResources     = () => useContext(DataContext).resources;
 export const usePrayers       = () => useContext(DataContext).prayers;
 export const useContacts      = () => useContext(DataContext).contacts;
 export const useBanners       = () => useContext(DataContext).banners;
+export const useProgramming   = () => useContext(DataContext).programming;
 
 export function useAbout() {
   const ctx = useContext(DataContext);

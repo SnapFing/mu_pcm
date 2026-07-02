@@ -7,6 +7,8 @@ import MemberRegistersSection from './MemberRegistersSection';
 import MinutesSection from './MinutesSection';
 import FileUpload from '@/app/ui/FileUpload';
 import MediaSection from './MediaSection';
+import ProgrammingSection from "./ProgrammingSection";
+
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
@@ -100,6 +102,7 @@ const Icons = {
   users:      "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75",
   shield:     "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
   menu:       "M3 12h18 M3 6h18 M3 18h18",
+  programming: "M8 2v4 M16 2v4 M3 10h18 M21 8a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V8z M8 14h.01 M12 14h.01 M16 14h.01",
 };
 
 // ── Palette ────────────────────────────────────────────────────────────────
@@ -1486,6 +1489,14 @@ export default function AdminPage() {
         { key: "minutes",               label: "Meeting Minutes",       icon: Icons.about },
       ];
     }
+ 
+    const isProgramming = user?.role === 'programming_committee';
+    if (isProgramming) {
+      return [
+        { key: "programming", label: "Programming Workspace", icon: Icons.programming },
+      ];
+    }
+ 
     const base = [
       { key: "overview",      label: "Overview",       icon: Icons.dashboard },
       { key: "announcements", label: "Announcements",  icon: Icons.announce  },
@@ -1505,6 +1516,7 @@ export default function AdminPage() {
         { key: "student-registrations", label: "Student Registrations", icon: Icons.users    },
         { key: "members-register",      label: "Members Register",      icon: Icons.journals },
         { key: "minutes",               label: "Meeting Minutes",       icon: Icons.about    },
+        { key: "programming",           label: "Programming Workspace", icon: Icons.programming },
       );
     }
     base.push({ key: "about", label: "About Editor", icon: Icons.about });
@@ -1530,6 +1542,7 @@ export default function AdminPage() {
     'student-registrations': <StudentRegistrationsSection token={token} />,
     'members-register':      <MemberRegistersSection token={token} />,
     'minutes':               <MinutesSection token={token} />,
+    'programming':           <ProgrammingSection token={token} />,
   };
 
   const current = nav.find(n => n.key === section);
