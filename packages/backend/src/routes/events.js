@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { db } = require('../firebase');
-const { verifyToken, requireRole } = require('../middleware/auth');
+const { verifyToken, requireRole, requireAnyRole } = require('../middleware/auth');
 
 const COL = 'events';
 
@@ -20,7 +20,7 @@ router.get('/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.post('/', verifyToken, requireRole('editor'), async (req, res) => {
+router.post('/', verifyToken, requireAnyRole('editor', 'programming_committee'), async (req, res) => {
   try {
     const doc = await db.collection(COL).add({
       ...req.body,
@@ -31,7 +31,7 @@ router.post('/', verifyToken, requireRole('editor'), async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.put('/:id', verifyToken, requireRole('editor'), async (req, res) => {
+router.put('/:id', verifyToken, requireAnyRole('editor', 'programming_committee'), async (req, res) => {
   try {
     await db.collection(COL).doc(req.params.id).update({
       ...req.body,
@@ -42,7 +42,7 @@ router.put('/:id', verifyToken, requireRole('editor'), async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete('/:id', verifyToken, requireRole('admin'), async (req, res) => {
+router.delete('/:id', verifyToken, requireAnyRole('editor', 'programming_committee'), async (req, res) => {
   try {
     await db.collection(COL).doc(req.params.id).delete();
     res.json({ success: true });

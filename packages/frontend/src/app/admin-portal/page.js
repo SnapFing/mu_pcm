@@ -1324,18 +1324,20 @@ function UsersSection({ token }) {
           </button>
         </>)}
       />
+
+      // Invitation and role change modals
       {modal === "invite" && (
         <Modal title="Invite New Admin" onClose={() => setModal(null)}>
           <Field label="Email"><Input type="email" value={form.email} onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} placeholder="user@example.com" /></Field>
           <Field label="Display Name"><Input value={form.displayName} onChange={(e) => setForm(f => ({ ...f, displayName: e.target.value }))} placeholder="John Doe" /></Field>
-          <Field label="Role"><Sel value={form.role} onChange={(e) => setForm(f => ({ ...f, role: e.target.value }))} options={["editor", "admin", "super_admin", "secretary", "prayer_band_leader", "publicity_secretary"]} /></Field>
+          <Field label="Role"><Sel value={form.role} onChange={(e) => setForm(f => ({ ...f, role: e.target.value }))} options={["editor", "admin", "super_admin", "secretary", "prayer_band_leader", "publicity_secretary", "programming_committee"]} /></Field>
           <MFooter onClose={() => setModal(null)} onSave={handleInvite} />
         </Modal>
       )}
       {modal && modal.uid && (
         <Modal title="Change Role" onClose={() => setModal(null)}>
           <p className="text-sm mb-4">Select a new role for <strong>{users.find(u => u.uid === modal.uid)?.email}</strong></p>
-          <Field label="New Role"><Sel value={modal.currentRole} onChange={(e) => setModal({ ...modal, currentRole: e.target.value })} options={["editor", "admin", "super_admin", "secretary", "prayer_band_leader", "publicity_secretary"]} /></Field>
+          <Field label="New Role"><Sel value={modal.currentRole} onChange={(e) => setModal({ ...modal, currentRole: e.target.value })} options={["editor", "admin", "super_admin", "secretary", "prayer_band_leader", "publicity_secretary", "programming_committee"]} /></Field>
           <MFooter onClose={() => setModal(null)} onSave={() => handleRoleChange(modal.uid, modal.currentRole)} />
         </Modal>
       )}

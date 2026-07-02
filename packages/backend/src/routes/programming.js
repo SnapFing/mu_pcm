@@ -16,6 +16,9 @@
  *   createdAt, createdBy, updatedAt, updatedBy
  * }
  */
+
+import requestJson from /utils/requestJson
+
 const express = require('express');
 const router = express.Router();
 const { db } = require('../firebase');
@@ -23,6 +26,65 @@ const { verifyToken, requireAnyRole } = require('../middleware/auth');
 
 const COL = 'programming_plans';
 const guard = requireAnyRole('admin', 'programming_committee');
+
+const [notifying, setNotifying] = useState(null);
+
+const notifyPresenter = async (plan, row) => {
+  setNotifying(row.id);
+  try {
+    const result = await requestJson(`${API}/api/programming/${plan.id}/notify`, {
+      method: 'POST',
+      body: JSON.stringify({ rowId: row.id }),
+    });
+    if (result?.ok) {
+      showToast(`Notified ${row.presenter}`);
+      // reflect notifiedAt locally without a full reload
+      updateRow(row.id, 'notifiedAt', new Date().toISOString());
+      await update({ ...plan, schedule: plan.schedule.map(r => r.id === row.id ? { ...r, notifiedAt: new Date().toISOString() } : r) });
+    } else {
+      showToast(result?.error || 'Could not send notification.', false);
+    }
+  } finally {
+    setNotifying(null);
+  }
+};
+
+const { sendEmail } = require('../utils/email');
+
+router.post('/:id/notify', verifyToken, guard, async (req, res) => {
+  try {
+    const { rowId } = req.body;
+    const ref = db.collection(COL).doc(req.params.id);
+    const doc = await ref.get();
+    if (!doc.exists) return res.status(404).json({ error: 'Plan not found' });
+
+    const plan = doc.data();
+    const schedule = plan.schedule || [];
+    const row = schedule.find(r => r.id === rowId);
+    if (!row) return res.status(404).json({ error: 'Schedule row not found' });
+    if (!row.presenterEmail) return res.status(400).json({ error: 'No presenter email on this row' });
+
+    await sendEmail({
+      to: row.presenterEmail,
+      subject: `You're scheduled — ${row.band} on ${row.date}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;">
+          <p>Hello ${row.presenter || 'there'},</p>
+          <p>You've been scheduled for <strong>${row.band}</strong> on <strong>${row.date}</strong>${plan.termLabel ? ` (${plan.termLabel})` : ''}.</p>
+          ${plan.notes ? `<p style="color:#64748B;font-size:13px;">Programming notes: ${plan.notes}</p>` : ''}
+          <p style="font-size:12px;color:#94A3B8;">MU SDA PCM Programming Committee</p>
+        </div>
+      `,
+    });
+
+    const updatedSchedule = schedule.map(r =>
+      r.id === rowId ? { ...r, notifiedAt: new Date().toISOString() } : r
+    );
+    await ref.update({ schedule: updatedSchedule, updatedAt: new Date().toISOString(), updatedBy: req.user.uid });
+
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 router.get('/', verifyToken, guard, async (req, res) => {
   try {

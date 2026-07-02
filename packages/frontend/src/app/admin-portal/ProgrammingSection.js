@@ -25,7 +25,18 @@ const BAND_OPTIONS = [
 ];
 
 function emptyRow() {
-  return { id: `row_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, band: BAND_OPTIONS[0], date: '', presenter: '', standardsConfirmed: false };
+  return { 
+    id: `row_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, 
+    band: BAND_OPTIONS[0], 
+    date: '', 
+    presenter: '',
+    presenterEmail: '', 
+    standardsConfirmed: false,
+    confirmedBy: '',
+    confirmedAt: '',
+    notifiedAt: '',
+  };
+
 }
 
 export default function ProgrammingSection({ token }) {
@@ -184,6 +195,7 @@ export default function ProgrammingSection({ token }) {
                               {row.standardsConfirmed ? 'Confirmed' : 'Pending'}
                             </span>
                           </td>
+                          
                           <td style={{ padding: '9px 16px', textAlign: 'right' }}>
                             <button
                               onClick={() => promoteRow(plan, row)}
@@ -197,6 +209,28 @@ export default function ProgrammingSection({ token }) {
                               {promoting === row.id ? 'Creating…' : 'Promote'}
                             </button>
                           </td>
+                          
+                          <td style={{ padding: '9px 16px', textAlign: 'right' }}>
+                          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                            {row.presenterEmail && (
+                              <button
+                                onClick={() => notifyPresenter(plan, row)}
+                                disabled={notifying === row.id}
+                                style={{
+                                  padding: '5px 10px', borderRadius: 8, border: `1px solid ${C.border}`,
+                                  background: row.notifiedAt ? '#F5F7FF' : 'white',
+                                  color: notifying === row.id ? '#94A3B8' : C.primary,
+                                  fontSize: 11, fontWeight: 600, cursor: notifying === row.id ? 'not-allowed' : 'pointer',
+                                }}>
+                                {notifying === row.id ? 'Sending…' : row.notifiedAt ? '✓ Notified' : 'Notify'}
+                              </button>
+                            )}
+                            <button onClick={() => promoteRow(plan, row)} disabled={promoting === row.id} /* ...existing... */>
+                              {promoting === row.id ? 'Creating…' : 'Promote'}
+                            </button>
+                          </div>
+                        </td>
+
                         </tr>
                       ))}
                     </tbody>
@@ -258,10 +292,16 @@ export default function ProgrammingSection({ token }) {
                         style={{ ...inputStyle, flex: '1 1 150px' }}>
                         {BAND_OPTIONS.map(b => <option key={b}>{b}</option>)}
                       </select>
+                      
                       <input type="date" value={row.date} onChange={e => updateRow(row.id, 'date', e.target.value)}
                         style={{ ...inputStyle, flex: '1 1 130px' }} />
+                      
                       <input value={row.presenter} onChange={e => updateRow(row.id, 'presenter', e.target.value)}
                         placeholder="Presenter" style={{ ...inputStyle, flex: '1 1 130px' }} />
+                      
+                      <input value={row.presenterEmail} onChange={e => updateRow(row.id, 'presenterEmail', e.target.value)}
+                        placeholder="Presenter Email" style={{ ...inputStyle, flex: '1 1 130px' }} />
+                      
                       <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#64748B', whiteSpace: 'nowrap', flexShrink: 0 }}>
                         <input type="checkbox" checked={!!row.standardsConfirmed}
                           onChange={e => updateRow(row.id, 'standardsConfirmed', e.target.checked)} />

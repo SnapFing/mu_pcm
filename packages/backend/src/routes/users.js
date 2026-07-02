@@ -45,9 +45,13 @@ router.post('/invite', ...requireSuperAdmin, async (req, res) => {
     return res.status(400).json({ error: 'email and role are required' });
   }
 
-  const VALID_ROLES = ['editor', 'admin', 'super_admin', 'secretary', 'prayer_band_leader', 'publicity_secretary', 'programming_committee'];
+  const VALID_ROLES = [
+    'editor', 'admin', 'super_admin',
+    'secretary', 'prayer_band_leader', 'publicity_secretary',
+    'programming_committee',
+  ];
   if (!VALID_ROLES.includes(role)) {
-    return res.status(400).json({ error: `role must be one of: ${VALID_ROLES.join(', ')}` });
+    return res.status(400).json({ error: `invalid privilege: ${VALID_ROLES.join(', ')}` });
   }
 
   try {
@@ -133,7 +137,7 @@ router.patch('/:uid/role', ...requireSuperAdmin, async (req, res) => {
 
   const VALID_ROLES = ['editor', 'admin', 'super_admin', 'secretary', 'prayer_band_leader', 'publicity_secretary'];
   if (!VALID_ROLES.includes(role)) {
-    return res.status(400).json({ error: `role must be one of: ${VALID_ROLES.join(', ')}` });
+    return res.status(400).json({ error: `invalid privileges: ${VALID_ROLES.join(', ')}` });
   }
   if (uid === req.user.uid) {
     return res.status(400).json({ error: 'You cannot change your own role' });
