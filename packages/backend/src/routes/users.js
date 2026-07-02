@@ -38,7 +38,7 @@ router.get('/me', verifyToken, async (req, res) => {
 // ── POST /api/users/invite ────────────────────────────────────────────────
 // Invite a new admin user. Requires super_admin.
 // Creates Firebase Auth account (enabled), writes admin_users doc, sends reset email.
-router.post('/invite', ...requireSuperAdmin, async (req, res) => {
+router.post('/invite', requireSuperAdmin, async (req, res) => {
   const { email, displayName, role } = req.body;
 
   if (!email || !role) {
@@ -131,7 +131,7 @@ router.post('/invite', ...requireSuperAdmin, async (req, res) => {
 // ── PATCH /api/users/:uid/role ────────────────────────────────────────────
 // Change a user's role. Requires super_admin.
 // A super_admin cannot change their own role.
-router.patch('/:uid/role', ...requireSuperAdmin, async (req, res) => {
+router.patch('/:uid/role', requireSuperAdmin, async (req, res) => {
   const { uid } = req.params;
   const { role } = req.body;
 
@@ -163,7 +163,7 @@ router.patch('/:uid/role', ...requireSuperAdmin, async (req, res) => {
 //   2. Update Firestore (the label)
 //   3. If Firestore fails, roll back Firebase Auth
 // This guarantees the two stores never drift apart.
-router.patch('/:uid/status', ...requireSuperAdmin, async (req, res) => {
+router.patch('/:uid/status', requireSuperAdmin, async (req, res) => {
   const { uid } = req.params;
   const { active } = req.body;
 
@@ -221,7 +221,7 @@ router.patch('/:uid/status', ...requireSuperAdmin, async (req, res) => {
 // ── DELETE /api/users/:uid ────────────────────────────────────────────────
 // Permanently remove a user. Requires super_admin.
 // Cannot delete yourself.
-router.delete('/:uid', ...requireSuperAdmin, async (req, res) => {
+router.delete('/:uid', requireSuperAdmin, async (req, res) => {
   const { uid } = req.params;
 
   if (uid === req.user.uid) {
@@ -243,7 +243,7 @@ router.delete('/:uid', ...requireSuperAdmin, async (req, res) => {
 
 // ── POST /api/users/:uid/reset-password ───────────────────────────────────
 // Super admin sends a password reset email to any admin user.
-router.post('/:uid/reset-password', ...requireSuperAdmin, async (req, res) => {
+router.post('/:uid/reset-password', requireSuperAdmin, async (req, res) => {
   const { uid } = req.params;
   try {
     const doc = await db.collection(COL).doc(uid).get();

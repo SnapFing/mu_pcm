@@ -1,56 +1,82 @@
-/**
- * /api/programming
- *
- * Private workspace for the Programming Committee — strategic plan notes
- * and a draft schedule of who's presenting when. Nothing here is public;
- * every route requires admin or programming_committee.
- *
- * A "plan" document shape:
- * {
- *   title: string,
- *   termLabel: string,           e.g. "Semester 1, 2026"
- *   notes: string,                free-text strategic plan
- *   schedule: [
- *     { id, band, date, presenter, standardsConfirmed: boolean }
- *   ],
- *   createdAt, createdBy, updatedAt, updatedBy
- * }
- */
-
-import requestJson from /utils/requestJson
-
 const express = require('express');
 const router = express.Router();
 const { db } = require('../firebase');
 const { verifyToken, requireAnyRole } = require('../middleware/auth');
+const { sendEmail } = require('../utils/email');
 
 const COL = 'programming_plans';
 const guard = requireAnyRole('admin', 'programming_committee');
 
-const [notifying, setNotifying] = useState(null);
-
-const notifyPresenter = async (plan, row) => {
-  setNotifying(row.id);
+// ── GET all plans ─────────────────────────────────────────────────────────
+router.get('/', verifyToken, guard, async (req, res) => {
   try {
-    const result = await requestJson(`${API}/api/programming/${plan.id}/notify`, {
-      method: 'POST',
-      body: JSON.stringify({ rowId: row.id }),
-    });
-    if (result?.ok) {
-      showToast(`Notified ${row.presenter}`);
-      // reflect notifiedAt locally without a full reload
-      updateRow(row.id, 'notifiedAt', new Date().toISOString());
-      await update({ ...plan, schedule: plan.schedule.map(r => r.id === row.id ? { ...r, notifiedAt: new Date().toISOString() } : r) });
-    } else {
-      showToast(result?.error || 'Could not send notification.', false);
-    }
-  } finally {
-    setNotifying(null);
+    const snap = await db.collection(COL).orderBy('createdAt', 'desc').get();
+    const plans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    res.json(plans);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-};
+});
 
-const { sendEmail } = require('../utils/email');
+// ── GET single plan ──────────────────────────────────────────────────────
+router.get('/:id', verifyToken, guard, async (req, res) => {
+  try {
+    const doc = await db.collection(COL).doc(req.params.id).get();
+    if (!doc.exists) return res.status(404).json({ error: 'Not found' });
+    res.json({ id: doc.id, ...doc.data() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
+// ── POST create a plan ──────────────────────────────────────────────────
+router.post('/', verifyToken, guard, async (req, res) => {
+  try {
+    const { title, termLabel, notes, schedule } = req.body;
+    const newPlan = {
+      title: title || 'Untitled Plan',
+      termLabel: termLabel || '',
+      notes: notes || '',
+      schedule: Array.isArray(schedule) ? schedule : [],
+      createdAt: new Date().toISOString(),
+      createdBy: req.user.uid,
+    };
+    const docRef = await db.collection(COL).add(newPlan);
+    res.status(201).json({ id: docRef.id, ...newPlan });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── PUT update a plan ───────────────────────────────────────────────────
+router.put('/:id', verifyToken, guard, async (req, res) => {
+  try {
+    const { title, termLabel, notes, schedule } = req.body;
+    await db.collection(COL).doc(req.params.id).update({
+      title,
+      termLabel,
+      notes,
+      schedule,
+      updatedAt: new Date().toISOString(),
+      updatedBy: req.user.uid,
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── DELETE a plan ──────────────────────────────────────────────────────
+router.delete('/:id', verifyToken, guard, async (req, res) => {
+  try {
+    await db.collection(COL).doc(req.params.id).delete();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /:id/notify – send email to a presenter ─────────────────────────
 router.post('/:id/notify', verifyToken, guard, async (req, res) => {
   try {
     const { rowId } = req.body;
@@ -83,52 +109,9 @@ router.post('/:id/notify', verifyToken, guard, async (req, res) => {
     await ref.update({ schedule: updatedSchedule, updatedAt: new Date().toISOString(), updatedBy: req.user.uid });
 
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-router.get('/', verifyToken, guard, async (req, res) => {
-  try {
-    const snap = await db.collection(COL).orderBy('createdAt', 'desc').get();
-    res.json(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-router.get('/:id', verifyToken, guard, async (req, res) => {
-  try {
-    const doc = await db.collection(COL).doc(req.params.id).get();
-    if (!doc.exists) return res.status(404).json({ error: 'Not found' });
-    res.json({ id: doc.id, ...doc.data() });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-router.post('/', verifyToken, guard, async (req, res) => {
-  try {
-    const doc = await db.collection(COL).add({
-      ...req.body,
-      schedule: Array.isArray(req.body.schedule) ? req.body.schedule : [],
-      createdAt: new Date().toISOString(),
-      createdBy: req.user.uid,
-    });
-    res.status(201).json({ id: doc.id });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-router.put('/:id', verifyToken, guard, async (req, res) => {
-  try {
-    await db.collection(COL).doc(req.params.id).update({
-      ...req.body,
-      updatedAt: new Date().toISOString(),
-      updatedBy: req.user.uid,
-    });
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-router.delete('/:id', verifyToken, guard, async (req, res) => {
-  try {
-    await db.collection(COL).doc(req.params.id).delete();
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;
