@@ -1,32 +1,32 @@
 'use client';
 import { useState } from 'react';
-
 import { useRouter } from 'next/navigation';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
-import { validateEmail } from '../utils/validation';
+import { validateEmail } from '@/app/utils/validation';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // NEW
   const [emailError, setEmailError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Handle login form submission
+  const handleEmailBlur = () => {
+    const result = validateEmail(email);
+    setEmailError(result.error);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Validate email before attempting login
     const emailCheck = validateEmail(email);
+    setEmailError(emailCheck.error);
     if (!emailCheck.isValid) {
-      setEmailError('Please enter a valid email address.');
+      setError('Please enter a valid email address.');
       return;
     }
-    setEmailError(null);
-
     setLoading(true);
     setError('');
     try {
@@ -40,25 +40,28 @@ export default function LoginPage() {
     }
   };
 
-  // Handle forgot password
-
   const handleForgotPassword = async () => {
-  if (!email) return alert('Enter your email first');
-  const auth = getFirebaseAuth();
-  if (!auth) return;
-  try {
-    const resetUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}/reset-password`
-      : '/reset-password';
-    await sendPasswordResetEmail(auth, email, {
-      url: resetUrl,
-      handleCodeInApp: true,
-    });
-    alert('Password reset email sent to ' + email);
-  } catch (err) {
-    setError(err.message || 'Failed to send reset email');
-  }
-};
+    if (!email) return alert('Enter your email first');
+    const emailCheck = validateEmail(email);
+    if (!emailCheck.isValid) {
+      setEmailError(emailCheck.error);
+      return alert('Please enter a valid email before requesting a reset.');
+    }
+    const auth = getFirebaseAuth();
+    if (!auth) return;
+    try {
+      const resetUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}/reset-password`
+        : '/reset-password';
+      await sendPasswordResetEmail(auth, email, {
+        url: resetUrl,
+        handleCodeInApp: true,
+      });
+      alert('Password reset email sent to ' + email);
+    } catch (err) {
+      setError(err.message || 'Failed to send reset email');
+    }
+  };
 
   const labelStyle = {
     fontSize: 13, fontWeight: 600, color: '#1E293B', marginBottom: 6, display: 'block',
@@ -67,6 +70,12 @@ export default function LoginPage() {
     width: '100%', padding: '12px 14px', borderRadius: 10, fontSize: 14,
     border: '1px solid #CBD5E1', background: '#FFFFFF', color: '#0F172A',
     outline: 'none', fontFamily: "'Noto Sans', sans-serif",
+  };
+  // Eye icon style
+  const eyeStyle = {
+    position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+    display: 'flex', alignItems: 'center', color: '#64748B',
   };
 
   return (
@@ -87,19 +96,47 @@ export default function LoginPage() {
             <input
               required type="email" placeholder="you@example.com"
               value={email} onChange={(e) => setEmail(e.target.value)}
-              style={inputStyle}
+              onBlur={handleEmailBlur}
+              style={{ ...inputStyle, borderColor: emailError ? '#DC2626' : '#CBD5E1' }}
             />
             {emailError && (
-              <p className="text-red-500 text-xs mt-1">{emailError}</p>
+              <p style={{ color: '#DC2626', fontSize: 12, marginTop: 4, fontWeight: 500 }}>
+                {emailError}
+              </p>
             )}
           </div>
           <div>
             <label style={labelStyle}>Password</label>
-            <input
-              required type="password" placeholder="••••••••"
-              value={password} onChange={(e) => setPassword(e.target.value)}
-              style={inputStyle}
-            />
+            <div style={{ position: 'relative' }}> {/* NEW wrapper for eye icon */}
+              <input
+                required
+                type={showPassword ? 'text' : 'password'} // Toggle type
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={inputStyle}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={eyeStyle}
+                aria-label="Toggle password visibility"
+              >
+                {showPassword ? (
+                  // Eye Slash SVG (hidden)
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                ) : (
+                  // Eye SVG (visible)
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
           <button
             type="submit" disabled={loading}

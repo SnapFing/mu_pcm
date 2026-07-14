@@ -3,7 +3,7 @@ import { useState } from 'react';
 import Button from '@/app/ui/Button';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { validateEmail, validatePhone } from '../utils/validation';
+import { validateEmail, validatePhone } from '@/app/utils/validation';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -24,13 +24,14 @@ export default function RegisterPage() {
     category: 'Ordinary',
     initialBand: '',
   });
+  const [showPassword, setShowPassword] = useState(false); // NEW
+  const [errors, setErrors] = useState({ email: null, phone: null });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
 
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
 
-  // ── Validation handlers ──────────────────────────────────────────────────
   const handleEmailBlur = () => {
     const result = validateEmail(form.email);
     setErrors((prev) => ({ ...prev, email: result.error }));
@@ -39,16 +40,24 @@ export default function RegisterPage() {
   const handlePhoneBlur = () => {
     const result = validatePhone(form.phone);
     setErrors((prev) => ({ ...prev, phone: result.error }));
-    // Auto-format the phone number if valid, so it sends E.164 to backend
     if (result.isValid && result.formatted) {
       setForm((prev) => ({ ...prev, phone: result.formatted }));
     }
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.email || !form.password || !form.name) return;
+    const emailCheck = validateEmail(form.email);
+    const phoneCheck = validatePhone(form.phone);
+    setErrors({ email: emailCheck.error, phone: phoneCheck.error });
+    if (!emailCheck.isValid || !phoneCheck.isValid) {
+      setError('Please fix the highlighted fields before signing up.');
+      return;
+    }
+    if (!form.name) {
+      setError('Full name is required.');
+      return;
+    }
     setLoading(true);
     setError('');
     let cred = null;
@@ -126,6 +135,12 @@ export default function RegisterPage() {
     border: '1px solid #CBD5E1', background: '#FFFFFF', color: '#0F172A',
     outline: 'none', fontFamily: "'Noto Sans', sans-serif",
   };
+  // Eye icon style
+  const eyeStyle = {
+    position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+    display: 'flex', alignItems: 'center', color: '#64748B',
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-10" style={{ background: '#F5F7FF' }}>
@@ -142,19 +157,59 @@ export default function RegisterPage() {
         )}
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-          {/* ── Left Column ───────────────────────────────────────────── */}
+          {/* Left Column */}
           <div>
             <label style={labelStyle}>Full Name *</label>
             <input required placeholder="John Mwanza" value={form.name} onChange={set('name')} style={inputStyle} />
           </div>
           <div>
             <label style={labelStyle}>Email *</label>
-            <input required type="email" placeholder="you@example.com" value={form.email} onChange={set('email')} style={inputStyle} />
+            <input
+              required type="email" placeholder="you@example.com"
+              value={form.email} onChange={set('email')}
+              onBlur={handleEmailBlur}
+              style={{ ...inputStyle, borderColor: errors.email ? '#DC2626' : '#CBD5E1' }}
+            />
+            {errors.email && (
+              <p style={{ color: '#DC2626', fontSize: 12, marginTop: 4, fontWeight: 500 }}>
+                {errors.email}
+              </p>
+            )}
           </div>
+
+          {/* ── PASSWORD FIELD WITH EYE ────────────────────────────────── */}
           <div>
             <label style={labelStyle}>Password * (min. 6 characters)</label>
-            <input required type="password" placeholder="••••••••" value={form.password} onChange={set('password')} style={inputStyle} />
+            <div style={{ position: 'relative' }}>
+              <input
+                required
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={form.password}
+                onChange={set('password')}
+                style={inputStyle}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={eyeStyle}
+                aria-label="Toggle password visibility"
+              >
+                {showPassword ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
+
           <div>
             <label style={labelStyle}>Membership Category</label>
             <select value={form.category} onChange={set('category')} style={inputStyle}>
@@ -185,16 +240,25 @@ export default function RegisterPage() {
                   <option value="Fifth Year">Fifth Year</option>
                 </select>
               </div>
-              {/* placeholder to keep grid alignment */}
               <div className="hidden md:block" />
             </>
           )}
           <div>
             <label style={labelStyle}>Phone (optional)</label>
-            <input type="tel" placeholder="+260 977 123 456" value={form.phone} onChange={set('phone')} style={inputStyle} />
+            <input
+              type="tel" placeholder="+260 977 123 456"
+              value={form.phone} onChange={set('phone')}
+              onBlur={handlePhoneBlur}
+              style={{ ...inputStyle, borderColor: errors.phone ? '#DC2626' : '#CBD5E1' }}
+            />
+            {errors.phone && (
+              <p style={{ color: '#DC2626', fontSize: 12, marginTop: 4, fontWeight: 500 }}>
+                {errors.phone}
+              </p>
+            )}
           </div>
 
-          {/* ── Right Column ──────────────────────────────────────────── */}
+          {/* Right Column */}
           <div>
             <label style={labelStyle}>Room Number</label>
             <input placeholder="e.g. Room 12, David Livingstone Hostel" value={form.roomNumber} onChange={set('roomNumber')} style={inputStyle} />
@@ -230,7 +294,7 @@ export default function RegisterPage() {
             </select>
           </div>
 
-          {/* ── Submit Button (full width) ─────────────────────────────── */}
+          {/* Submit Button */}
           <div className="md:col-span-2">
             <button
               type="submit" disabled={loading}
