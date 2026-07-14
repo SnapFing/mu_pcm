@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { validateEmail } from '../utils/validation';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [emailError, setEmailError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -16,6 +18,15 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate email before attempting login
+    const emailCheck = validateEmail(email);
+    if (!emailCheck.isValid) {
+      setEmailError('Please enter a valid email address.');
+      return;
+    }
+    setEmailError(null);
+
     setLoading(true);
     setError('');
     try {
@@ -78,6 +89,9 @@ export default function LoginPage() {
               value={email} onChange={(e) => setEmail(e.target.value)}
               style={inputStyle}
             />
+            {emailError && (
+              <p className="text-red-500 text-xs mt-1">{emailError}</p>
+            )}
           </div>
           <div>
             <label style={labelStyle}>Password</label>

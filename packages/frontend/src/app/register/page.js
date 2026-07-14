@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Button from '@/app/ui/Button';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { validateEmail, validatePhone } from '../utils/validation';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -28,6 +29,22 @@ export default function RegisterPage() {
   const [done, setDone] = useState(false);
 
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
+
+  // ── Validation handlers ──────────────────────────────────────────────────
+  const handleEmailBlur = () => {
+    const result = validateEmail(form.email);
+    setErrors((prev) => ({ ...prev, email: result.error }));
+  };
+
+  const handlePhoneBlur = () => {
+    const result = validatePhone(form.phone);
+    setErrors((prev) => ({ ...prev, phone: result.error }));
+    // Auto-format the phone number if valid, so it sends E.164 to backend
+    if (result.isValid && result.formatted) {
+      setForm((prev) => ({ ...prev, phone: result.formatted }));
+    }
+  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
