@@ -179,7 +179,7 @@ router.post('/:uid/approve', verifyToken, requireAnyRole('admin', 'secretary'), 
       const student = studentDoc.data();
       if (student?.email) {
         const { sendEmail } = require('../utils/email');
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const frontendUrl = process.env.FRONTEND_URL || 'https://mu-pcm.vercel.app/';
         sendEmail({
           to: student.email,
           subject: '🎉 Your MU SDA PCM account has been approved!',
