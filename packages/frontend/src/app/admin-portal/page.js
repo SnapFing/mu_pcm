@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { initializeApp, getApps } from "firebase/app";
+import { useRouter } from "next/navigation";
 import StudentRegistrationsSection from './StudentRegistrationsSection';
 import MemberRegistersSection from './MemberRegistersSection';
 import MinutesSection from './MinutesSection';
@@ -1463,7 +1464,8 @@ function BannersSection({ token }) {
 // ROOT ADMIN PAGE
 // ═══════════════════════════════════════════════════════════════════════════
 export default function AdminPage() {
-  const { user, token, loading, login, logout } = useAdminAuth();
+  const router = useRouter();
+  const { user, token, loading, login, logout, unauthorized } = useAdminAuth();
   const [section, setSection]   = useState("overview");
   const [open, setOpen]         = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -1474,6 +1476,15 @@ export default function AdminPage() {
 
   useEffect(() => { if (user) { loadPrayers(); loadContacts(); } }, [user, loadPrayers, loadContacts]);
   useEffect(() => { const p = new URLSearchParams(window.location.search); setIsResetLink(p.get("mode") === "resetPassword"); }, []);
+
+  // A Firebase session exists but the account isn't authorised for the
+  // admin portal — send them back to the public dashboard instead of
+  // showing them the admin login form. Skip this during a password-reset
+  // flow so that link still works normally.
+  useEffect(() => {
+    if (loading || isResetLink) return;
+    if (unauthorized) router.replace('/dashboard');
+  }, [loading, isResetLink, unauthorized, router]);
 
   // Responsive: detect viewport and set sensible sidebar defaults
   useEffect(() => {
@@ -1558,7 +1569,7 @@ export default function AdminPage() {
 
   const current = nav.find(n => n.key === section);
 
-  if (loading) return (
+  if (loading || (unauthorized && !isResetLink)) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: C.navy }}>
       <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
     </div>
