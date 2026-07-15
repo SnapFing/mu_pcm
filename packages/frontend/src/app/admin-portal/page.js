@@ -121,6 +121,7 @@ function useAdminAuth() {
   const [user, setUser]       = useState(null);
   const [token, setToken]     = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
 
   const login = useCallback(async (email, password) => {
     const auth = getFirebaseAuth();
@@ -137,6 +138,7 @@ function useAdminAuth() {
     };
     setToken(idToken);
     setUser(userData);
+    setAuthorized(true);
     return userData;
   }, []);
 
@@ -145,6 +147,7 @@ function useAdminAuth() {
     if (auth) await signOut(auth);
     setUser(null);
     setToken(null);
+    setAuthorized(false);
   }, []);
 
   useEffect(() => {
@@ -154,6 +157,7 @@ function useAdminAuth() {
     const unsub = onIdTokenChanged(auth, async (fbUser) => {
       if (!fbUser) {
         setUser(null); setToken(null); setLoading(false);
+        setAuthorized(false);
         return;
       }
       try {
@@ -167,10 +171,15 @@ function useAdminAuth() {
           displayName: profile.displayName,
           active:      profile.active,
         });
+        setAuthorized(true);
+        
       } catch (err) {
         console.error("[auth] session error:", err.message);
+        // User is logged in but NOT an admin → authorized = false, user = null
         await signOut(auth);
         setUser(null); setToken(null);
+        setAuthorized(false);
+      
       } finally {
         setLoading(false);
       }
@@ -179,7 +188,7 @@ function useAdminAuth() {
     return unsub;
   }, []);
 
-  return { user, token, loading, login, logout };
+  return { user, token, loading, login, logout, authorized };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

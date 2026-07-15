@@ -82,7 +82,7 @@ export default function Navbar({ activePath = '' }) {
 
           {/* Logo */}
           <a href="/dashboard" className="flex items-center gap-3 shrink-0">
-            <img src="/mu pcm.png" alt="MU SDA PCM"
+            <img src="/public/pcm.png" alt="MU SDA PCM"
               style={{ height: 38, width: 'auto', objectFit: 'contain' }}
               onError={e => e.currentTarget.style.display = 'none'} />
             <div className="hidden sm:block leading-tight">
@@ -175,7 +175,7 @@ export default function Navbar({ activePath = '' }) {
         <div className="flex items-center justify-between px-5 py-4"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', height: 64 }}>
           <div className="flex items-center gap-2.5">
-            <img src="/mu pcm.png" alt="PCM"
+            <img src="/public/pcm.png" alt="PCM"
               style={{ height: 28, width: 'auto' }}
               onError={e => e.currentTarget.style.display = 'none'} />
             <span className="font-bold text-white text-sm">Menu</span>
